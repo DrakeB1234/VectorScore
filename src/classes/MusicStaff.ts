@@ -1,7 +1,8 @@
+import { parseNoteString as parsedNoteString } from "../helpers/notehelpers";
 import BassStrategy from "../strategies/BassStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
 import TrebleStrategy from "../strategies/TrebleStrategy";
-import type { StaffTypes } from "../types";
+import type { NoteObj, StaffTypes } from "../types";
 import SVGRenderer from "./SVGRenderer";
 
 export type MusicStaffOptions = {
@@ -50,5 +51,15 @@ export default class MusicStaff {
     // Commit to DOM for one batch operation
     this.rendererInstance.applySizingToRootSvg();
     this.rendererInstance.commitElementsToDOM(rootSvgElement);
+  }
+
+  /**
+   * @param {string} note - The musical note to be drawn on the staff.
+   * @description A string representing a single musical note, structured as:
+   * `C#4w` == `<PITCH><OCTAVE><DURATION><MODIFIER>`
+  */
+  drawNote(note: string) {
+    const noteObj: NoteObj = parsedNoteString(note);
+    console.log(noteObj);
   }
 }

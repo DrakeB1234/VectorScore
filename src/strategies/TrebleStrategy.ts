@@ -7,7 +7,7 @@ export default class TrebleStrategy implements StaffStrategy {
   private params: ClefParams = {
     clefGlyph: "CLEF_TREBLE",
     paddingTop: 13,
-    paddingBottom: 2.5
+    paddingBottom: 2.5,
   }
   private rendererRef: SVGRenderer;
 

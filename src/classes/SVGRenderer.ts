@@ -1,3 +1,4 @@
+import { NOTE_LAYER_START_X } from "../constants";
 import { GLPYH_ENTRIES, type GlyphNames } from "../glyphs";
 
 const SVG_HREF = "http://www.w3.org/2000/svg";
@@ -56,6 +57,10 @@ export default class SVGRenderer {
     this.parentGroupContainer.appendChild(this.musicNotesLayer);
     this.parentGroupContainer.appendChild(this.musicUILayer);
 
+    // Apply Note Layer Offset
+    this.musicNotesLayer.setAttribute("transform", `translate(${NOTE_LAYER_START_X}, 0)`);
+
+    this.drawLine(0, 0, 0, 100, this.musicNotesLayer);
   }
 
   // Creates SVG defs for all glyphs in GLYPH_ENTRIES, applies global scale and offsets, appends to root SVG

@@ -7,7 +7,7 @@ export default class BassStrategy implements StaffStrategy {
   private params: ClefParams = {
     clefGlyph: "CLEF_BASS",
     paddingTop: 0,
-    paddingBottom: 0
+    paddingBottom: 0,
   }
   private rendererRef: SVGRenderer;
 
