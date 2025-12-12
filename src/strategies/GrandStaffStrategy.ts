@@ -7,6 +7,9 @@ import type { LedgerLineEntry, StaffParams, StaffStrategy } from "./StrategyInte
 const MIDDLE_C_SEMITONE = 48;
 const MIDDLE_C_Y_POS: number = (STAFF_LINE_SPACING * 4) + (GRAND_STAFF_SPACING / 2);
 
+const UPPER_MIDDLE_LINE_Y_POS = 20;
+const LOWER_MIDDLE_LINE_Y_POS = 90;
+
 export default class GrandStaffStrategy implements StaffStrategy {
   private params: StaffParams;
   private rendererRef: SVGRenderer;
@@ -57,6 +60,21 @@ export default class GrandStaffStrategy implements StaffStrategy {
 
     this.rendererRef.addTotalRootSvgHeight(newHeight);
     this.rendererRef.addTotalRootSvgYOffset(newYOffset);
+  }
+
+  shouldNoteFlip(noteYPos: number): boolean {
+    const diffLower = Math.abs(noteYPos - LOWER_MIDDLE_LINE_Y_POS);
+    const diffUpper = Math.abs(noteYPos - UPPER_MIDDLE_LINE_Y_POS);
+
+    if (noteYPos === MIDDLE_C_Y_POS) return false;
+
+    if (diffLower <= diffUpper) {
+      const res = noteYPos >= LOWER_MIDDLE_LINE_Y_POS;
+      return !res;
+    } else {
+      const res = noteYPos <= UPPER_MIDDLE_LINE_Y_POS;
+      return res;
+    }
   }
 
   getLedgerLinesX(note: Omit<NoteObj, "accidental">, yPos: number): LedgerLineEntry[] {

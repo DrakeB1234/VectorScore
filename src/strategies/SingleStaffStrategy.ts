@@ -4,6 +4,8 @@ import { getGlyphNameByClef, getNoteSpacingFromReference } from "../helpers/note
 import type { NoteObj, StaffTypes } from "../types";
 import type { LedgerLineEntry, StaffParams, StaffStrategy } from "./StrategyInterface";
 
+const MIDDLE_LINE_Y_POS = 20;
+
 export default class SingleStaffStrategy implements StaffStrategy {
   private params: StaffParams;
   private rendererRef: SVGRenderer;
@@ -42,6 +44,10 @@ export default class SingleStaffStrategy implements StaffStrategy {
     // Add padding to height and y offset to root svg
     this.rendererRef.addTotalRootSvgHeight(newHeight);
     this.rendererRef.addTotalRootSvgYOffset(newYOffset);
+  }
+
+  shouldNoteFlip(noteYPos: number): boolean {
+    return noteYPos <= MIDDLE_LINE_Y_POS;
   }
 
   getLedgerLinesX(note: Omit<NoteObj, "accidental">, yPos: number): LedgerLineEntry[] {

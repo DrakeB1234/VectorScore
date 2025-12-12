@@ -3,7 +3,7 @@ import type { StaffTypes } from "./types";
 
 export const STAFF_LINE_COUNT = 5;
 export const STAFF_LINE_SPACING = 10;
-export const NOTE_LAYER_START_X = 34;
+export const NOTE_LAYER_START_X = 38;
 
 export const ACCIDENTAL_OFFSET_X = -8;
 export const HALF_NOTEHEAD_WIDTH = 10;
@@ -15,21 +15,28 @@ export const HALF_NOTE_LEDGER_LINE_WIDTH = 12.5;
 
 export const GRAND_STAFF_SPACING = 30;
 
-
-export const staffParams: Partial<Record<StaffTypes, StaffParams>> = {
+export const staffParams: Record<StaffTypes, StaffParams> = {
   treble: {
     staffType: "treble",
     paddingTop: 13,
     paddingBottom: 3,
     topLineNote: { name: "F", octave: 5 },
     topLineYPos: 0,
-    bottomLineYPos: STAFF_LINE_SPACING * (STAFF_LINE_COUNT - 1)
+    bottomLineYPos: STAFF_LINE_SPACING * (STAFF_LINE_COUNT - 1),
   },
   bass: {
     staffType: "bass",
     paddingTop: 0,
     paddingBottom: 0,
     topLineNote: { name: "A", octave: 3 },
+    topLineYPos: 0,
+    bottomLineYPos: STAFF_LINE_SPACING * (STAFF_LINE_COUNT - 1)
+  },
+  alto: {
+    staffType: "alto",
+    paddingTop: 0,
+    paddingBottom: 0,
+    topLineNote: { name: "G", octave: 4 },
     topLineYPos: 0,
     bottomLineYPos: STAFF_LINE_SPACING * (STAFF_LINE_COUNT - 1)
   },

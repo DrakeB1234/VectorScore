@@ -4,6 +4,7 @@ export interface StaffStrategy {
   drawStaff(width: number): void;
   calculateNoteYPos(note: Omit<NoteObj, "accidental">): number;
   getLedgerLinesX(note: Omit<NoteObj, "accidental">, yPos: number): LedgerLineEntry[];
+  shouldNoteFlip(noteYPos: number): boolean;
 }
 
 export type StaffParams = {

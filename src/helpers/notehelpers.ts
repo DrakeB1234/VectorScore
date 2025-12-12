@@ -1,7 +1,7 @@
 import { type GlyphNames } from "../glyphs";
 import type { Accidentals, Durations, NoteNames, NoteObj } from "../types";
 
-export const REGEX_NOTE_STRING = /^(?<name>[A-G])(?<accidental>[#b]?)(?<octave>\d)(?<duration>[whq]?)$/;
+export const REGEX_NOTE_STRING = /^(?<name>[A-Ga-g])(?<accidental>[#b]?)(?<octave>\d)(?<duration>[whqeWHQE]?)$/;
 
 const NOTE_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as NoteNames[];
 
@@ -9,10 +9,14 @@ export function parseNoteString(noteString: string): NoteObj {
   const match = noteString.match(REGEX_NOTE_STRING);
 
   if (!match || !match.groups) {
-    throw new Error(`Invalid note string format: ${noteString}. Expected format: [A-G][#|b]?[0-9][w|h|q].`);
+    throw new Error(`Invalid note string format: ${noteString}. Expected format: [A-Ga-g][#|b]?[0-9][w|h|q|e].`);
   };
 
   let { name, accidental, octave, duration } = match.groups;
+
+  // Normalize input
+  name = name.toUpperCase();
+  duration = duration.toLowerCase();
 
   if (!name) {
     throw new Error(`Invalid note name: ${name}. Valid note names are: C, D, E, F, G, A, B.`);
@@ -46,6 +50,9 @@ export function getGlyphNameByClef(clef: string): GlyphNames {
       break;
     case 'bass':
       searchKey = 'CLEF_BASS';
+      break;
+    case 'alto':
+      searchKey = 'CLEF_ALTO';
       break;
   }
   if (!searchKey) throw new Error(`Invalid clef type: ${clef}. Valid clef types are: treble, bass, alto.`);

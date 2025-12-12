@@ -8,6 +8,8 @@ type SVGRendererOptions = {
   width: number;
   height: number;
   scale: number;
+  staffColor: string;
+  staffBackgroundColor: string;
 }
 
 type LayerNames = 'staff' | 'notes' | 'ui';
@@ -45,6 +47,10 @@ export default class SVGRenderer {
     this.svgElementRef.style.height = `auto`;
     this.svgElementRef.style.display = "block";
 
+    // Applies coloring to staff
+    this.svgElementRef.setAttribute("color", options.staffColor);
+    this.svgElementRef.style.backgroundColor = options.staffBackgroundColor;
+
     // CREATE DEFS THEN PARENT GROUP IN ORDER
     this.makeGlyphDefs();
     this.parentGroupContainer = this.createGroup("svg-renderer-parent");
@@ -68,6 +74,7 @@ export default class SVGRenderer {
       const path = document.createElementNS(SVG_HREF, "path");
       path.setAttribute("id", `glyph-${name}`);
       path.setAttribute("d", data.path);
+      path.setAttribute("fill", "currentColor");
 
       // BAKE SCALE AND OFFSETS INTO SYMBOL
       path.setAttribute("transform", `translate(${data.xOffset}, ${data.yOffset}) scale(${GLOBAL_SYMBOL_SCALE})`);
@@ -142,7 +149,7 @@ export default class SVGRenderer {
     line.setAttribute("y1", y1.toString());
     line.setAttribute("x2", x2.toString());
     line.setAttribute("y2", y2.toString());
-    line.setAttribute("stroke", "#000");
+    line.setAttribute("stroke", "currentColor");
     line.setAttribute("stroke-width", "1");
 
     parent.appendChild(line);

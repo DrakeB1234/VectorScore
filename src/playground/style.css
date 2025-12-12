@@ -45,6 +45,7 @@ body {
 .controls {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-top: 2rem;
   padding: 1rem;
@@ -55,4 +56,5 @@ button {
   font-size: 1rem;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  word-break: break-all;
 }

@@ -1,4 +1,4 @@
-import { ACCIDENTAL_OFFSET_X, HALF_NOTEHEAD_WIDTH, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
+import { ACCIDENTAL_OFFSET_X, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
 import { parseNoteString as parsedNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
@@ -12,6 +12,8 @@ export type MusicStaffOptions = {
   staffType?: StaffTypes;
   spaceAbove?: number;
   spaceBelow?: number;
+  staffColor?: string;
+  staffBackgroundColor?: string;
 };
 
 type NoteEntry = {
@@ -38,13 +40,17 @@ export default class MusicStaff {
       staffType: "treble",
       spaceAbove: 0,
       spaceBelow: 0,
+      staffColor: "black",
+      staffBackgroundColor: "transparent",
       ...options
     } as Required<MusicStaffOptions>;
 
     this.rendererInstance = new SVGRenderer(rootElementCtx, {
       width: this.options.width,
       height: 100,
-      scale: this.options.scale
+      scale: this.options.scale,
+      staffColor: this.options.staffColor,
+      staffBackgroundColor: this.options.staffBackgroundColor
     });
     const rootSvgElement = this.rendererInstance.rootSvgElement;
 
@@ -58,8 +64,11 @@ export default class MusicStaff {
       case "treble":
         this.strategyInstance = new SingleStaffStrategy(this.rendererInstance, "treble");
         break;
+      case "alto":
+        this.strategyInstance = new SingleStaffStrategy(this.rendererInstance, "alto");
+        break;
       default:
-        throw new Error(`The staff type ${this.options.staffType} is not supported. Please use "treble", "bass", or "grand".`);
+        throw new Error(`The staff type ${this.options.staffType} is not supported. Please use "treble", "bass", "alto", or "grand".`);
     };
     this.strategyInstance.drawStaff(this.options.width);
 
@@ -80,22 +89,35 @@ export default class MusicStaff {
     this.rendererInstance.commitElementsToDOM(rootSvgElement);
   }
 
-  private drawStem(noteGroup: SVGGElement) {
-    this.rendererInstance.drawLine(HALF_NOTEHEAD_WIDTH, 0, HALF_NOTEHEAD_WIDTH, -NOTEHEAD_STEM_HEIGHT, noteGroup);
+  private drawStem(noteGroup: SVGGElement, noteFlip: boolean) {
+    if (noteFlip) {
+      this.rendererInstance.drawLine(0, 0, 0, NOTEHEAD_STEM_HEIGHT, noteGroup);
+    }
+    else {
+      this.rendererInstance.drawLine(HALF_NOTEHEAD_WIDTH, 0, HALF_NOTEHEAD_WIDTH, -NOTEHEAD_STEM_HEIGHT, noteGroup);
+    }
   }
 
   // Handles drawing the glyphs to internal group, applies the xPositioning to this.noteCursorX
   private renderNote(note: NoteObj, ySpacing: number): SVGGElement {
     const noteGroup = this.rendererInstance.createGroup("note");
+    let noteFlip = false;
 
     switch (note.duration) {
       case "h":
         this.rendererInstance.drawGlyph("NOTE_HEAD_HALF", noteGroup);
-        this.drawStem(noteGroup);
+        noteFlip = this.strategyInstance.shouldNoteFlip(ySpacing);
+        this.drawStem(noteGroup, noteFlip);
         break;
       case "q":
         this.rendererInstance.drawGlyph("NOTE_HEAD_QUARTER", noteGroup);
-        this.drawStem(noteGroup);
+        noteFlip = this.strategyInstance.shouldNoteFlip(ySpacing);
+        this.drawStem(noteGroup, noteFlip);
+        break;
+      case "e":
+        noteFlip = this.strategyInstance.shouldNoteFlip(ySpacing);
+        if (noteFlip) this.rendererInstance.drawGlyph("EIGTH_NOTE_FLIPPED", noteGroup);
+        else this.rendererInstance.drawGlyph("EIGTH_NOTE", noteGroup);
         break;
       default:
         this.rendererInstance.drawGlyph("NOTE_HEAD_WHOLE", noteGroup);
@@ -165,5 +187,23 @@ export default class MusicStaff {
 
     // Commit the newly created note/notes element to the 'notes' layer
     this.rendererInstance.commitElementsToDOM(noteGroups, notesLayer);
+  }
+
+  // Gets all current notes on staff and evenly spaces them
+  justifyNotes() {
+    const containerWidth = this.options.width - NOTE_LAYER_START_X;
+    const notesCount = this.noteEntries.length;
+    if (notesCount <= 0 || containerWidth <= 0) return;
+    const noteSpacing = Math.round(containerWidth / notesCount);
+
+    let cursorX = 0;
+    if (notesCount === 1) {
+      this.noteEntries[0].gElement.setAttribute("transform", `translate(${containerWidth / 2 - NOTE_LAYER_START_X}, ${this.noteEntries[0].yPos})`);
+      return;
+    }
+    this.noteEntries.forEach((e) => {
+      e.gElement.setAttribute("transform", `translate(${cursorX}, ${e.yPos})`);
+      cursorX += noteSpacing;
+    });
   }
 }

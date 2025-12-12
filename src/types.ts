@@ -8,5 +8,5 @@ export type NoteObj = {
 }
 
 export type NoteNames = 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B';
-export type Durations = 'w' | 'h' | 'q';
+export type Durations = 'w' | 'h' | 'q' | 'e';
 export type Accidentals = '#' | 'b';
