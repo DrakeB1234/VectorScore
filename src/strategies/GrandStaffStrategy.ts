@@ -1,12 +1,11 @@
 import type SVGRenderer from "../classes/SVGRenderer";
-import { STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams } from "../constants";
+import { GRAND_STAFF_SPACING, HALF_NOTE_LEDGER_LINE_WIDTH, STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams, START_LEDGER_LINE_X, WHOLE_NOTE_LEDGER_LINE_WIDTH } from "../constants";
 import { getGlyphNameByClef, getNoteSpacingFromReference, noteToAbsoluteSemitone } from "../helpers/notehelpers";
 import type { NoteObj, StaffTypes } from "../types";
-import type { StaffParams, StaffStrategy } from "./StrategyInterface";
+import type { LedgerLineEntry, StaffParams, StaffStrategy } from "./StrategyInterface";
 
-const GRAND_STAFF_SPACING = STAFF_LINE_SPACING * 3;
 const MIDDLE_C_SEMITONE = 48;
-const MIDDLE_C_Y_POS: number = (STAFF_LINE_SPACING * 4) + (GRAND_STAFF_SPACING / 2)
+const MIDDLE_C_Y_POS: number = (STAFF_LINE_SPACING * 4) + (GRAND_STAFF_SPACING / 2);
 
 export default class GrandStaffStrategy implements StaffStrategy {
   private params: StaffParams;
@@ -58,6 +57,43 @@ export default class GrandStaffStrategy implements StaffStrategy {
 
     this.rendererRef.addTotalRootSvgHeight(newHeight);
     this.rendererRef.addTotalRootSvgYOffset(newYOffset);
+  }
+
+  getLedgerLinesX(note: Omit<NoteObj, "accidental">, yPos: number): LedgerLineEntry[] {
+    const ledgerLineEntries: LedgerLineEntry[] = []
+    const noteSemitone = noteToAbsoluteSemitone(note);
+    let ledgerLineWidth = note.duration === "w" ? WHOLE_NOTE_LEDGER_LINE_WIDTH : HALF_NOTE_LEDGER_LINE_WIDTH;
+
+    if (noteSemitone === MIDDLE_C_SEMITONE) {
+      ledgerLineEntries.push({ x1: START_LEDGER_LINE_X, x2: ledgerLineWidth, yPos: 0 });
+      return ledgerLineEntries;
+    }
+    if (yPos < this.params.topLineYPos) {
+      let lineAbsoluteY = this.params.topLineYPos - STAFF_LINE_SPACING;
+
+      while (lineAbsoluteY >= yPos) {
+        ledgerLineEntries.push({
+          x1: START_LEDGER_LINE_X,
+          x2: ledgerLineWidth,
+          yPos: lineAbsoluteY - yPos
+        });
+        lineAbsoluteY -= STAFF_LINE_SPACING;
+      }
+    }
+    else if (yPos > this.params.bottomLineYPos) {
+      let lineAbsoluteY = this.params.bottomLineYPos + STAFF_LINE_SPACING;
+
+      while (lineAbsoluteY <= yPos) {
+        ledgerLineEntries.push({
+          x1: START_LEDGER_LINE_X,
+          x2: ledgerLineWidth,
+          yPos: lineAbsoluteY - yPos
+        });
+        lineAbsoluteY += STAFF_LINE_SPACING;
+      }
+    }
+
+    return ledgerLineEntries;
   }
 
   calculateNoteYPos = (note: Omit<NoteObj, "accidental">): number => {

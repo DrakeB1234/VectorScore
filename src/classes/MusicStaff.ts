@@ -21,7 +21,7 @@ type NoteEntry = {
   yPos: number;
 }
 
-const NOTE_SPACING = 24;
+const NOTE_SPACING = 28;
 
 export default class MusicStaff {
   private rendererInstance: SVGRenderer;
@@ -80,8 +80,8 @@ export default class MusicStaff {
     this.rendererInstance.commitElementsToDOM(rootSvgElement);
   }
 
-  private drawStem(parent: SVGGElement) {
-    this.rendererInstance.drawLine(HALF_NOTEHEAD_WIDTH, 0, HALF_NOTEHEAD_WIDTH, -NOTEHEAD_STEM_HEIGHT, parent);
+  private drawStem(noteGroup: SVGGElement) {
+    this.rendererInstance.drawLine(HALF_NOTEHEAD_WIDTH, 0, HALF_NOTEHEAD_WIDTH, -NOTEHEAD_STEM_HEIGHT, noteGroup);
   }
 
   // Handles drawing the glyphs to internal group, applies the xPositioning to this.noteCursorX
@@ -115,6 +115,16 @@ export default class MusicStaff {
     }
     // If accidental, add its offset
     this.noteCursorX += xOffset;
+
+    // Strategy returns coords of expected ledger lines, this class will handle drawing them.
+    const ledgerLines = this.strategyInstance.getLedgerLinesX({
+      name: note.name,
+      octave: note.octave,
+      duration: note.duration
+    }, ySpacing);
+    ledgerLines.forEach(e => {
+      this.rendererInstance.drawLine(e.x1, e.yPos, e.x2, e.yPos, noteGroup);
+    })
 
     // Apply positioning to note group container
     noteGroup.setAttribute("transform", `translate(${this.noteCursorX}, ${ySpacing})`);

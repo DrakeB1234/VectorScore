@@ -9,26 +9,36 @@ export const ACCIDENTAL_OFFSET_X = -8;
 export const HALF_NOTEHEAD_WIDTH = 10;
 export const NOTEHEAD_STEM_HEIGHT = 34;
 
+export const START_LEDGER_LINE_X = -2;
+export const WHOLE_NOTE_LEDGER_LINE_WIDTH = 17;
+export const HALF_NOTE_LEDGER_LINE_WIDTH = 12.5;
+
+export const GRAND_STAFF_SPACING = 30;
+
+
 export const staffParams: Partial<Record<StaffTypes, StaffParams>> = {
   treble: {
     staffType: "treble",
     paddingTop: 13,
     paddingBottom: 3,
     topLineNote: { name: "F", octave: 5 },
-    bottomLineNote: { name: "E", octave: 4 },
+    topLineYPos: 0,
+    bottomLineYPos: STAFF_LINE_SPACING * (STAFF_LINE_COUNT - 1)
   },
   bass: {
     staffType: "bass",
     paddingTop: 0,
     paddingBottom: 0,
     topLineNote: { name: "A", octave: 3 },
-    bottomLineNote: { name: "G", octave: 2 },
+    topLineYPos: 0,
+    bottomLineYPos: STAFF_LINE_SPACING * (STAFF_LINE_COUNT - 1)
   },
   grand: {
     staffType: "grand",
     paddingTop: 13,
     paddingBottom: 0,
     topLineNote: { name: "F", octave: 5 },
-    bottomLineNote: { name: "G", octave: 2 },
+    topLineYPos: 0,
+    bottomLineYPos: STAFF_LINE_SPACING * (STAFF_LINE_COUNT * 2 - 2) + GRAND_STAFF_SPACING
   },
 }

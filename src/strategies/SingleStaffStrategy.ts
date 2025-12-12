@@ -1,8 +1,8 @@
 import type SVGRenderer from "../classes/SVGRenderer";
-import { STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams } from "../constants";
+import { HALF_NOTE_LEDGER_LINE_WIDTH, STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams, START_LEDGER_LINE_X, WHOLE_NOTE_LEDGER_LINE_WIDTH } from "../constants";
 import { getGlyphNameByClef, getNoteSpacingFromReference } from "../helpers/notehelpers";
 import type { NoteObj, StaffTypes } from "../types";
-import type { StaffParams, StaffStrategy } from "./StrategyInterface";
+import type { LedgerLineEntry, StaffParams, StaffStrategy } from "./StrategyInterface";
 
 export default class SingleStaffStrategy implements StaffStrategy {
   private params: StaffParams;
@@ -42,6 +42,38 @@ export default class SingleStaffStrategy implements StaffStrategy {
     // Add padding to height and y offset to root svg
     this.rendererRef.addTotalRootSvgHeight(newHeight);
     this.rendererRef.addTotalRootSvgYOffset(newYOffset);
+  }
+
+  getLedgerLinesX(note: Omit<NoteObj, "accidental">, yPos: number): LedgerLineEntry[] {
+    const ledgerLineEntries: LedgerLineEntry[] = []
+    let ledgerLineWidth = note.duration === "w" ? WHOLE_NOTE_LEDGER_LINE_WIDTH : HALF_NOTE_LEDGER_LINE_WIDTH;
+
+    if (yPos < this.params.topLineYPos) {
+      let lineAbsoluteY = this.params.topLineYPos - STAFF_LINE_SPACING;
+
+      while (lineAbsoluteY >= yPos) {
+        ledgerLineEntries.push({
+          x1: START_LEDGER_LINE_X,
+          x2: ledgerLineWidth,
+          yPos: lineAbsoluteY - yPos
+        });
+        lineAbsoluteY -= STAFF_LINE_SPACING;
+      }
+    }
+    else if (yPos > this.params.bottomLineYPos) {
+      let lineAbsoluteY = this.params.bottomLineYPos + STAFF_LINE_SPACING;
+
+      while (lineAbsoluteY <= yPos) {
+        ledgerLineEntries.push({
+          x1: START_LEDGER_LINE_X,
+          x2: ledgerLineWidth,
+          yPos: lineAbsoluteY - yPos
+        });
+        lineAbsoluteY += STAFF_LINE_SPACING;
+      }
+    }
+
+    return ledgerLineEntries;
   }
 
   calculateNoteYPos = (note: Omit<NoteObj, "accidental">): number => {
