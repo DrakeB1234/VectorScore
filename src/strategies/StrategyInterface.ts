@@ -2,7 +2,7 @@ import type { NoteObj, StaffTypes } from "../types";
 
 export interface StaffStrategy {
   drawStaff(width: number): void;
-  handleDrawNote(note: NoteObj): SVGGElement;
+  calculateNoteYPos(note: Omit<NoteObj, "accidental">): number;
 }
 
 export type StaffParams = {

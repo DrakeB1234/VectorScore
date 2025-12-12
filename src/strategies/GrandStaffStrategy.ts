@@ -1,5 +1,5 @@
 import type SVGRenderer from "../classes/SVGRenderer";
-import { ACCIDENTAL_OFFSET_X, STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams } from "../constants";
+import { STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams } from "../constants";
 import { getGlyphNameByClef, getNoteSpacingFromReference, noteToAbsoluteSemitone } from "../helpers/notehelpers";
 import type { NoteObj, StaffTypes } from "../types";
 import type { StaffParams, StaffStrategy } from "./StrategyInterface";
@@ -60,12 +60,8 @@ export default class GrandStaffStrategy implements StaffStrategy {
     this.rendererRef.addTotalRootSvgYOffset(newYOffset);
   }
 
-  handleDrawNote = (note: NoteObj): SVGGElement => {
-    const noteNoAccidental: NoteObj = {
-      name: note.name,
-      octave: note.octave
-    }
-    let spaceCount = getNoteSpacingFromReference(this.params.topLineNote, noteNoAccidental);
+  calculateNoteYPos = (note: Omit<NoteObj, "accidental">): number => {
+    let spaceCount = getNoteSpacingFromReference(this.params.topLineNote, note);
     let yPos = spaceCount * (STAFF_LINE_SPACING / 2);
 
     // Determines which staff to draw on by comparing pos from C4
@@ -78,39 +74,6 @@ export default class GrandStaffStrategy implements StaffStrategy {
       yPos = MIDDLE_C_Y_POS;
     }
 
-    // Determine X Pos
-    let xPos = 0;
-
-    // Render the note
-    const noteGroup = this.rendererRef.createGroup("note");
-
-    // Draw note head
-    switch (note.duration) {
-      case "h":
-        this.rendererRef.drawGlyph("NOTE_HEAD_HALF", noteGroup);
-        break;
-      case "q":
-        this.rendererRef.drawGlyph("NOTE_HEAD_QUARTER", noteGroup);
-        break;
-      default:
-        this.rendererRef.drawGlyph("NOTE_HEAD_WHOLE", noteGroup);
-    };
-
-
-    // Draw accidental, add its offset
-    switch (note.accidental) {
-      case "#":
-        this.rendererRef.drawGlyph("ACCIDENTAL_SHARP", noteGroup);
-        xPos -= ACCIDENTAL_OFFSET_X;
-        break;
-      case "b":
-        this.rendererRef.drawGlyph("ACCIDENTAL_FLAT", noteGroup);
-        xPos -= ACCIDENTAL_OFFSET_X;
-        break;
-    }
-
-    // Apply positioning to note group container
-    noteGroup.setAttribute("transform", `translate(${xPos}, ${yPos})`);
-    return noteGroup;
+    return yPos;
   }
 }

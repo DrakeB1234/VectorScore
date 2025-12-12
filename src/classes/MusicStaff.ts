@@ -1,4 +1,4 @@
-import { STAFF_LINE_SPACING } from "../constants";
+import { ACCIDENTAL_OFFSET_X, HALF_NOTEHEAD_WIDTH, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
 import { parseNoteString as parsedNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
@@ -14,10 +14,22 @@ export type MusicStaffOptions = {
   spaceBelow?: number;
 };
 
+type NoteEntry = {
+  gElement: SVGGElement;
+  note: NoteObj;
+  xPos: number;
+  yPos: number;
+}
+
+const NOTE_SPACING = 24;
+
 export default class MusicStaff {
   private rendererInstance: SVGRenderer;
   private strategyInstance: StaffStrategy;
   private options: Required<MusicStaffOptions>;
+
+  private noteEntries: NoteEntry[] = [];
+  private noteCursorX: number = 0;
 
   constructor(rootElementCtx: HTMLElement, options?: MusicStaffOptions) {
     this.options = {
@@ -68,12 +80,56 @@ export default class MusicStaff {
     this.rendererInstance.commitElementsToDOM(rootSvgElement);
   }
 
+  private drawStem(parent: SVGGElement) {
+    this.rendererInstance.drawLine(HALF_NOTEHEAD_WIDTH, 0, HALF_NOTEHEAD_WIDTH, -NOTEHEAD_STEM_HEIGHT, parent);
+  }
+
+  // Handles drawing the glyphs to internal group, applies the xPositioning to this.noteCursorX
+  private renderNote(note: NoteObj, ySpacing: number): SVGGElement {
+    const noteGroup = this.rendererInstance.createGroup("note");
+
+    switch (note.duration) {
+      case "h":
+        this.rendererInstance.drawGlyph("NOTE_HEAD_HALF", noteGroup);
+        this.drawStem(noteGroup);
+        break;
+      case "q":
+        this.rendererInstance.drawGlyph("NOTE_HEAD_QUARTER", noteGroup);
+        this.drawStem(noteGroup);
+        break;
+      default:
+        this.rendererInstance.drawGlyph("NOTE_HEAD_WHOLE", noteGroup);
+    };
+
+    // Draw accidental, add its offset
+    let xOffset = 0;
+    switch (note.accidental) {
+      case "#":
+        this.rendererInstance.drawGlyph("ACCIDENTAL_SHARP", noteGroup);
+        xOffset -= ACCIDENTAL_OFFSET_X;
+        break;
+      case "b":
+        this.rendererInstance.drawGlyph("ACCIDENTAL_FLAT", noteGroup);
+        xOffset -= ACCIDENTAL_OFFSET_X;
+        break;
+    }
+    // If accidental, add its offset
+    this.noteCursorX += xOffset;
+
+    // Apply positioning to note group container
+    noteGroup.setAttribute("transform", `translate(${this.noteCursorX}, ${ySpacing})`);
+    this.noteCursorX += NOTE_SPACING;
+
+    return noteGroup;
+  }
+
   /**
    * @param {string | string[]} notes - The musical note to be drawn on the staff. Can pass an array for multiple notes at a time.
    * @description A string representing a single musical note, structured as:
    * `C#4w` == `<PITCH><OCTAVE><DURATION><MODIFIER>`
   */
   drawNote(notes: string | string[]) {
+    // Normalizes input by converting a single string into an array
     const normalizedNotesArray = Array.isArray(notes) ? notes : [notes];
     const notesLayer = this.rendererInstance.getLayerByName("notes");
 
@@ -81,8 +137,20 @@ export default class MusicStaff {
     for (const noteString of normalizedNotesArray) {
       const noteObj: NoteObj = parsedNoteString(noteString);
 
-      const newNoteGroup = this.strategyInstance.handleDrawNote(noteObj);
-      noteGroups.push(newNoteGroup);
+      const yPos = this.strategyInstance.calculateNoteYPos({
+        name: noteObj.name,
+        octave: noteObj.octave
+      });
+      const noteGroup = this.renderNote(noteObj, yPos);
+
+      this.noteEntries.push({
+        gElement: noteGroup,
+        note: noteObj,
+        yPos: yPos,
+        xPos: this.noteCursorX
+      });
+
+      noteGroups.push(noteGroup);
     }
 
     // Commit the newly created note/notes element to the 'notes' layer

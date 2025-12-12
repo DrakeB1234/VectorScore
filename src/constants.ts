@@ -6,6 +6,8 @@ export const STAFF_LINE_SPACING = 10;
 export const NOTE_LAYER_START_X = 34;
 
 export const ACCIDENTAL_OFFSET_X = -8;
+export const HALF_NOTEHEAD_WIDTH = 10;
+export const NOTEHEAD_STEM_HEIGHT = 34;
 
 export const staffParams: Partial<Record<StaffTypes, StaffParams>> = {
   treble: {

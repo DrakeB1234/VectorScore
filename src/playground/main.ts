@@ -15,8 +15,8 @@ const musicStaffGrand = new MusicStaff(grandRoot, {
   width: 300,
   scale: 2,
   staffType: "grand",
-  spaceAbove: 1,
-  spaceBelow: 3
+  spaceAbove: 0,
+  spaceBelow: 0
 });
 
 const musicStaffTreble = new MusicStaff(trebleRoot, {
@@ -30,11 +30,29 @@ const musicStaffBass = new MusicStaff(bassRoot, {
   scale: 2,
   staffType: "bass",
   spaceAbove: 1,
-  spaceBelow: 1,
+  spaceBelow: 0,
 });
 
-// Index Elements
+function addNotesToStaff(staff: "grand" | "treble" | "bass") {
+  switch (staff) {
+    case "grand":
+      // musicStaffGrand.drawNote(["C6w", "C2h", "Cb4q"]);
+      musicStaffGrand.drawNote(["C4w", "C#4w", "C4h", "Cb4q"]);
+      break;
+    case "treble":
+      musicStaffTreble.drawNote(["E4", "G4", "B4"]);
+      break;
+    case "bass":
+      musicStaffBass.drawNote(["A3", "F3", "D3"]);
+      break;
+  }
+}
 
+addNotesToStaff("grand");
+addNotesToStaff("treble");
+addNotesToStaff("bass");
+
+// Index Elements
 const elements = {
   testButtonGrand: document.getElementById("test-button-grand"),
   testButtonTreble: document.getElementById("test-button-treble"),
@@ -43,20 +61,8 @@ const elements = {
 
 // Event Listeners
 elements.testButtonGrand?.addEventListener("click", () => {
-  // musicStaffGrand.drawNote([
-  //   "C4",
-  //   "E4", "G4", "B4",
-  //   "A3", "F3", "D3"
-  // ]);
-
-  musicStaffGrand.drawNote(["C6w", "C2h", "Cb4q"]);
 });
 elements.testButtonTreble?.addEventListener("click", () => {
-  musicStaffTreble.drawNote(["E4", "G4", "B4"]);
-  // musicStaffTreble.drawNote(["B3w", "D4q"]);
-
 });
 elements.testButtonBass?.addEventListener("click", () => {
-  musicStaffBass.drawNote(["A3", "F3", "D3"]);
-
 });
