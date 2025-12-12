@@ -1,11 +1,13 @@
-type GlyphEntry = {
+import { ACCIDENTAL_OFFSET_X } from "./constants";
+
+export type GlyphEntry = {
   path: string;
   xOffset: number;
   yOffset: number;
 }
 
 export type GlyphNames =
-  "CLEF_TREBLE" | "CLEF_BASS" | "NOTE_HEAD_WHOLE" | "NOTE_HEAD_HALF" | "NOTE_HEAD_QUARTER";
+  "CLEF_TREBLE" | "CLEF_BASS" | "NOTE_HEAD_WHOLE" | "NOTE_HEAD_HALF" | "NOTE_HEAD_QUARTER" | "ACCIDENTAL_SHARP" | "ACCIDENTAL_FLAT";
 
 export const GLPYH_ENTRIES: Record<GlyphNames, GlyphEntry> = {
   CLEF_TREBLE: {
@@ -21,16 +23,26 @@ export const GLPYH_ENTRIES: Record<GlyphNames, GlyphEntry> = {
   NOTE_HEAD_WHOLE: {
     path: "M77 0c34 0 74 19 74 45 0 24-19 45-77 45C21 90 0 68 0 45 0 20 30 0 77 0Zm-9 8c-17 0-30 5-30 24 0 22 23 50 47 50 16 0 28-8 28-26 0-21-20-48-45-48Z",
     xOffset: 0,
-    yOffset: 0.5
+    yOffset: -4.5
   },
   NOTE_HEAD_HALF: {
     path: "M35 90C15 90 0 79 0 60 0 42 17 0 70 0c21 0 36 12 36 30 0 12-12 60-71 60Zm-8-14c18 0 68-31 68-47l-2-6c-3-5-7-8-14-8-17 0-68 29-68 46l2 7c2 4 7 8 14 8Z",
     xOffset: 0,
-    yOffset: 0.5
+    yOffset: -4.5
   },
   NOTE_HEAD_QUARTER: {
     path: "M35 90C16 90 0 79 0 60 0 29 32 0 71 0c20 0 35 12 35 30 0 30-40 60-71 60Z",
     xOffset: 0,
-    yOffset: 0.5
+    yOffset: -4.5
   },
+  ACCIDENTAL_SHARP: {
+    path: "m67 66-8 3c-2 0-3 6-3 8v26c0 4 2 5 3 5l8-2 1-1c1 0 2 1 2 3v20c0 1-1 4-3 4l-8 4c-2 0-3 4-3 6v40c0 2-2 4-5 4-2 0-4-2-4-4v-35c0-2-1-5-4-5h-1l-17 7c-1 1-3 3-3 6v40c0 2-1 3-4 3-2 0-4-1-4-3v-35c0-1-1-5-3-5l-1 1-7 2v1c-2 0-3-1-3-3v-20c0-2 1-4 3-5l8-3c2-1 3-3 3-6V94c0-3-2-5-4-5l-7 3c-2 0-3-1-3-3V69l3-4 8-3c1-1 3-4 3-8V16c0-2 2-4 5-4 2 0 3 2 3 4v34c0 2 1 5 4 5l18-7c2-1 3-5 3-8V3c0-2 2-3 5-3 2 0 4 1 4 3v35c0 2 2 3 4 3l7-2h1c1 0 2 0 2 2v20c0 2-1 4-3 5Zm-20 46c2-11 2-23 0-34l-4-2c-7 0-20 6-21 11v35l4 1c6 0 20-5 21-11Z",
+    xOffset: ACCIDENTAL_OFFSET_X,
+    yOffset: -10
+  },
+  ACCIDENTAL_FLAT: {
+    path: "M4 196C1 193 0 9 0 9c0-6 5-9 10-9 3 0 6 2 6 5l-2 91c0 3 1 5 3 6h2l7-4c5-3 12-6 18-6 15 1 29 13 29 31 0 15-10 35-39 55-8 5-16 14-25 19l-2 1c-1 0-2 0-3-2Zm11-28c0 1 1 5 4 5l3-1c14-9 29-27 29-44 0-8-4-19-14-19-7 0-20 10-22 16l-1 10 1 33Z",
+    xOffset: ACCIDENTAL_OFFSET_X,
+    yOffset: -14
+  }
 }

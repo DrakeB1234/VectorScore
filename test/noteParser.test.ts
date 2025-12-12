@@ -9,7 +9,6 @@ describe('parseNoteString', () => {
     const result = parseNoteString('C4q');
     expect(result).toEqual({
       name: 'C',
-      accidental: '',
       octave: 4,
       duration: 'q',
     });
@@ -29,7 +28,6 @@ describe('parseNoteString', () => {
     const result = parseNoteString('A4');
     expect(result).toEqual({
       name: 'A',
-      accidental: '',
       octave: 4,
       duration: 'w',
     });
@@ -41,6 +39,15 @@ describe('parseNoteString', () => {
       name: 'B',
       accidental: 'b',
       octave: 3,
+      duration: 'w',
+    });
+  });
+
+  it('should omit accidental if not provided (C4w)', () => {
+    const result = parseNoteString('C4w');
+    expect(result).toEqual({
+      name: 'C',
+      octave: 4,
       duration: 'w',
     });
   });

@@ -41,7 +41,7 @@ export default class SVGRenderer {
     this.svgElementRef.setAttribute("class", "svg-renderer-root");
 
     // SET ROOT SVG ATTRIBUTES, WIDTH/HEIGHT * SCALE APPLIED AFTER STAFF IS DRAWN
-    this.svgElementRef.style.width = `100%`;
+    this.svgElementRef.style.maxWidth = `100%`;
     this.svgElementRef.style.height = `auto`;
     this.svgElementRef.style.display = "block";
 
@@ -59,8 +59,6 @@ export default class SVGRenderer {
 
     // Apply Note Layer Offset
     this.musicNotesLayer.setAttribute("transform", `translate(${NOTE_LAYER_START_X}, 0)`);
-
-    this.drawLine(0, 0, 0, 100, this.musicNotesLayer);
   }
 
   // Creates SVG defs for all glyphs in GLYPH_ENTRIES, applies global scale and offsets, appends to root SVG
@@ -150,9 +148,11 @@ export default class SVGRenderer {
     parent.appendChild(line);
   }
 
-  drawGlyph(glyphName: GlyphNames, parent: SVGElement) {
+  drawGlyph(glyphName: GlyphNames, parent: SVGElement, yOffset?: number) {
     const useElement = document.createElementNS(SVG_HREF, "use");
     useElement.setAttribute("href", `#glyph-${glyphName}`);
+
+    if (yOffset) useElement.setAttribute("transform", `translate(0, ${yOffset})`);
 
     parent.appendChild(useElement);
   }

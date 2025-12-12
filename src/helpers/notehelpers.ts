@@ -1,6 +1,9 @@
+import { type GlyphNames } from "../glyphs";
 import type { Accidentals, Durations, NoteNames, NoteObj } from "../types";
 
 export const REGEX_NOTE_STRING = /^(?<name>[A-G])(?<accidental>[#b]?)(?<octave>\d)(?<duration>[whq]?)$/;
+
+const NOTE_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as NoteNames[];
 
 export function parseNoteString(noteString: string): NoteObj {
   const match = noteString.match(REGEX_NOTE_STRING);
@@ -10,7 +13,6 @@ export function parseNoteString(noteString: string): NoteObj {
   };
 
   let { name, accidental, octave, duration } = match.groups;
-  console.log(`name: ${name}, accidental: ${accidental}, octave: ${octave}, duration: ${duration}`);
 
   if (!name) {
     throw new Error(`Invalid note name: ${name}. Valid note names are: C, D, E, F, G, A, B.`);
@@ -22,10 +24,46 @@ export function parseNoteString(noteString: string): NoteObj {
     duration = 'w';
   }
 
-  return {
+  const noteObj: NoteObj = {
     name: name as NoteNames,
-    accidental: accidental as Accidentals,
     octave: parseInt(octave),
-    duration: duration as Durations
+    duration: duration as Durations,
   }
+
+  if (accidental) {
+    noteObj.accidental = accidental as Accidentals;
+  }
+
+  return noteObj;
+}
+
+export function getGlyphNameByClef(clef: string): GlyphNames {
+  let searchKey: GlyphNames | undefined;
+
+  switch (clef) {
+    case 'treble':
+      searchKey = 'CLEF_TREBLE';
+      break;
+    case 'bass':
+      searchKey = 'CLEF_BASS';
+      break;
+  }
+  if (!searchKey) throw new Error(`Invalid clef type: ${clef}. Valid clef types are: treble, bass, alto.`);
+
+  return searchKey;
+}
+
+export function getNoteSpacingFromReference(referenceNote: NoteObj, targetNote: NoteObj): number {
+  const nameDiff = NOTE_NAMES.indexOf(referenceNote.name) - NOTE_NAMES.indexOf(targetNote.name);
+  let octaveDiff = referenceNote.octave - targetNote.octave;
+  octaveDiff *= 7;
+
+  return nameDiff + octaveDiff;
+}
+
+// DOES NOT CONSIDER ACCIDENTAL INTO FINAL SEMITONE AMOUNT
+export function noteToAbsoluteSemitone(note: NoteObj): number {
+  let semitone = NOTE_NAMES.indexOf(note.name);
+  semitone += (note.octave * 12)
+  return semitone;
 }

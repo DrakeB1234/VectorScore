@@ -1,27 +1,62 @@
 import MusicStaff from '../classes/MusicStaff';
 import './style.css'
 
-const element = document.getElementById("staff-root");
+const grandRoot = document.getElementById("staff-root-grand");
+const trebleRoot = document.getElementById("staff-root-treble");
+const bassRoot = document.getElementById("staff-root-bass");
 
-if (!element) {
-  throw new Error("Required DOM element with ID 'staff-root' not found.");
+if (!trebleRoot || !bassRoot || !grandRoot) {
+  throw new Error("Required DOM elements not found.");
 }
 
 // Class Testing
 
-const musicStaff = new MusicStaff(element, {
+const musicStaffGrand = new MusicStaff(grandRoot, {
   width: 300,
   scale: 2,
-  staffType: "treble"
+  staffType: "grand",
+  spaceAbove: 1,
+  spaceBelow: 3
+});
+
+const musicStaffTreble = new MusicStaff(trebleRoot, {
+  width: 300,
+  scale: 2,
+  staffType: "treble",
+});
+
+const musicStaffBass = new MusicStaff(bassRoot, {
+  width: 300,
+  scale: 2,
+  staffType: "bass",
+  spaceAbove: 1,
+  spaceBelow: 1,
 });
 
 // Index Elements
 
 const elements = {
-  testButton: document.getElementById("test-button"),
+  testButtonGrand: document.getElementById("test-button-grand"),
+  testButtonTreble: document.getElementById("test-button-treble"),
+  testButtonBass: document.getElementById("test-button-bass"),
 }
 
 // Event Listeners
-elements.testButton?.addEventListener("click", () => {
-  musicStaff.drawNote("C4");
+elements.testButtonGrand?.addEventListener("click", () => {
+  // musicStaffGrand.drawNote([
+  //   "C4",
+  //   "E4", "G4", "B4",
+  //   "A3", "F3", "D3"
+  // ]);
+
+  musicStaffGrand.drawNote(["C6w", "C2h", "Cb4q"]);
+});
+elements.testButtonTreble?.addEventListener("click", () => {
+  musicStaffTreble.drawNote(["E4", "G4", "B4"]);
+  // musicStaffTreble.drawNote(["B3w", "D4q"]);
+
+});
+elements.testButtonBass?.addEventListener("click", () => {
+  musicStaffBass.drawNote(["A3", "F3", "D3"]);
+
 });
