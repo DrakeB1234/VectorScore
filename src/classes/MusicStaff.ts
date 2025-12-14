@@ -1,5 +1,5 @@
 import { ACCIDENTAL_OFFSET_X, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
-import { parseNoteString as parsedNoteString } from "../helpers/notehelpers";
+import { parseNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
@@ -182,7 +182,7 @@ export default class MusicStaff {
 
     const noteGroups: SVGGElement[] = [];
     for (const noteString of normalizedNotesArray) {
-      const noteObj: NoteObj = parsedNoteString(noteString);
+      const noteObj: NoteObj = parseNoteString(noteString);
 
       const yPos = this.strategyInstance.calculateNoteYPos({
         name: noteObj.name,
@@ -218,7 +218,7 @@ export default class MusicStaff {
 
   changeNoteByIndex(note: string, noteIndex: number) {
     if (noteIndex >= this.noteEntries.length) throw new Error("Note index was out of bounds.");
-    const noteObj: NoteObj = parsedNoteString(note);
+    const noteObj: NoteObj = parseNoteString(note);
     const noteEntry = this.noteEntries[noteIndex];
     const newNoteYPos = this.strategyInstance.calculateNoteYPos({
       name: noteObj.name,
@@ -257,7 +257,7 @@ export default class MusicStaff {
   // Class applied is wrong-note, which can be css selected
   showWrongNoteUIByNoteIndex(note: string, noteIndex: number) {
     if (noteIndex >= this.noteEntries.length) throw new Error("Note index was out of bounds.");
-    const noteObj = parsedNoteString(note);
+    const noteObj = parseNoteString(note);
     const ySpacing = this.strategyInstance.calculateNoteYPos({
       name: noteObj.name,
       octave: noteObj.octave

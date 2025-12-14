@@ -7,6 +7,7 @@ export default defineConfig({
     dts({
       insertTypesEntry: true,
       include: ['src'],
+      exclude: ['dev']
     }),
   ],
   publicDir: false,
@@ -15,6 +16,6 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'MusicStaff',
       fileName: 'music-staff',
-    },
+    }
   },
 });

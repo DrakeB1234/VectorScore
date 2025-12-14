@@ -1,7 +1,8 @@
 import { type GlyphNames } from "../glyphs";
-import type { Accidentals, Durations, NoteNames, NoteObj } from "../types";
+import type { Accidentals, DurationNoteObj, Durations, NoteNames, NoteObj } from "../types";
 
 export const REGEX_NOTE_STRING = /^(?<name>[A-Ga-g])(?<accidental>[#b]?)(?<octave>\d)(?<duration>[whqeWHQE]?)$/;
+export const REGEX_DURATION_NOTE_STRING = /[whqeWHQE]/;
 
 const NOTE_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as NoteNames[];
 
@@ -40,6 +41,17 @@ export function parseNoteString(noteString: string): NoteObj {
 
   return noteObj;
 }
+
+export function parseDurationNoteString(note: string): DurationNoteObj {
+  const match = note.match(REGEX_DURATION_NOTE_STRING);
+  if (!match) throw new Error(`Invalid note duration '${note}'. Use w | h | q | e.`);
+  let string = match.toString().toLowerCase() as Durations;
+
+  return {
+    name: string,
+    beatValue: 1
+  };
+};
 
 export function getGlyphNameByClef(clef: string): GlyphNames {
   let searchKey: GlyphNames | undefined;

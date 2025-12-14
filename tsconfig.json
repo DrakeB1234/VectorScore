@@ -29,4 +29,7 @@
   "include": [
     "src"
   ],
+  "exclude": [
+    "src/dev"
+  ]
 }

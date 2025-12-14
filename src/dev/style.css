@@ -55,6 +55,10 @@ button {
   border: 1px solid #ccc;
 }
 
+.staffs-container:nth-child(2) {
+  margin-top: 1rem;
+}
+
 [id^="staff-root"] {
   border: 1px solid #008cff79;
 }

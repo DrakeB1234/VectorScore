@@ -1,4 +1,5 @@
 import MusicStaff from '../classes/MusicStaff';
+import RhythmStaff from '../classes/RhythmStaff';
 import './style.css'
 
 const grandRoot = document.getElementById("staff-root-grand");
@@ -6,7 +7,9 @@ const trebleRoot = document.getElementById("staff-root-treble");
 const bassRoot = document.getElementById("staff-root-bass");
 const altoRoot = document.getElementById("staff-root-alto");
 
-if (!trebleRoot || !bassRoot || !grandRoot || !altoRoot) {
+const rhythmRoot = document.getElementById("staff-root-rhythm");
+
+if (!trebleRoot || !bassRoot || !grandRoot || !altoRoot || !rhythmRoot) {
   throw new Error("Required DOM elements not found.");
 }
 
@@ -45,18 +48,26 @@ const musicStaffAlto = new MusicStaff(altoRoot, {
   spaceBelow: 1,
 });
 
+const rhythmStaff = new RhythmStaff(rhythmRoot, {
+  width: 400,
+  scale: 1.2,
+  topNumber: 4,
+  spaceAbove: 0,
+  spaceBelow: 0,
+});
+
 musicStaffGrand.drawNote(["c#5w", "b#4e", "a#4e", "c#4e", "a#3e", "d#3e", "c#3e"]);
 musicStaffTreble.drawNote(["c4e", "b4e", "a5e"]);
 musicStaffBass.drawNote(["C4w", "D3w", "C3w"]);
 musicStaffAlto.drawNote(["C4w", "G4w", "F3w"]);
 
-function addErrorClassToNote() {
-  musicStaffGrand.applyClassToNoteByIndex("error-note", 0);
+// function addErrorClassToNote() {
+//   musicStaffGrand.applyClassToNoteByIndex("error-note", 0);
 
-  setTimeout(() => {
-    musicStaffGrand.removeClassToNoteByIndex("error-note", 1);
-  }, 1000);
-};
+//   setTimeout(() => {
+//     musicStaffGrand.removeClassToNoteByIndex("error-note", 1);
+//   }, 1000);
+// };
 
 function toggleWrongNoteUI(note: string, index: number) {
   musicStaffGrand.showWrongNoteUIByNoteIndex(note, index);
