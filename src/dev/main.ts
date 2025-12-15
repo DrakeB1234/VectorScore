@@ -60,7 +60,7 @@ const musicStaffAlto = new MusicStaff(altoRoot, {
 });
 
 const rhythmStaff = new RhythmStaff(rhythmRoot, {
-  width: 350,
+  width: 400,
   scale: 1.2,
   staffColor: "var(--font-color)",
   staffBackgroundColor: "var(--bg-color)",
@@ -76,14 +76,10 @@ let selectedStaff: SelectedStaff = {
 
 selectedStaff.element.classList.add("show");
 
-musicStaffGrand.drawNote(["c#5w", "b#4e", "a#4e", "c#4e", "a#3e", "d#3e", "c#3e"]);
-musicStaffTreble.drawNote(["c4e", "b4e", "a5e"]);
-musicStaffBass.drawNote(["C4w", "D3w", "C3w"]);
-musicStaffAlto.drawNote(["C4w", "G4w", "F3w"]);
-
 // Index Elements
 const elements = {
   buttonDrawNotes: document.getElementById("button-draw") as HTMLButtonElement,
+  buttonDrawChord: document.getElementById("button-draw-chord") as HTMLButtonElement,
   buttonDrawBeamNotes: document.getElementById("button-draw-beam") as HTMLButtonElement,
   buttonDrawRests: document.getElementById("button-draw-rest") as HTMLButtonElement,
   buttonChangeNote: document.getElementById("button-change-note") as HTMLButtonElement,
@@ -132,13 +128,24 @@ elements.buttonDrawNotes?.addEventListener("click", () => {
   selectedStaff.staff.drawNote(noteParts);
 });
 
+elements.buttonDrawChord?.addEventListener("click", () => {
+  if (selectedStaff.staff instanceof RhythmStaff) return;
+
+  const notesRawString = elements.inputNotes.value;
+  if (!notesRawString) return;
+  const noteParts = notesRawString.split("/");
+
+  selectedStaff.staff.drawChord(noteParts);
+});
+
 elements.buttonDrawBeamNotes.addEventListener("click", () => {
   if (selectedStaff.staff instanceof MusicStaff) return;
+  const notesRawString = elements.inputNotes.value;
 
   const noteIndexRawValue = elements.inputNoteIndex.value;
   const noteIndex = Number(noteIndexRawValue);
   if (typeof noteIndex !== "number" || noteIndex < 1) return;
-  rhythmStaff.drawBeamedNotes("e", noteIndex);
+  rhythmStaff.drawBeamedNotes(notesRawString as "e" | "s", noteIndex);
 });
 
 elements.buttonDrawRests.addEventListener("click", () => {

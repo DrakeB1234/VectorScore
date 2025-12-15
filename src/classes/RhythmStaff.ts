@@ -104,7 +104,8 @@ export default class RhythmStaff {
     this.maxBeatCount = this.options.barsCount * this.options.topNumber;
 
     // Draw bar line
-    this.rendererInstance.drawLine(this.barSpacing + NOTE_LAYER_START_X, 0, this.barSpacing + NOTE_LAYER_START_X, STAFF_SPACING * 2, staffLayer);
+    const barLineStartX = this.barSpacing + NOTE_LAYER_START_X;
+    this.rendererInstance.drawLine(barLineStartX, 0, barLineStartX, STAFF_SPACING * 2, staffLayer);
 
     // Translate entire notes layer to match single line on staff
     this.rendererInstance.getLayerByName("notes").setAttribute("transform", `translate(${NOTE_LAYER_START_X}, ${STAFF_SPACING})`);
@@ -184,6 +185,16 @@ export default class RhythmStaff {
     };
     return null;
   };
+
+  private renderBeamRect(localX: number, spacingAmount: number, yOffset?: number): SVGRectElement {
+    const beamRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    beamRect.setAttribute("height", "4");
+    beamRect.setAttribute("width", `${localX - spacingAmount}`);
+    beamRect.setAttribute("x", `${HALF_NOTEHEAD_WIDTH}`);
+    beamRect.setAttribute("y", `${-NOTEHEAD_STEM_HEIGHT + (yOffset ?? 0)}`);
+    beamRect.setAttribute("fill", this.options.staffColor);
+    return beamRect;
+  }
 
   private createRemainingRests(remainingBeatsInBar: number): SVGGElement[] {
     const restGroups: SVGGElement[] = [];
@@ -302,7 +313,7 @@ export default class RhythmStaff {
   }
 
   // Will stop beam early if bar line is reached / if beat count is over max limit
-  drawBeamedNotes(note: "e", noteCount: number) {
+  drawBeamedNotes(note: "e" | "s", noteCount: number) {
     if (noteCount < 2) {
       throw new Error("Must provide a value greater than 2 for beamed note.");
     }
@@ -310,7 +321,13 @@ export default class RhythmStaff {
     if (this.currentBeatCount >= this.maxBeatCount) {
       throw new Error("Max beat count reached. Can't add additional beamed note.");
     }
-    const durationString = parseDurationNoteString(note);
+    let durationString: Durations = "s";
+    if (note === "s") {
+      durationString = "s";
+    }
+    else {
+      durationString = parseDurationNoteString(note);
+    }
 
     this.checkAndCreateNewBar();
 
@@ -321,7 +338,6 @@ export default class RhythmStaff {
     // Forces number to be less if it reaches the bar line
     const remainingBeatsInBar = this.options.topNumber - (this.currentBeatCount % this.options.topNumber);
     const fixedNoteCount = Math.min(noteCount, remainingBeatsInBar / beatValue);
-
 
     const beamedGroup = this.rendererInstance.createGroup("beamed-note");
     beamedGroup.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
@@ -336,12 +352,13 @@ export default class RhythmStaff {
     };
 
     // Render beam line
-    const beamRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    const beamRect = this.renderBeamRect(localX, spacingAmount);
     beamedGroup.appendChild(beamRect);
-    beamRect.setAttribute("height", "4");
-    beamRect.setAttribute("width", `${localX - spacingAmount}`);
-    beamRect.setAttribute("x", `${HALF_NOTEHEAD_WIDTH}`);
-    beamRect.setAttribute("y", `${-NOTEHEAD_STEM_HEIGHT}`);
+
+    if (note === "s") {
+      const secondBeamRect = this.renderBeamRect(localX, spacingAmount, 6);
+      beamedGroup.appendChild(secondBeamRect);
+    }
 
     this.noteCursorX += localX;
     this.noteEntries.push(beamedGroup);

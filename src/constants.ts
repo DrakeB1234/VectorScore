@@ -54,5 +54,6 @@ export const durationBeatValueMap: Record<Durations, number> = {
   w: 4,
   h: 2,
   q: 1,
-  e: 0.5
+  e: 0.5,
+  s: 0.25
 };

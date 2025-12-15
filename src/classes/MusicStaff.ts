@@ -203,6 +203,40 @@ export default class MusicStaff {
     this.rendererInstance.commitElementsToDOM(noteGroups, notesLayer);
   }
 
+  // Bugs: JustifyNotes does not position chord group correctly. When stem note is used, the note can flip, causing weird looking chord
+  drawChord(notes: string | string[]) {
+    const normalizedNotesArray = Array.isArray(notes) ? notes : [notes];
+    if (normalizedNotesArray.length < 2) throw new Error("Provide more than one note for a chord.");
+
+    const notesLayer = this.rendererInstance.getLayerByName("notes");
+
+    const chordGroup = this.rendererInstance.createGroup("chord");
+    for (const noteString of normalizedNotesArray) {
+      const noteObj: NoteObj = parseNoteString(noteString);
+
+      const yPos = this.strategyInstance.calculateNoteYPos({
+        name: noteObj.name,
+        octave: noteObj.octave
+      });
+      const noteGroup = this.renderNote(noteObj, yPos, this.noteCursorX);
+
+      chordGroup.appendChild(noteGroup);
+    };
+
+    this.noteEntries.push({
+      gElement: chordGroup,
+      note: parseNoteString(normalizedNotesArray[0]),
+      xPos: this.noteCursorX,
+      yPos: 0
+    });
+
+    // Increment note cursor due to renderNote function being overriden X pos
+    this.noteCursorX += NOTE_SPACING;
+
+    // Commit the newly created note/notes element to the 'notes' layer
+    this.rendererInstance.commitElementsToDOM(chordGroup, notesLayer);
+  }
+
   // Gets all current notes on staff and evenly spaces them
   justifyNotes() {
     const containerWidth = this.options.width - NOTE_LAYER_START_X;
@@ -216,7 +250,14 @@ export default class MusicStaff {
       return;
     }
     this.noteEntries.forEach((e) => {
-      e.gElement.setAttribute("transform", `translate(${cursorX}, ${e.yPos})`);
+      // Chord parent is not translated, therefore don't adjust its Y pos
+      // X POS IS OFF, FIX
+      if (e.gElement.classList.contains("chord")) {
+        e.gElement.setAttribute("transform", `translate(${cursorX}, 0)`);
+      }
+      else {
+        e.gElement.setAttribute("transform", `translate(${cursorX}, ${e.yPos})`);
+      }
       cursorX += noteSpacing;
     });
   }
@@ -243,7 +284,6 @@ export default class MusicStaff {
     // Determermines new offset based off the previous note diff in accidental to the new note
     let accidentalXPosOffset = 0;
     if (noteEntry.note.accidental && !noteObj.accidental) {
-      console.log("here")
       accidentalXPosOffset = ACCIDENTAL_OFFSET_X;
     }
     else if (!noteEntry.note.accidental && noteObj.accidental) {
