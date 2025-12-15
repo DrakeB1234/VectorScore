@@ -51,7 +51,7 @@ export default class GrandStaffStrategy implements StaffStrategy {
     const trebleGlpyh = getGlyphNameByClef("treble");
     const bassGlpyh = getGlyphNameByClef("bass");
     this.rendererRef.drawGlyph(trebleGlpyh, musicStaffLayer);
-    this.rendererRef.drawGlyph(bassGlpyh, musicStaffLayer, trebleStaffHeight + GRAND_STAFF_SPACING);
+    this.rendererRef.drawGlyph(bassGlpyh, musicStaffLayer, { yOffset: trebleStaffHeight + GRAND_STAFF_SPACING });
 
 
     // One added for last staff line to prevent clipping

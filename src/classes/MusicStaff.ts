@@ -118,8 +118,8 @@ export default class MusicStaff {
         break;
       case "e":
         noteFlip = this.strategyInstance.shouldNoteFlip(ySpacing);
-        if (noteFlip) this.rendererInstance.drawGlyph("EIGTH_NOTE_FLIPPED", noteGroup);
-        else this.rendererInstance.drawGlyph("EIGTH_NOTE", noteGroup);
+        if (noteFlip) this.rendererInstance.drawGlyph("EIGHTH_NOTE_FLIPPED", noteGroup);
+        else this.rendererInstance.drawGlyph("EIGHTH_NOTE", noteGroup);
         break;
       default:
         this.rendererInstance.drawGlyph("NOTE_HEAD_WHOLE", noteGroup);
@@ -210,10 +210,19 @@ export default class MusicStaff {
       return;
     }
     this.noteEntries.forEach((e) => {
-      console.log(e.gElement, e.xPos)
       e.gElement.setAttribute("transform", `translate(${cursorX}, ${e.yPos})`);
       cursorX += noteSpacing;
     });
+  }
+
+  clearAllNotes() {
+    this.noteCursorX = 0;
+
+    this.noteEntries.forEach(e => {
+      e.gElement.remove();
+    });
+
+    this.noteEntries = [];
   }
 
   changeNoteByIndex(note: string, noteIndex: number) {

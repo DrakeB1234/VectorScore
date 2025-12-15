@@ -14,18 +14,43 @@
     <div id="staff-root-treble"></div>
     <div id="staff-root-bass"></div>
     <div id="staff-root-alto"></div>
-  </div>
-
-  <div class="staffs-container">
     <div id="staff-root-rhythm"></div>
   </div>
 
-  <div class="controls">
-    <button id="test-button-grand">Test Grand</button>
-    <button id="test-button-treble">Test Treble</button>
-    <button id="test-button-bass">Test Bass</button>
-    <button id="test-button-alto">Test Alto</button>
+  <div class="card-wrapper">
+    <div class="controls-card">
+      <h3>Controls</h3>
+      <div class="input-stack">
+        <label>
+          Staff Selection
+          <select id="input-select-staff">
+            <option value="grand">Grand</option>
+            <option value="treble">Treble</option>
+            <option value="bass">Bass</option>
+            <option value="alto">Alto</option>
+            <option value="rhythm" selected>Rhythm</option>
+          </select>
+        </label>
+        <label>
+          Note Index
+          <input type="number" id="input-number-index" value="0" min="0">
+        </label>
+        <label>
+          Note Input
+          <input type="text" id="input-text-notes" placeholder="e.g. C#4w/B3q...">
+        </label>
+      </div>
+      <hr>
+      <div class="button-grid">
+        <button id="button-draw">Draw Notes</button>
+        <button id="button-draw-beam">Draw Beamed Note</button>
+        <button id="button-justify">Justify Notes</button>
+        <button id="button-error">Set Error Note</button>
+        <button id="button-clear" class="danger">Clear Notes</button>
+      </div>
+    </div>
   </div>
+
 </body>
 
 </html>

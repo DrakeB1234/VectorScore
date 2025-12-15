@@ -8,7 +8,7 @@ export type GlyphEntry = {
 
 export type GlyphNames =
   "CLEF_TREBLE" | "CLEF_BASS" | "CLEF_ALTO" | "NOTE_HEAD_WHOLE" | "NOTE_HEAD_HALF" |
-  "NOTE_HEAD_QUARTER" | "EIGTH_NOTE" | "EIGTH_NOTE_FLIPPED" | "ACCIDENTAL_SHARP" | "ACCIDENTAL_FLAT" |
+  "NOTE_HEAD_QUARTER" | "EIGHTH_NOTE" | "EIGHTH_NOTE_FLIPPED" | "ACCIDENTAL_SHARP" | "ACCIDENTAL_FLAT" |
   "TIME_4" | "TIME_3";
 
 export const GLPYH_ENTRIES: Record<GlyphNames, GlyphEntry> = {
@@ -42,12 +42,12 @@ export const GLPYH_ENTRIES: Record<GlyphNames, GlyphEntry> = {
     xOffset: 0,
     yOffset: -4.5
   },
-  EIGTH_NOTE: {
+  EIGHTH_NOTE: {
     path: "M142 89c20 32 36 70 36 110 0 25-8 55-8 55-2 5-5 7-8 6h-1c-2-1-5-4-5-9l1-5c5-14 8-29 8-44 0-19-3-37-8-48-10-23-33-58-53-70v179c0 30-38 60-70 60-19 0-34-11-34-30 0-31 31-60 70-60 11 0 19 3 25 8V3c0-2 2-3 3-3 6 0 9 2 10 7 5 31 18 57 34 82Z",
     xOffset: 0,
     yOffset: -28
   },
-  EIGTH_NOTE_FLIPPED: {
+  EIGHTH_NOTE_FLIPPED: {
     path: "M9 323H0V60C0 29 32 0 71 0c20 0 35 12 35 30 0 30-40 60-71 60-19 0-26-9-26-9v158s58-56 58-89c0 0 0-25-8-43-5-12 10-17 14-6 13 34 9 48 9 48 0 39-41 97-41 97-20 27-32 77-32 77Z",
     xOffset: 0,
     yOffset: -4

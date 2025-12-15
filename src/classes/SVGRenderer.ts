@@ -14,6 +14,11 @@ type SVGRendererOptions = {
 
 type LayerNames = 'staff' | 'notes' | 'ui';
 
+type DrawGlyphOptions = {
+  yOffset?: number;
+  xOffset?: number;
+}
+
 export default class SVGRenderer {
   private rootElementRef: HTMLElement;
   private svgElementRef: SVGElement;
@@ -155,11 +160,17 @@ export default class SVGRenderer {
     parent.appendChild(line);
   }
 
-  drawGlyph(glyphName: GlyphNames, parent: SVGElement, yOffset?: number) {
+  drawGlyph(glyphName: GlyphNames, parent: SVGElement, options?: DrawGlyphOptions) {
+    options = {
+      xOffset: 0,
+      yOffset: 0,
+      ...options
+    };
+
     const useElement = document.createElementNS(SVG_HREF, "use");
     useElement.setAttribute("href", `#glyph-${glyphName}`);
 
-    if (yOffset) useElement.setAttribute("transform", `translate(0, ${yOffset})`);
+    if (options.xOffset || options.yOffset) useElement.setAttribute("transform", `translate(${options.xOffset}, ${options.yOffset})`);
 
     parent.appendChild(useElement);
   }

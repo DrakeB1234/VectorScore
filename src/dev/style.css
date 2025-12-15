@@ -10,6 +10,11 @@
 
   font: rgba(26, 24, 39);
   background-color: #f1eded;
+
+  --bg-color: #f4f4f5;
+  --card-bg: #ffffff;
+  --border: #d4d4d8;
+  --primary: #3b82f6;
 }
 
 h1,
@@ -31,28 +36,15 @@ body {
   padding: 0.5rem;
 }
 
-.controls {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding: 1rem;
-  border: 1px solid #ccc;
-}
-
-button {
-  font-size: 1rem;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  word-break: break-all;
-}
+/* Staff */
 
 .staffs-container {
-  display: grid;
-  place-items: center;
-  gap: 2rem;
-  border: 1px solid #ccc;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  border: 1px solid #a0a3b4;
+  padding: 0.5rem;
 }
 
 .staffs-container:nth-child(2) {
@@ -60,7 +52,8 @@ button {
 }
 
 [id^="staff-root"] {
-  border: 1px solid #008cff79;
+  height: fit-content;
+  border: 1px solid #5fb7ff;
 }
 
 .wrong-note-ui {
@@ -70,4 +63,81 @@ button {
 
 .wrong-note-ui.show {
   color: rgba(255, 0, 0, 0.558);
+}
+
+/* Inputs */
+.card-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.controls-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.controls-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.controls-card hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 1.5rem 0;
+}
+
+.input-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #52525b;
+}
+
+input,
+select {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+button {
+  padding: 0.75rem;
+  cursor: pointer;
+  background-color: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+button:hover {
+  background-color: #fafafa;
+  border-color: #a1a1aa;
+}
+
+.danger {
+  color: #ef4444;
+  border-color: #fca5a5;
 }
