@@ -182,7 +182,14 @@ export default class MusicStaff {
 
     const noteGroups: SVGGElement[] = [];
     for (const noteString of normalizedNotesArray) {
-      const noteObj: NoteObj = parseNoteString(noteString);
+      let noteObj: NoteObj | undefined;
+      try {
+        noteObj = parseNoteString(noteString);
+      }
+      catch (error) {
+        if (noteGroups.length > 0) this.rendererInstance.commitElementsToDOM(noteGroups, notesLayer);
+        throw error;
+      };
 
       const yPos = this.strategyInstance.calculateNoteYPos({
         name: noteObj.name,

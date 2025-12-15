@@ -223,7 +223,14 @@ export default class RhythmStaff {
 
     const noteGroups: SVGGElement[] = [];
     for (const noteString of normalizedNotesArray) {
-      const durationString = parseDurationNoteString(noteString);
+      let durationString: Durations = "w";
+      try {
+        durationString = parseDurationNoteString(noteString);
+      }
+      catch (error) {
+        if (noteGroups.length > 0) this.rendererInstance.commitElementsToDOM(noteGroups, notesLayer);
+        throw error;
+      }
       const beatValue = durationBeatValueMap[durationString];
 
       if (this.currentBeatCount >= this.maxBeatCount) {
@@ -262,7 +269,14 @@ export default class RhythmStaff {
 
     const restGroups: SVGGElement[] = [];
     for (const restString of normalizedNotesArray) {
-      const durationString = parseDurationNoteString(restString);
+      let durationString: Durations = "w";
+      try {
+        durationString = parseDurationNoteString(restString);
+      }
+      catch (error) {
+        if (restGroups.length > 0) this.rendererInstance.commitElementsToDOM(restGroups, notesLayer);
+        throw error;
+      }
 
       const restGroup = this.rendererInstance.createGroup("rest");
       const beatValue = durationBeatValueMap[durationString];
