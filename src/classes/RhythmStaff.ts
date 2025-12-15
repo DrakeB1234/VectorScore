@@ -413,9 +413,12 @@ export default class RhythmStaff {
   resetCurrentBeatUI() {
     this.currentBeatUICount = 0;
     this.currentBeatUIXPos = CURRENT_BEAT_UI_START_X_POS;
-    this.currentBeatUIElement!.setAttribute("display", "none");
-    this.currentBeatUIElement!.setAttribute("x", this.currentBeatUIXPos.toString());
-  }
+
+    if (this.currentBeatUIElement) {
+      this.currentBeatUIElement.setAttribute("display", "none");
+      this.currentBeatUIElement.setAttribute("x", this.currentBeatUIXPos.toString());
+    }
+  };
 
   clearAllNotes() {
     this.noteCursorX = 0;
