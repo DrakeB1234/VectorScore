@@ -3,6 +3,7 @@ import type { Accidentals, Durations, NoteNames, NoteObj } from "../types";
 
 export const REGEX_NOTE_STRING = /^(?<name>[A-Ga-g])(?<accidental>[#b]?)(?<octave>\d)(?<duration>[whqeWHQE]?)$/;
 export const REGEX_DURATION_NOTE_STRING = /^[whqeWHQE]$/;
+export const REGEX_REST_STRING = /^(?<rest>[rR])(?<duration>[whqeWHQE]?)$/;
 
 const NOTE_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as NoteNames[];
 
@@ -49,6 +50,25 @@ export function parseDurationNoteString(note: string): Durations {
 
   return string;
 };
+
+export function parseRestString(rest: string): Durations {
+  const match = rest.match(REGEX_REST_STRING);
+
+  if (!match || !match.groups) {
+    throw new Error(`Invalid rest string format: ${rest}. Expected format: [r][w|h|q|e].`);
+  };
+
+  let { _, duration } = match.groups;
+
+  // Normalize input
+  duration = duration.toLowerCase();
+
+  if (!duration) {
+    duration = 'w';
+  }
+
+  return duration as Durations;
+}
 
 export function getGlyphNameByClef(clef: string): GlyphNames {
   let searchKey: GlyphNames | undefined;

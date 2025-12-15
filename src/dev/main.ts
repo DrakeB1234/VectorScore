@@ -99,6 +99,7 @@ function toggleWrongNoteUI(staff: string, note: string, index: number) {
 const elements = {
   buttonDrawNotes: document.getElementById("button-draw") as HTMLButtonElement,
   buttonDrawBeamNotes: document.getElementById("button-draw-beam") as HTMLButtonElement,
+  buttonDrawRests: document.getElementById("button-draw-rest") as HTMLButtonElement,
   buttonJustifyNotes: document.getElementById("button-justify") as HTMLButtonElement,
   buttonErrorNote: document.getElementById("button-error") as HTMLButtonElement,
   buttonClearNotes: document.getElementById("button-clear") as HTMLButtonElement,
@@ -139,6 +140,14 @@ elements.buttonDrawBeamNotes.addEventListener("click", () => {
   const noteIndex = Number(noteIndexRawValue);
   if (typeof noteIndex !== "number" || noteIndex < 1) return;
   rhythmStaff.drawBeamedNotes("e", noteIndex);
+});
+
+elements.buttonDrawRests.addEventListener("click", () => {
+  const notesRawString = elements.inputNotes.value;
+  if (!notesRawString) return;
+  const noteParts = notesRawString.split("/");
+
+  rhythmStaff.drawRest(noteParts);
 });
 
 elements.buttonJustifyNotes?.addEventListener("click", () => {

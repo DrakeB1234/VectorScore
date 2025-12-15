@@ -7,8 +7,10 @@ export type GlyphEntry = {
 }
 
 export type GlyphNames =
-  "CLEF_TREBLE" | "CLEF_BASS" | "CLEF_ALTO" | "NOTE_HEAD_WHOLE" | "NOTE_HEAD_HALF" |
-  "NOTE_HEAD_QUARTER" | "EIGHTH_NOTE" | "EIGHTH_NOTE_FLIPPED" | "ACCIDENTAL_SHARP" | "ACCIDENTAL_FLAT" |
+  "CLEF_TREBLE" | "CLEF_BASS" | "CLEF_ALTO" |
+  "NOTE_HEAD_WHOLE" | "NOTE_HEAD_HALF" | "NOTE_HEAD_QUARTER" | "EIGHTH_NOTE" | "EIGHTH_NOTE_FLIPPED" |
+  "REST_WHOLE" | "REST_HALF" | "REST_QUARTER" | "REST_EIGHTH" |
+  "ACCIDENTAL_SHARP" | "ACCIDENTAL_FLAT" |
   "TIME_4" | "TIME_3";
 
 export const GLPYH_ENTRIES: Record<GlyphNames, GlyphEntry> = {
@@ -51,6 +53,26 @@ export const GLPYH_ENTRIES: Record<GlyphNames, GlyphEntry> = {
     path: "M9 323H0V60C0 29 32 0 71 0c20 0 35 12 35 30 0 30-40 60-71 60-19 0-26-9-26-9v158s58-56 58-89c0 0 0-25-8-43-5-12 10-17 14-6 13 34 9 48 9 48 0 39-41 97-41 97-20 27-32 77-32 77Z",
     xOffset: 0,
     yOffset: -4
+  },
+  REST_WHOLE: {
+    path: "M0 0h104v53H0V0Z",
+    xOffset: 0,
+    yOffset: 0
+  },
+  REST_HALF: {
+    path: "M0 0h104v53H0V0Z",
+    xOffset: 0,
+    yOffset: -6
+  },
+  REST_QUARTER: {
+    path: "m28 151-18-22s-3-4-3-9c0-3 1-7 5-11 16-17 22-33 22-46 0-27-21-45-23-49l-1-6c0-5 4-8 7-8s5 1 7 3l61 71 1 7-1 5c-10 15-23 34-25 55v3c0 20 11 35 25 52 4 4 14 16 14 20 0 2-2 2-5 1-6-2-19-6-29-6-16 0-23 12-23 27 0 8 5 22 11 22 3 3 6 6 6 9s-2 5-7 5l-9-3c-27-21-43-39-43-57s13-35 32-35c3 0 10 3 14 0l-2-6-16-22Z",
+    xOffset: 0,
+    yOffset: -16
+  },
+  REST_EIGHTH: {
+    path: "M61 35c18 0 41-35 47-32 0 1 5 3 5 8l-5 17S64 189 62 190c-4 4-11 5-16 5-3 0-13 0-13-6 8-30 41-122 42-128 1-5 1-10-1-10-4 0-3 3-19 8C16 71 0 46 0 31 0 14 14 0 31 0c5 0 30 1 30 35Z",
+    xOffset: 0,
+    yOffset: -10
   },
   ACCIDENTAL_SHARP: {
     path: "m67 66-8 3c-2 0-3 6-3 8v26c0 4 2 5 3 5l8-2 1-1c1 0 2 1 2 3v20c0 1-1 4-3 4l-8 4c-2 0-3 4-3 6v40c0 2-2 4-5 4-2 0-4-2-4-4v-35c0-2-1-5-4-5h-1l-17 7c-1 1-3 3-3 6v40c0 2-1 3-4 3-2 0-4-1-4-3v-35c0-1-1-5-3-5l-1 1-7 2v1c-2 0-3-1-3-3v-20c0-2 1-4 3-5l8-3c2-1 3-3 3-6V94c0-3-2-5-4-5l-7 3c-2 0-3-1-3-3V69l3-4 8-3c1-1 3-4 3-8V16c0-2 2-4 5-4 2 0 3 2 3 4v34c0 2 1 5 4 5l18-7c2-1 3-5 3-8V3c0-2 2-3 5-3 2 0 4 1 4 3v35c0 2 2 3 4 3l7-2h1c1 0 2 0 2 2v20c0 2-1 4-3 5Zm-20 46c2-11 2-23 0-34l-4-2c-7 0-20 6-21 11v35l4 1c6 0 20-5 21-11Z",

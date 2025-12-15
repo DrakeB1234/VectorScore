@@ -1,6 +1,6 @@
 import { durationBeatValueMap, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
 import type { GlyphNames } from "../glyphs";
-import { parseDurationNoteString } from "../helpers/notehelpers";
+import { parseDurationNoteString, parseRestString } from "../helpers/notehelpers";
 import type { Durations } from "../types";
 import SVGRenderer from "./SVGRenderer";
 
@@ -22,8 +22,6 @@ const BAR_SPACING = 12;
 
 // STAFF RIGHT SPACING TO PREVENT EIGTH NOTES FROM OVERFLOWING
 const STAFF_RIGHT_PADDING = 1;
-
-const MAX_BEAM_COUNT = 4;
 
 export default class RhythmStaff {
   private rendererInstance: SVGRenderer;
@@ -151,6 +149,74 @@ export default class RhythmStaff {
     }
   }
 
+  private renderRest(duration: Durations, restGroup: SVGGElement) {
+    switch (duration) {
+      case "w":
+        this.rendererInstance.drawGlyph("REST_WHOLE", restGroup);
+        break;
+      case "h":
+        this.rendererInstance.drawGlyph("REST_HALF", restGroup);
+        break;
+      case "q":
+        this.rendererInstance.drawGlyph("REST_QUARTER", restGroup);
+        break;
+      case "e":
+        this.rendererInstance.drawGlyph("REST_EIGHTH", restGroup);
+        break;
+    };
+  }
+
+  private checkAndCreateNewBar() {
+    const isBarFull = this.currentBeatCount > 0 && (this.currentBeatCount % this.options.topNumber === 0);
+    const isNotLastBar = this.currentBeatCount < this.maxBeatCount;
+
+    if (isBarFull && isNotLastBar) {
+      this.handleNewBar();
+    };
+  }
+
+  private checkAndFillBarWithRests(beatValue: number): SVGGElement[] | null {
+    const remainingBeatsInBar = this.options.topNumber - (this.currentBeatCount % this.options.topNumber);
+    if (beatValue > remainingBeatsInBar) {
+      const restGroups = this.createRemainingRests(remainingBeatsInBar);
+      this.handleNewBar();
+      return restGroups;
+    };
+    return null;
+  };
+
+  private createRemainingRests(remainingBeatsInBar: number): SVGGElement[] {
+    const restGroups: SVGGElement[] = [];
+    let beatsLeft = remainingBeatsInBar;
+
+    while (beatsLeft > 0) {
+      const newGroup = this.rendererInstance.createGroup("rest");
+      let beatValue = 0;
+
+      // Try adding the biggest rest first
+      if (beatsLeft - durationBeatValueMap["h"] >= 0) {
+        this.rendererInstance.drawGlyph("REST_HALF", newGroup);
+        beatValue = durationBeatValueMap["h"];
+      }
+      else if (beatsLeft - durationBeatValueMap["q"] >= 0) {
+        this.rendererInstance.drawGlyph("REST_QUARTER", newGroup);
+        beatValue = durationBeatValueMap["q"];
+      }
+      else {
+        this.rendererInstance.drawGlyph("REST_EIGHTH", newGroup);
+        beatValue = durationBeatValueMap["e"];
+      }
+      beatsLeft -= beatValue;
+      this.currentBeatCount += beatValue;
+      newGroup.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
+
+      this.noteCursorX += beatValue * this.quarterNoteSpacing;
+      restGroups.push(newGroup);
+    }
+
+    return restGroups;
+  }
+
   drawNote(notes: string | string[]) {
     const normalizedNotesArray = Array.isArray(notes) ? notes : [notes];
     const notesLayer = this.rendererInstance.getLayerByName("notes");
@@ -159,27 +225,28 @@ export default class RhythmStaff {
     for (const noteString of normalizedNotesArray) {
       const durationString = parseDurationNoteString(noteString);
       const beatValue = durationBeatValueMap[durationString];
+
       if (this.currentBeatCount >= this.maxBeatCount) {
         if (noteGroups.length > 0) this.rendererInstance.commitElementsToDOM(noteGroups, notesLayer);
         throw new Error("Max beat count reached. Can't add additional notes.");
-      }
+      };
 
-      this.currentBeatCount += beatValue;
+      this.checkAndCreateNewBar();
+
+      const restGroups = this.checkAndFillBarWithRests(beatValue);
+      if (restGroups) restGroups.forEach(e => {
+        noteGroups.push(e);
+        this.noteEntries.push(e);
+      });
 
       const noteGroup = this.rendererInstance.createGroup("note");
       const cursorXIncrement = this.translateGroupByDuration(beatValue, noteGroup);
 
       // Apply cursor increment
       this.noteCursorX += cursorXIncrement;
+      this.currentBeatCount += beatValue;
 
       this.renderNote(durationString, noteGroup);
-
-      const isBarFull = this.currentBeatCount > 0 && (this.currentBeatCount % this.options.topNumber === 0);
-      const isNotLastBar = this.currentBeatCount < this.maxBeatCount;
-
-      if (isBarFull && isNotLastBar) {
-        this.handleNewBar();
-      }
 
       noteGroups.push(noteGroup);
       this.noteEntries.push(noteGroup);
@@ -187,6 +254,37 @@ export default class RhythmStaff {
 
     // Commit the newly created note/notes element to the 'notes' layer
     this.rendererInstance.commitElementsToDOM(noteGroups, notesLayer);
+  }
+
+  drawRest(rests: string | string[]) {
+    const normalizedNotesArray = Array.isArray(rests) ? rests : [rests];
+    const notesLayer = this.rendererInstance.getLayerByName("notes");
+
+    const restGroups: SVGGElement[] = [];
+    for (const restString of normalizedNotesArray) {
+      const durationString = parseDurationNoteString(restString);
+
+      const restGroup = this.rendererInstance.createGroup("rest");
+      const beatValue = durationBeatValueMap[durationString];
+      const spacing = beatValue * this.quarterNoteSpacing;
+
+      if (this.currentBeatCount >= this.maxBeatCount) {
+        if (restGroups.length > 0) this.rendererInstance.commitElementsToDOM(restGroups, notesLayer);
+        throw new Error("Max beat count reached. Can't add additional notes.");
+      };
+
+      this.checkAndCreateNewBar();
+
+      this.renderRest(durationString, restGroup);
+      restGroup.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
+
+      this.noteCursorX += spacing;
+      this.currentBeatCount += beatValue;
+      restGroups.push(restGroup);
+      this.noteEntries.push(restGroup);
+    }
+
+    this.rendererInstance.commitElementsToDOM(restGroups, notesLayer);
   }
 
   // Will stop beam early if bar line is reached / if beat count is over max limit
@@ -198,8 +296,9 @@ export default class RhythmStaff {
     if (this.currentBeatCount >= this.maxBeatCount) {
       throw new Error("Max beat count reached. Can't add additional beamed note.");
     }
-
     const durationString = parseDurationNoteString(note);
+
+    this.checkAndCreateNewBar();
 
     const notesLayer = this.rendererInstance.getLayerByName("notes");
     const beatValue = durationBeatValueMap[durationString];
@@ -209,19 +308,11 @@ export default class RhythmStaff {
     const remainingBeatsInBar = this.options.topNumber - (this.currentBeatCount % this.options.topNumber);
     const fixedNoteCount = Math.min(noteCount, remainingBeatsInBar / beatValue);
 
-    // Check if bass is full, if so, handle
-    const isBarFull = this.currentBeatCount > 0 && (this.currentBeatCount % this.options.topNumber === 0);
-    const isNotLastBar = this.currentBeatCount < this.maxBeatCount;
-
-    if (isBarFull && isNotLastBar) {
-      this.handleNewBar();
-    }
 
     const beamedGroup = this.rendererInstance.createGroup("beamed-note");
     beamedGroup.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
     let localX = 0;
 
-    // Render notes
     for (let i = 0; i < fixedNoteCount; i++) {
       this.rendererInstance.drawGlyph("NOTE_HEAD_QUARTER", beamedGroup, { xOffset: localX });
       this.drawStem(beamedGroup, localX);
