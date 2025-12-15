@@ -76,17 +76,11 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 1rem;
-  border: 1px solid var(--border);
   padding: 0.5rem;
 }
 
 .staffs-container:nth-child(2) {
   margin-top: 1rem;
-}
-
-[id^="staff-root"] {
-  height: fit-content;
-  border: 1px solid var(--primary);
 }
 
 [id^="staff-root"]:not(.show) {
@@ -164,6 +158,10 @@ select {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
+}
+
+.button-grid:not(:first-of-type) {
+  margin-top: 1.5rem;
 }
 
 button {

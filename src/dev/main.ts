@@ -16,6 +16,7 @@ if (!trebleRoot || !bassRoot || !grandRoot || !altoRoot || !rhythmRoot) {
 type SelectedStaff = {
   element: HTMLElement;
   staff: MusicStaff | RhythmStaff;
+  name: string;
 }
 
 // Class Testing
@@ -64,17 +65,11 @@ const rhythmStaff = new RhythmStaff(rhythmRoot, {
   scale: 1.2,
   staffColor: "var(--font-color)",
   staffBackgroundColor: "var(--bg-color)",
+  currentBeatUIColor: "#24ff7450",
   topNumber: 4,
   spaceAbove: 0,
   spaceBelow: 0,
 });
-
-let selectedStaff: SelectedStaff = {
-  element: grandRoot,
-  staff: musicStaffGrand
-};
-
-selectedStaff.element.classList.add("show");
 
 // Index Elements
 const elements = {
@@ -86,6 +81,8 @@ const elements = {
   buttonJustifyNotes: document.getElementById("button-justify") as HTMLButtonElement,
   buttonErrorNote: document.getElementById("button-error") as HTMLButtonElement,
   buttonClearNotes: document.getElementById("button-clear") as HTMLButtonElement,
+  buttonIncrementBeat: document.getElementById("button-increment-beat") as HTMLButtonElement,
+  buttonResetBeat: document.getElementById("button-reset-beat") as HTMLButtonElement,
 
   buttonThemeToggle: document.getElementById("button-theme-toggle") as HTMLButtonElement,
 
@@ -93,6 +90,60 @@ const elements = {
   inputNoteIndex: document.getElementById("input-number-index") as HTMLInputElement,
   inputNotes: document.getElementById("input-text-notes") as HTMLInputElement,
 }
+
+let selectedStaff: SelectedStaff = {
+  element: grandRoot,
+  staff: musicStaffGrand,
+  name: "grand"
+};
+
+changeStaff("rhythm");
+
+
+function changeStaff(name: string) {
+  selectedStaff.element.classList.remove('show');
+
+  switch (name) {
+    case "grand":
+      selectedStaff = {
+        element: grandRoot!,
+        staff: musicStaffGrand,
+        name: "grand"
+      }
+      break;
+    case "treble":
+      selectedStaff = {
+        element: trebleRoot!,
+        staff: musicStaffTreble,
+        name: "treble"
+      }
+      break;
+    case "bass":
+      selectedStaff = {
+        element: bassRoot!,
+        staff: musicStaffBass,
+        name: "bass"
+      }
+      break;
+    case "alto":
+      selectedStaff = {
+        element: altoRoot!,
+        staff: musicStaffAlto,
+        name: "alto"
+      }
+      break;
+    case "rhythm":
+      selectedStaff = {
+        element: rhythmRoot!,
+        staff: rhythmStaff,
+        name: "rhythm"
+      }
+      break;
+  };
+
+  selectedStaff.element.classList.add("show");
+  elements.inputStaff.value = selectedStaff.name;
+};
 
 // Event Listeners
 elements.buttonThemeToggle?.addEventListener("click", () => {
@@ -189,40 +240,18 @@ elements.buttonClearNotes?.addEventListener("click", () => {
 elements.inputStaff.addEventListener("change", (e: Event) => {
   const target = e.target as HTMLSelectElement;
   const value = target.value;
-  selectedStaff.element.classList.remove('show');
 
-  switch (value) {
-    case "grand":
-      selectedStaff = {
-        element: grandRoot,
-        staff: musicStaffGrand
-      }
-      break;
-    case "treble":
-      selectedStaff = {
-        element: trebleRoot,
-        staff: musicStaffTreble
-      }
-      break;
-    case "bass":
-      selectedStaff = {
-        element: bassRoot,
-        staff: musicStaffBass
-      }
-      break;
-    case "alto":
-      selectedStaff = {
-        element: altoRoot,
-        staff: musicStaffAlto
-      }
-      break;
-    case "rhythm":
-      selectedStaff = {
-        element: rhythmRoot,
-        staff: rhythmStaff
-      }
-      break;
-  };
+  changeStaff(value);
+});
 
-  selectedStaff.element.classList.add("show");
+elements.buttonIncrementBeat.addEventListener("click", () => {
+  if (selectedStaff.staff instanceof MusicStaff) return;
+
+  selectedStaff.staff.incrementCurrentBeatUI();
+});
+
+elements.buttonResetBeat.addEventListener("click", () => {
+  if (selectedStaff.staff instanceof MusicStaff) return;
+
+  selectedStaff.staff.resetCurrentBeatUI();
 });

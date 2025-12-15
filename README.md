@@ -17,8 +17,8 @@ A lightweight, SVG-based TypeScript library for rendering musical staves, notes,
 ## Installation
 
 ```bash
-npm install DrakeB1234/MusicStaffPackage
-```
+npm install DrakeB1234/VectorScore
+````
 
 ## Development
 
@@ -144,6 +144,8 @@ Notes are defined using a specific string format parsed by the library:
 | `drawRest(rests: string \| string[])` | Draws rests. |
 | `drawBeamedNotes(type: 'e'\|'s', count: number)` | Draws a group of beamed eighth or sixteenth notes. |
 | `clearAllNotes()` | Removes all items from the staff. |
+| `incrementCurrentBeatUI()` | Starts the UI for showing the current beat. Connect to a external interval for accurate showing of current beat. |
+| `resetCurrentBeatUI()` | Must be called if current beat goes over the total beats in the bar to reset its state |
 
 ## Configuration Options
 
@@ -159,4 +161,5 @@ Notes are defined using a specific string format parsed by the library:
 ### RhythmStaffOptions
 * `topNumber`: The top number of the time signature (e.g., 4 for 4/4 time).
 * `barsCount`: Number of measures to draw.
+* `currentBeatUIColor`: CSS color string for current beat UI.
 * *Inherits sizing and color options from MusicStaffOptions.*

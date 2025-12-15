@@ -13,6 +13,7 @@ export type RhythmStaffOptions = {
   spaceBelow?: number;
   staffColor?: string;
   staffBackgroundColor?: string;
+  currentBeatUIColor?: string;
 };
 
 // Applies to top and bottom
@@ -22,6 +23,8 @@ const BAR_SPACING = 12;
 
 // STAFF RIGHT SPACING TO PREVENT EIGTH NOTES FROM OVERFLOWING
 const STAFF_RIGHT_PADDING = 1;
+
+const CURRENT_BEAT_UI_START_X_POS = NOTE_LAYER_START_X;
 
 export default class RhythmStaff {
   private rendererInstance: SVGRenderer;
@@ -35,6 +38,10 @@ export default class RhythmStaff {
   private maxBeatCount: number;
   private currentBeatCount: number = 0;
 
+  private currentBeatUICount: number = 0;
+  private currentBeatUIElement: SVGRectElement | null = null;
+  private currentBeatUIXPos: number = CURRENT_BEAT_UI_START_X_POS;
+
   constructor(rootElementCtx: HTMLElement, options?: RhythmStaffOptions) {
     this.options = {
       width: 300,
@@ -44,7 +51,8 @@ export default class RhythmStaff {
       spaceAbove: 0,
       spaceBelow: 0,
       staffColor: "black",
-      staffBackgroundColor: "transparent",
+      staffBackgroundColor: "white",
+      currentBeatUIColor: "#24ff7450",
       ...options
     } as Required<RhythmStaffOptions>;
 
@@ -105,7 +113,9 @@ export default class RhythmStaff {
 
     // Draw bar line
     const barLineStartX = this.barSpacing + NOTE_LAYER_START_X;
-    this.rendererInstance.drawLine(barLineStartX, 0, barLineStartX, STAFF_SPACING * 2, staffLayer);
+    const barLineStartY = STAFF_SPACING / 2;
+    const barLineEndY = STAFF_SPACING + barLineStartY;
+    this.rendererInstance.drawLine(barLineStartX, barLineStartY, barLineStartX, barLineEndY, staffLayer);
 
     // Translate entire notes layer to match single line on staff
     this.rendererInstance.getLayerByName("notes").setAttribute("transform", `translate(${NOTE_LAYER_START_X}, ${STAFF_SPACING})`);
@@ -114,6 +124,18 @@ export default class RhythmStaff {
     this.rendererInstance.applySizingToRootSvg();
     this.rendererInstance.commitElementsToDOM(rootSvgElement);
   };
+
+  private createBeatUIElement() {
+    const uiLayer = this.rendererInstance.getLayerByName("ui");
+    const element = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    element.setAttribute("fill", this.options.currentBeatUIColor);
+    element.setAttribute("width", (this.quarterNoteSpacing / 2).toString());
+    element.setAttribute("height", (STAFF_SPACING * 2).toString());
+    element.setAttribute("x", CURRENT_BEAT_UI_START_X_POS.toString());
+
+    this.currentBeatUIElement = element;
+    this.rendererInstance.commitElementsToDOM(element, uiLayer);
+  }
 
   private handleNewBar() {
     this.noteCursorX += BAR_SPACING;
@@ -364,6 +386,35 @@ export default class RhythmStaff {
     this.noteEntries.push(beamedGroup);
 
     this.rendererInstance.commitElementsToDOM(beamedGroup, notesLayer);
+  }
+
+  incrementCurrentBeatUI() {
+    if (!this.currentBeatUIElement) this.createBeatUIElement();
+
+    if (this.currentBeatUICount >= this.maxBeatCount) {
+      this.currentBeatUIElement!.setAttribute("display", "none");
+      return;
+    };
+
+    if (this.currentBeatUIElement?.getAttribute("display") === "none") this.currentBeatUIElement.removeAttribute("display");
+
+    this.currentBeatUICount++;
+
+    // Calls per bar, ignores first occurence
+    if (this.currentBeatUICount > this.options.topNumber && this.currentBeatUICount % this.options.topNumber === 1) {
+      this.currentBeatUIXPos += BAR_SPACING;
+    };
+
+    if (this.currentBeatUICount > 1) this.currentBeatUIXPos += this.quarterNoteSpacing;
+
+    this.currentBeatUIElement!.setAttribute("x", this.currentBeatUIXPos.toString());
+  }
+
+  resetCurrentBeatUI() {
+    this.currentBeatUICount = 0;
+    this.currentBeatUIXPos = CURRENT_BEAT_UI_START_X_POS;
+    this.currentBeatUIElement!.setAttribute("display", "none");
+    this.currentBeatUIElement!.setAttribute("x", this.currentBeatUIXPos.toString());
   }
 
   clearAllNotes() {
