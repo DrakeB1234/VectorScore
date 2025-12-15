@@ -20,7 +20,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^25.0.0",
