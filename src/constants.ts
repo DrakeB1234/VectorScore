@@ -6,6 +6,9 @@ export const STAFF_LINE_SPACING = 10;
 export const NOTE_LAYER_START_X = 38;
 
 export const ACCIDENTAL_OFFSET_X = -8;
+export const DOUBLE_SHARP_ACCIDENTAL_OFFSET_X = -2;
+export const DOUBLE_FLAT_ACCIDENTAL_OFFSET_X = -6;
+
 export const HALF_NOTEHEAD_WIDTH = 10;
 export const NOTEHEAD_STEM_HEIGHT = 28;
 

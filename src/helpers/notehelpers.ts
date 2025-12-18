@@ -1,7 +1,7 @@
 import { type GlyphNames } from "../glyphs";
 import type { Accidentals, Durations, NoteNames, NoteObj } from "../types";
 
-const REGEX_NOTE_STRING = /^(?<name>[A-Ga-g])(?<accidental>[#b]?)(?<octave>\d)(?<duration>[whqeWHQE]?)$/;
+const REGEX_NOTE_STRING = /^(?<name>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqeWHQE]?)$/;
 const REGEX_DURATION_NOTE_STRING = /^[whqeWHQE]$/;
 const REGEX_REST_STRING = /^(?<rest>[rR])(?<duration>[whqeWHQE]?)$/;
 

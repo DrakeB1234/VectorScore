@@ -105,6 +105,8 @@ changeStaff("treble");
 if (selectedStaff.staff instanceof MusicStaff) {
   // selectedStaff.staff.drawChord(["F#4", "A#4", "C5", "E#5", "G#5", "B#5", "D#6"]);
   // selectedStaff.staff.drawChord(["B#3", "Cb4", "D#4", "Eb4", "F#4", "Gb4", "A#4", "B#4"]);
+  selectedStaff.staff.drawNote(["F#4", "Fb4", "Fn4", "F##4", "Fbb4"]);
+  // selectedStaff.staff.drawChord(["C#4", "En4", "Gb4", "Abb4"]);
 }
 
 

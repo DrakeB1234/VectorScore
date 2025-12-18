@@ -1,4 +1,4 @@
-import { ACCIDENTAL_OFFSET_X, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
+import { ACCIDENTAL_OFFSET_X, DOUBLE_FLAT_ACCIDENTAL_OFFSET_X, DOUBLE_SHARP_ACCIDENTAL_OFFSET_X, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
 import { getNameOctaveIdx, parseNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
@@ -139,6 +139,18 @@ export default class MusicStaff {
       case "b":
         this.rendererInstance.drawGlyph("ACCIDENTAL_FLAT", noteGroup);
         xOffset -= ACCIDENTAL_OFFSET_X;
+        break;
+      case "n":
+        this.rendererInstance.drawGlyph("ACCIDENTAL_NATURAL", noteGroup);
+        xOffset -= ACCIDENTAL_OFFSET_X;
+        break;
+      case "##":
+        this.rendererInstance.drawGlyph("ACCIDENTAL_DOUBLE_SHARP", noteGroup);
+        xOffset -= ACCIDENTAL_OFFSET_X + DOUBLE_SHARP_ACCIDENTAL_OFFSET_X;
+        break;
+      case "bb":
+        this.rendererInstance.drawGlyph("ACCIDENTAL_DOUBLE_FLAT", noteGroup);
+        xOffset -= ACCIDENTAL_OFFSET_X + DOUBLE_FLAT_ACCIDENTAL_OFFSET_X;
         break;
     }
 
