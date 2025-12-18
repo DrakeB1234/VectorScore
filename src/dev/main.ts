@@ -79,6 +79,7 @@ const elements = {
   buttonDrawBeamNotes: document.getElementById("button-draw-beam") as HTMLButtonElement,
   buttonDrawRests: document.getElementById("button-draw-rest") as HTMLButtonElement,
   buttonChangeNote: document.getElementById("button-change-note") as HTMLButtonElement,
+  buttonChangeChord: document.getElementById("button-change-chord") as HTMLButtonElement,
   buttonJustifyNotes: document.getElementById("button-justify") as HTMLButtonElement,
   buttonErrorNote: document.getElementById("button-error") as HTMLButtonElement,
   buttonClearNotes: document.getElementById("button-clear") as HTMLButtonElement,
@@ -105,8 +106,8 @@ changeStaff("treble");
 if (selectedStaff.staff instanceof MusicStaff) {
   // selectedStaff.staff.drawChord(["F#4", "A#4", "C5", "E#5", "G#5", "B#5", "D#6"]);
   // selectedStaff.staff.drawChord(["B#3", "Cb4", "D#4", "Eb4", "F#4", "Gb4", "A#4", "B#4"]);
-  selectedStaff.staff.drawNote(["F#4", "Fb4", "Fn4", "F##4", "Fbb4"]);
-  // selectedStaff.staff.drawChord(["C#4", "En4", "Gb4", "Abb4"]);
+  // selectedStaff.staff.drawNote(["F#4", "Fb4", "Fn4", "F##4", "Fbb4"]);
+  selectedStaff.staff.drawChord(["C4", "E4", "G4"]);
 }
 
 
@@ -179,6 +180,19 @@ elements.buttonChangeNote.addEventListener("click", () => {
   const noteParts = notesRawString.split("/");
 
   selectedStaff.staff.changeNoteByIndex(noteParts[0], noteIndex);
+})
+
+elements.buttonChangeChord.addEventListener("click", () => {
+  if (selectedStaff.staff instanceof RhythmStaff) return;
+
+  const noteIndexRawValue = elements.inputNoteIndex.value;
+  const noteIndex = Number(noteIndexRawValue);
+  if (typeof noteIndex !== "number") return;
+  const notesRawString = elements.inputNotes.value;
+  if (!notesRawString) return;
+  const noteParts = notesRawString.split("/");
+
+  selectedStaff.staff.changeChordByIndex(noteParts, noteIndex);
 })
 
 elements.buttonDrawNotes?.addEventListener("click", () => {

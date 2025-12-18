@@ -281,7 +281,7 @@ export default class MusicStaff {
   }
 
   // Bugs: JustifyNotes does not position chord group correctly. When stem note is used, the note can flip, causing weird looking chord
-  drawChord(notes: string | string[]) {
+  drawChord(notes: string[]) {
     const normalizedNotesArray = Array.isArray(notes) ? notes : [notes];
     if (normalizedNotesArray.length < 2) throw new Error("Provide more than one note for a chord.");
 
@@ -391,6 +391,52 @@ export default class MusicStaff {
       note: noteObj,
       xPos: noteEntry.xPos + accidentalXPosOffset,
       yPos: newNoteYPos
+    };
+  };
+
+  changeChordByIndex(notes: string[], chordIndex: number) {
+    if (chordIndex >= this.noteEntries.length) throw new Error("Chord index was out of bounds.");
+    if (notes.length < 2) throw new Error("Notes provided need to be more than one to be considered a chord.");
+
+    const chordEntry = this.noteEntries[chordIndex];
+    const chordGroup = this.rendererInstance.createGroup("chord");
+
+    const noteObjs: NoteEntry[] = [];
+    for (const noteString of notes) {
+      const noteObj: NoteObj = parseNoteString(noteString);
+
+      const yPos = this.strategyInstance.calculateNoteYPos({
+        name: noteObj.name,
+        octave: noteObj.octave
+      });
+      const res = this.renderNote(noteObj, yPos);
+      res.noteGroup.setAttribute("transform", `translate(0, ${yPos})`);
+
+      chordGroup.appendChild(res.noteGroup);
+      noteObjs.push({
+        gElement: res.noteGroup,
+        note: noteObj,
+        yPos: yPos,
+        xPos: 0
+      });
+    };
+
+    // Chcek / apply offset from accidentals
+    const accidentalXOffset = this.chordOffsetConsecutiveAccidentals(noteObjs);
+    this.chordOffsetCloseNotes(noteObjs);
+
+    // Apply XPos to chord parent not sure how to handle xOffsets without them accumlating
+    chordGroup.setAttribute("transform", `translate(${chordEntry.xPos}, 0)`);
+
+    // Replace with new note
+    this.rendererInstance.getLayerByName("notes").replaceChild(chordGroup, chordEntry.gElement);
+
+    // Replace place in list with new note data
+    this.noteEntries[chordIndex] = {
+      gElement: chordGroup,
+      note: parseNoteString(notes[0]),
+      xPos: chordEntry.xPos,
+      yPos: 0
     };
   };
 
