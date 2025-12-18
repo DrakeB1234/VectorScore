@@ -2,7 +2,7 @@ import { durationBeatValueMap, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD
 import type { GlyphNames } from "../glyphs";
 import { parseDurationNoteString } from "../helpers/notehelpers";
 import type { Durations } from "../types";
-import SVGRenderer, { SVG_HREF } from "./SVGRenderer";
+import SVGRenderer from "./SVGRenderer";
 
 export type RhythmStaffOptions = {
   width?: number;
