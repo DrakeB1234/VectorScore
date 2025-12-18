@@ -1,7 +1,7 @@
 import { NAMESPACE, NOTE_LAYER_START_X } from "../constants";
 import { GLPYH_ENTRIES, type GlyphNames } from "../glyphs";
 
-const SVG_HREF = "http://www.w3.org/2000/svg";
+export const SVG_HREF = "http://www.w3.org/2000/svg";
 const GLOBAL_SYMBOL_SCALE = 0.1;
 
 type SVGRendererOptions = {
@@ -10,6 +10,7 @@ type SVGRendererOptions = {
   scale: number;
   staffColor: string;
   staffBackgroundColor: string;
+  useGlyphs: GlyphNames[];
 }
 
 type LayerNames = 'staff' | 'notes' | 'ui';
@@ -17,6 +18,12 @@ type LayerNames = 'staff' | 'notes' | 'ui';
 type DrawGlyphOptions = {
   yOffset?: number;
   xOffset?: number;
+}
+
+type DrawRectOptions = {
+  x?: number;
+  y?: number;
+  fill?: string;
 }
 
 export default class SVGRenderer {
@@ -57,7 +64,7 @@ export default class SVGRenderer {
     this.svgElementRef.style.backgroundColor = options.staffBackgroundColor;
 
     // CREATE DEFS THEN PARENT GROUP IN ORDER
-    this.makeGlyphDefs();
+    this.makeGlyphDefs(options.useGlyphs);
     this.parentGroupContainer = this.createGroup("svg-renderer-parent");
     this.svgElementRef.appendChild(this.parentGroupContainer);
 
@@ -73,9 +80,13 @@ export default class SVGRenderer {
   }
 
   // Creates SVG defs for all glyphs in GLYPH_ENTRIES, applies global scale and offsets, appends to root SVG
-  private makeGlyphDefs() {
+  private makeGlyphDefs(useGlyphs: GlyphNames[]) {
     const defsElement = document.createElementNS(SVG_HREF, "defs");
-    Object.entries(GLPYH_ENTRIES).forEach(([name, data]) => {
+    // Only get the glyphs specified in the constructor
+    const activeGlyphs = Object.entries(GLPYH_ENTRIES)
+      .filter(([key]) => useGlyphs.includes(key as GlyphNames));
+
+    activeGlyphs.forEach(([name, data]) => {
       const path = document.createElementNS(SVG_HREF, "path");
       path.setAttribute("id", `glyph-${name}`);
       path.setAttribute("d", data.path);
@@ -160,6 +171,23 @@ export default class SVGRenderer {
     parent.appendChild(line);
   }
 
+  drawRect(width: number, height: number, parent: SVGElement, options?: DrawRectOptions): SVGRectElement {
+    const rect = document.createElementNS(SVG_HREF, "rect");
+
+    rect.setAttribute("width", width.toString());
+    rect.setAttribute("height", height.toString());
+
+    // Default to 0 if not provided
+    rect.setAttribute("x", (options?.x ?? 0).toString());
+    rect.setAttribute("y", (options?.y ?? 0).toString());
+
+    if (options?.fill) rect.setAttribute("fill", options.fill);
+    else rect.setAttribute("fill", "currentColor");
+
+    parent.appendChild(rect);
+    return rect;
+  }
+
   drawGlyph(glyphName: GlyphNames, parent: SVGElement, options?: DrawGlyphOptions) {
     options = {
       xOffset: 0,
@@ -173,5 +201,13 @@ export default class SVGRenderer {
     if (options.xOffset || options.yOffset) useElement.setAttribute("transform", `translate(${options.xOffset}, ${options.yOffset})`);
 
     parent.appendChild(useElement);
+  }
+
+  destroy() {
+    if (this.rootElementRef && this.svgElementRef) {
+      if (this.rootElementRef.contains(this.svgElementRef)) {
+        this.rootElementRef.removeChild(this.svgElementRef);
+      }
+    }
   }
 }

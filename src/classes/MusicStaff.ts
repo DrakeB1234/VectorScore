@@ -1,4 +1,5 @@
 import { ACCIDENTAL_OFFSET_X, DOUBLE_FLAT_ACCIDENTAL_OFFSET_X, DOUBLE_SHARP_ACCIDENTAL_OFFSET_X, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
+import type { GlyphNames } from "../glyphs";
 import { getNameOctaveIdx, parseNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
@@ -23,6 +24,12 @@ type NoteEntry = {
   yPos: number;
   accidentalXOffset: number;
 }
+
+const USE_GLPYHS: GlyphNames[] = [
+  "CLEF_TREBLE", "CLEF_BASS", "CLEF_ALTO",
+  "NOTE_HEAD_WHOLE", "NOTE_HEAD_HALF", "NOTE_HEAD_QUARTER", "EIGHTH_NOTE", "EIGHTH_NOTE_FLIPPED",
+  "ACCIDENTAL_SHARP", "ACCIDENTAL_FLAT", "ACCIDENTAL_NATURAL", "ACCIDENTAL_DOUBLE_SHARP", "ACCIDENTAL_DOUBLE_FLAT"
+];
 
 const NOTE_SPACING = 28;
 const CHORD_MAX_CONSECUTIVE_ACCIDENTALS = 3;
@@ -54,7 +61,8 @@ export default class MusicStaff {
       height: 100,
       scale: this.options.scale,
       staffColor: this.options.staffColor,
-      staffBackgroundColor: this.options.staffBackgroundColor
+      staffBackgroundColor: this.options.staffBackgroundColor,
+      useGlyphs: USE_GLPYHS
     });
     const rootSvgElement = this.rendererInstance.rootSvgElement;
 
@@ -340,21 +348,33 @@ export default class MusicStaff {
     if (notesCount <= 0 || containerWidth <= 0) return;
     const noteSpacing = Math.round(containerWidth / notesCount);
 
-    this.noteEntries.forEach((e, i) => {
-      const posX = (i + 0.5) * noteSpacing;
-      const bbox = e.gElement.getBBox();
-      const rawPlacedX = posX - (bbox.width / 2) - bbox.x;
-      const placedPosX = Math.round(rawPlacedX * 10) / 10;
+    // Get all calculations first (prevent layout thrashing by writing/reading in the same loop)
+    const updates = this.noteEntries.map((e, i) => {
+      const slotCenterX = (i + 0.5) * noteSpacing;
+      const bbox = e.gElement.getBBox(); // Forces Style Recalc (Expensive)
 
-      if (e.gElement.classList.contains("chord")) {
-        e.gElement.setAttribute("transform", `translate(${placedPosX}, 0)`);
-      }
-      else {
-        e.gElement.setAttribute("transform", `translate(${placedPosX}, ${e.yPos})`);
+      // Calculate the final visual position
+      const rawPlacedX = slotCenterX - (bbox.width / 2) - bbox.x;
+      const finalX = Math.round(rawPlacedX * 10) / 10;
+
+      return {
+        entry: e,
+        newX: finalX,
+        isChord: e.gElement.classList.contains("chord")
+      };
+    });
+
+    // Write each update (not calling getBBox in this loops helps layout thrasing)
+    updates.forEach((update) => {
+      const { entry, newX, isChord } = update;
+
+      if (isChord) {
+        entry.gElement.setAttribute("transform", `translate(${newX}, 0)`);
+      } else {
+        entry.gElement.setAttribute("transform", `translate(${newX}, ${entry.yPos})`);
       }
 
-      // Change the x pos in the list of nodes
-      e.xPos = placedPosX;
+      entry.xPos = newX;
     });
   }
 
@@ -492,5 +512,9 @@ export default class MusicStaff {
     if (!this.wrongNoteGroupUi) throw new Error("Wrong note UI was never created, so it cannot be hidden.");
 
     this.wrongNoteGroupUi.classList.remove("show");
+  }
+
+  destroy() {
+    this.rendererInstance.destroy();
   }
 }
