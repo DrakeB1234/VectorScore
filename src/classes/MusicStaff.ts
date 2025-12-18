@@ -324,21 +324,19 @@ export default class MusicStaff {
     if (notesCount <= 0 || containerWidth <= 0) return;
     const noteSpacing = Math.round(containerWidth / notesCount);
 
-    let cursorX = 0;
-    if (notesCount === 1) {
-      this.noteEntries[0].gElement.setAttribute("transform", `translate(${containerWidth / 2 - NOTE_LAYER_START_X}, ${this.noteEntries[0].yPos})`);
-      return;
-    }
-    this.noteEntries.forEach((e) => {
-      // Chord parent is not translated, therefore don't adjust its Y pos
-      // X POS IS OFF, FIX
+    this.noteEntries.forEach((e, i) => {
+      const posX = (i + 0.5) * noteSpacing;
+      const noteSize = e.gElement.getBBox();
+      const noteWidth = noteSize.width / 2;
+      const placedPosX = Math.round(posX - noteWidth);
+
       if (e.gElement.classList.contains("chord")) {
-        e.gElement.setAttribute("transform", `translate(${cursorX}, 0)`);
+        e.gElement.setAttribute("transform", `translate(${placedPosX}, 0)`);
       }
       else {
-        e.gElement.setAttribute("transform", `translate(${cursorX}, ${e.yPos})`);
+        e.gElement.setAttribute("transform", `translate(${placedPosX}, ${e.yPos})`);
       }
-      cursorX += noteSpacing;
+
     });
   }
 
