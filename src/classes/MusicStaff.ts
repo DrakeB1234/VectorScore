@@ -326,9 +326,9 @@ export default class MusicStaff {
 
     this.noteEntries.forEach((e, i) => {
       const posX = (i + 0.5) * noteSpacing;
-      const noteSize = e.gElement.getBBox();
-      const noteWidth = noteSize.width / 2;
-      const placedPosX = Math.round(posX - noteWidth);
+      const bbox = e.gElement.getBBox();
+      const rawPlacedX = posX - (bbox.width / 2) - bbox.x;
+      const placedPosX = Math.round(rawPlacedX * 10) / 10;
 
       if (e.gElement.classList.contains("chord")) {
         e.gElement.setAttribute("transform", `translate(${placedPosX}, 0)`);
@@ -336,7 +336,6 @@ export default class MusicStaff {
       else {
         e.gElement.setAttribute("transform", `translate(${placedPosX}, ${e.yPos})`);
       }
-
     });
   }
 
