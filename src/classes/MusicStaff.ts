@@ -336,6 +336,9 @@ export default class MusicStaff {
       else {
         e.gElement.setAttribute("transform", `translate(${placedPosX}, ${e.yPos})`);
       }
+
+      // Change the x pos in the list of nodes
+      e.xPos = placedPosX;
     });
   }
 
@@ -364,20 +367,19 @@ export default class MusicStaff {
       accidentalXPosOffset = -ACCIDENTAL_OFFSET_X;
     }
 
-    // Remove previous note elements then render new one in same x positioning
-    noteEntry.gElement.remove();
     const res = this.renderNote(noteObj, newNoteYPos);
     res.noteGroup.setAttribute("transform", `translate(${noteEntry.xPos + accidentalXPosOffset}, ${newNoteYPos})`);
 
-    // Replace in place old entry with new
+    // Replace with new note
+    this.rendererInstance.getLayerByName("notes").replaceChild(res.noteGroup, noteEntry.gElement);
+
+    // Replace place in list with new note data
     this.noteEntries[noteIndex] = {
       gElement: res.noteGroup,
       note: noteObj,
       xPos: noteEntry.xPos + accidentalXPosOffset,
       yPos: newNoteYPos
     };
-
-    this.rendererInstance.commitElementsToDOM(res.noteGroup, this.rendererInstance.getLayerByName("notes"));
   };
 
   applyClassToNoteByIndex(className: string, noteIndex: number) {
