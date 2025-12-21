@@ -2,7 +2,6 @@ import MusicStaff from '../classes/MusicStaff';
 import RhythmStaff from '../classes/RhythmStaff';
 import ScrollingStaff from '../classes/ScrollingStaff';
 import './style.css';
-import '../staff.css';
 
 const grandRoot = document.getElementById("staff-root-grand");
 const trebleRoot = document.getElementById("staff-root-treble");
@@ -72,6 +71,7 @@ const scrollingStaff = new ScrollingStaff(scrollingRoot, {
   staffType: "treble",
   spaceAbove: 1,
   spaceBelow: 1,
+  onNotesOut: onScrollingStaffOut
 });
 
 const rhythmStaff = new RhythmStaff(rhythmRoot, {
@@ -127,6 +127,10 @@ if (selectedStaff.staff instanceof MusicStaff) {
 
 elements.inputNotes.value = "C4/E#4/G4";
 
+function onScrollingStaffOut() {
+  console.log("OUT HANDLED")
+}
+
 function changeStaff(name: string) {
   selectedStaff.element.classList.remove('show');
 
@@ -181,7 +185,7 @@ function changeStaff(name: string) {
 
 // Event Listeners
 elements.buttonTest?.addEventListener("click", () => {
-  scrollingStaff.queueNotes(["C4", "D4", ["C4", "E#4", "F4"], "A4", "B4", "C4", "C4", ["C4", "E#4", "G#4"], "A4", "B4", "C4", "C4", ["C4", "E#4", "G#4"]]);
+  scrollingStaff.queueNotes(["C4", "D4", ["C4", "E#4", "F4"], "A4", "B4", "C4", "C4", ["C4", "E#4", "G#4"], "A4", "B4", "C4", "C4", ["C4", "E#4", "G#4"], "A4", "A4", "A4", "A4", "A4", "A4", "A4"]);
 })
 elements.buttonAdvance?.addEventListener("click", () => {
   scrollingStaff.advanceNotes();

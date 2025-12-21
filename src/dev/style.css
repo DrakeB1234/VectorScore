@@ -195,3 +195,7 @@ button:hover {
   color: var(--danger-color);
   border-color: var(--danger-border);
 }
+
+g.scrolling-notes-layer>g.vs-note-wrapper {
+  transition: transform 0.2s ease-in;
+}

@@ -4,10 +4,10 @@ import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
 import type { StaffTypes } from "../types";
-import NoteRenderer, { type RenderNoteReturn } from "./NoteRenderer";
+import NoteRenderer from "./NoteRenderer";
 import SVGRenderer from "./SVGRenderer";
 
-export type MusicStaffOptions = {
+export type ScrollingStaffOptions = {
   width?: number;
   scale?: number;
   staffType?: StaffTypes;
@@ -15,6 +15,7 @@ export type MusicStaffOptions = {
   spaceBelow?: number;
   staffColor?: string;
   staffBackgroundColor?: string;
+  onNotesOut?: () => void;
 };
 
 const USE_GLPYHS: GlyphNames[] = [
@@ -43,14 +44,16 @@ export default class ScrollingStaff {
   private strategyInstance: StaffStrategy;
   private noteRendererInstance: NoteRenderer;
 
-  private options: Required<MusicStaffOptions>;
+  private options: Required<ScrollingStaffOptions>;
 
   private activeEntries: ActiveEntry[] = [];
   private noteBuffer: BufferedEntry[] = [];
 
+  private notesLayer: SVGGElement;
+
   private noteCursorX: number = 0;
 
-  constructor(rootElementCtx: HTMLElement, options?: MusicStaffOptions) {
+  constructor(rootElementCtx: HTMLElement, options?: ScrollingStaffOptions) {
     this.options = {
       width: 300,
       scale: 1,
@@ -60,7 +63,7 @@ export default class ScrollingStaff {
       staffColor: "black",
       staffBackgroundColor: "transparent",
       ...options
-    } as Required<MusicStaffOptions>;
+    } as Required<ScrollingStaffOptions>;
 
     // Create the SVGRenderer instance with its options passed into this class
     this.svgRendererInstance = new SVGRenderer(rootElementCtx, {
@@ -108,7 +111,8 @@ export default class ScrollingStaff {
     }
 
     // Add class for transition css animation
-    this.svgRendererInstance.getLayerByName("notes").classList.add("scrolling-notes-layer");
+    this.notesLayer = this.svgRendererInstance.getLayerByName("notes");
+    this.notesLayer.classList.add("scrolling-notes-layer");
 
     // Commit to DOM for one batch operation
     this.svgRendererInstance.applySizingToRootSvg();
@@ -116,49 +120,22 @@ export default class ScrollingStaff {
   }
 
   private renderFirstNoteGroups() {
-    const noteLayer = this.svgRendererInstance.getLayerByName("notes");
-
-    // Calculate the cutoff point for visible notes
+    // Calculate the cutoff point for visible notes, keep rendering notes until the cursor overreaches bounds + offset
     const maxVisibleX = (this.options.width - NOTE_LAYER_START_X) + SPAWN_X_OFFSET;
 
     while (this.noteBuffer.length > 0 && this.noteCursorX < maxVisibleX) {
-      const nextEntry = this.noteBuffer[0];
-      const currentX = this.noteCursorX;
+      this.renderNextNote();
 
-      const noteWrapper = this.svgRendererInstance.createGroup("note-wrapper");
-      let rendererReturn: RenderNoteReturn;
-
-      if (nextEntry.type === "chord") {
-        rendererReturn = this.noteRendererInstance.renderChord(nextEntry.notes);
-        rendererReturn.noteGroup.setAttribute("transform", `translate(0, ${rendererReturn.noteYPos})`);
-
-      } else {
-        rendererReturn = this.noteRendererInstance.renderNote(nextEntry.notes[0]);
-        rendererReturn.noteGroup.setAttribute("transform", `translate(0, ${rendererReturn.noteYPos})`);
-
-      }
-      this.noteCursorX += SCROLLING_NOTE_SPACING + rendererReturn.cursorOffset;
-
-      noteWrapper.appendChild(rendererReturn.noteGroup);
-      noteWrapper.style.transform = `translate(${currentX}px, 0px)`;
-      noteLayer.appendChild(noteWrapper);
-
-      this.activeEntries.push({
-        noteWrapper: noteWrapper,
-        xPos: currentX,
-      });
-
-      this.noteBuffer.shift();
+      this.noteCursorX += SCROLLING_NOTE_SPACING;
     }
 
-    // Removed the lastly applied noteCurorX increment
-    if (this.activeEntries.length > 1) this.noteCursorX -= SCROLLING_NOTE_SPACING * 2;
+    // Removed the lastly applied noteCurorX increment, due to the final op in while loop incrementing cursor
+    if (this.activeEntries.length > 1) this.noteCursorX -= SCROLLING_NOTE_SPACING;
   }
 
   private renderNextNote() {
     if (this.noteBuffer.length < 1) return;
 
-    const noteLayer = this.svgRendererInstance.getLayerByName("notes");
     const nextNoteInBuffer = this.noteBuffer[0];
     const noteWrapper = this.svgRendererInstance.createGroup("note-wrapper");
 
@@ -174,20 +151,20 @@ export default class ScrollingStaff {
     };
 
     // The note cursor at this stage will be placed at the last spawned position
-    const spawnX = this.noteCursorX + SPAWN_X_OFFSET;
-    noteWrapper.style.transform = `translate(${spawnX}px, 0px)`;
+    noteWrapper.style.transform = `translate(${this.noteCursorX}px, 0px)`;
 
     // Add current rendered note to active drawn notes, remove from buffer
     this.activeEntries.push({
       noteWrapper: noteWrapper,
-      xPos: spawnX,
+      xPos: this.noteCursorX,
     });
     this.noteBuffer.shift();
 
-    noteLayer.appendChild(noteWrapper);
+    this.notesLayer.appendChild(noteWrapper);
   }
 
   queueNotes(notes: NoteSequence) {
+    this.clearAllNotes();
     for (const entry of notes) {
       if (Array.isArray(entry)) {
         this.noteBuffer.push({
@@ -206,7 +183,10 @@ export default class ScrollingStaff {
   }
 
   advanceNotes() {
-    if (this.activeEntries.length <= 0) return;
+    if (this.activeEntries.length <= 0) {
+      this.options.onNotesOut();
+      return;
+    };
 
     this.activeEntries.forEach(e => {
       e.xPos -= SCROLLING_NOTE_SPACING;
@@ -215,8 +195,7 @@ export default class ScrollingStaff {
 
     const firstActiveNote = this.activeEntries[0];
     if (firstActiveNote.xPos <= 0) {
-      const notesLayer = this.svgRendererInstance.getLayerByName("notes");
-      notesLayer.removeChild(firstActiveNote.noteWrapper);
+      this.notesLayer.removeChild(firstActiveNote.noteWrapper);
       this.activeEntries.shift();
     }
     this.renderNextNote();
@@ -225,12 +204,24 @@ export default class ScrollingStaff {
   clearAllNotes() {
     this.noteCursorX = 0;
 
-    this.svgRendererInstance.getLayerByName("notes").replaceChildren();
+    this.notesLayer.replaceChildren();
     this.activeEntries = [];
     this.noteBuffer = [];
   }
 
   destroy() {
     this.svgRendererInstance.destroy();
+  }
+
+  addClassToFirstNote(className: string) {
+    if (this.activeEntries.length < 1) return;
+    const firstNote = this.activeEntries[0];
+    firstNote.noteWrapper.classList.add(className);
+  }
+
+  removeClassToFirstNote(className: string) {
+    if (this.activeEntries.length < 1) return;
+    const firstNote = this.activeEntries[0];
+    firstNote.noteWrapper.classList.remove(className);
   }
 }
