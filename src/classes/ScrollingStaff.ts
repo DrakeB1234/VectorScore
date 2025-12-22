@@ -10,6 +10,7 @@ import SVGRenderer from "./SVGRenderer";
 export type ScrollingStaffOptions = {
   width?: number;
   scale?: number;
+  noteStartX?: number;
   staffType?: StaffTypes;
   spaceAbove?: number;
   spaceBelow?: number;
@@ -52,6 +53,7 @@ export default class ScrollingStaff {
   private notesLayer: SVGGElement;
 
   private noteCursorX: number = 0;
+  private noteStartX: number;
 
   /**
    * Creates an instance of a ScrollingStaff, A single staff that takes in a queue of notes that can be advanced with in a 'endless' style of staff.
@@ -63,6 +65,7 @@ export default class ScrollingStaff {
     this.options = {
       width: 300,
       scale: 1,
+      noteStartX: 0,
       staffType: "treble",
       spaceAbove: 0,
       spaceBelow: 0,
@@ -120,6 +123,10 @@ export default class ScrollingStaff {
     this.notesLayer = this.svgRendererInstance.getLayerByName("notes");
     this.notesLayer.classList.add(`${NAMESPACE}-scrolling-notes-layer`);
 
+    // Apply note x offset
+    this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX;
+    this.svgRendererInstance.getLayerByName("notes").setAttribute("transform", `translate(${this.noteStartX}, 0)`);
+
     // Commit to DOM for one batch operation
     this.svgRendererInstance.applySizingToRootSvg();
     this.svgRendererInstance.commitElementsToDOM(rootSvgElement);
@@ -127,7 +134,7 @@ export default class ScrollingStaff {
 
   private renderFirstNoteGroups() {
     // Calculate the cutoff point for visible notes, keep rendering notes until the cursor overreaches bounds + offset
-    const maxVisibleX = (this.options.width - NOTE_LAYER_START_X) + SPAWN_X_OFFSET;
+    const maxVisibleX = (this.options.width - this.options.noteStartX) + SPAWN_X_OFFSET;
 
     while (this.noteBuffer.length > 0 && this.noteCursorX < maxVisibleX) {
       this.renderNextNote();

@@ -6,12 +6,12 @@ A lightweight, SVG-based TypeScript library for rendering musical staves, notes,
 
 ## Features
 
-* **Multiple Staff Types**: Supports Treble, Bass, Alto, and Grand staves.
-* **Rhythm Staff**: Dedicated staff for rhythm exercises with customizable time signatures and bar handling.
-* **Scrolling Staff** Staff made to allow for 'endless' style of notes.
-* **SVG Rendering**: Crisp, scalable vector graphics suitable for any screen size.
-* **Flexible Note Input**: Simple string-based syntax for defining notes, chords, and rests.
-* **Interactive Features**: Includes methods for error feedback (highlighting wrong notes) and note justification.
+* **Multiple Staff Types**: Supports Treble, Bass, Alto, and Grand staves (MusicStaff and ScrollingStaff).
+* [**Music Staff**](#Standard-Music-Staff):Standard music staff for notation.
+* [**Rhythm Staff**](#Rhythm-Staff): Dedicated staff for rhythm exercises with customizable time signatures and bar handling.
+* [**Scrolling Staff**](#Scrolling-Staff) Staff made to allow for 'endless' style of notes.
+* **SVG Rendering**: Scalable Vector graphics suitable for any screen size.
+* **Flexible Note Input**: Simple string-based syntax for defining notes.
 
 ## Installation
 
@@ -45,7 +45,7 @@ Create a container element in your HTML where the staff will be rendered.
 
 ### 2. Import and Initialize
 
-### Standard Music Staff (Treble, Bass, Alto)
+### Standard Music Staff
 
 ```typescript
 import { MusicStaff } from 'vector-score';
@@ -224,6 +224,7 @@ Notes are defined using a specific string format parsed by the library:
 ### MusicStaffOptions
 * `width`: Total width of the SVG in pixels.
 * `scale`: Zoom factor (default: 1).
+* `noteStartX`: Position where notes start to draw.
 * `staffType`: `'treble' | 'bass' | 'alto' | 'grand'`.
 * `spaceAbove`: Padding units above the staff (in staff line spaces).
 * `spaceBelow`: Padding units below the staff (in staff line spaces).
@@ -235,6 +236,23 @@ Notes are defined using a specific string format parsed by the library:
 * `barsCount`: Number of measures to draw.
 * `currentBeatUIColor`: CSS color string for current beat UI.
 * *Inherits sizing and color options from MusicStaffOptions.*
+* `width`: Total width of the SVG in pixels.
+* `scale`: Zoom factor (default: 1).
+* `topNumber`: The top number of the time signature (e.g., 4 for 4/4 time).
+* `barsCount`: Number of measures to draw.
+* `spaceAbove`: Padding units above the staff (in staff line spaces).
+* `spaceBelow`: Padding units below the staff (in staff line spaces).
+* `staffColor`: CSS color string for lines and notes.
+* `staffBackgroundColor`: CSS color string for background.
+* `currentBeatUIColor`: CSS color string for current beat UI indicator.
 
 ### ScrollingStaffOptions
-* same as MusicStaffOptions
+* `width`: Total width of the SVG in pixels.
+* `scale`: Zoom factor (default: 1).
+* `noteStartX`: Position where notes start to draw.
+* `staffType`: `'treble' | 'bass' | 'alto' | 'grand'`.
+* `spaceAbove`: Padding units above the staff (in staff line spaces).
+* `spaceBelow`: Padding units below the staff (in staff line spaces).
+* `staffColor`: CSS color string for lines and notes.
+* `staffBackgroundColor`: CSS color string for background.
+* `onNotesOut`: Callback function for when there are no more notes on the staff to advance.

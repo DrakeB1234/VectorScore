@@ -80,9 +80,6 @@ export default class SVGRenderer {
     this.parentGroupContainer.appendChild(this.musicStaffLayer);
     this.parentGroupContainer.appendChild(this.musicNotesLayer);
     this.parentGroupContainer.appendChild(this.musicUILayer);
-
-    // Apply Note Layer Offset
-    this.musicNotesLayer.setAttribute("transform", `translate(${NOTE_LAYER_START_X}, 0)`);
   }
 
   // Creates SVG defs for all glyphs in GLYPH_ENTRIES, applies global scale and offsets, appends to root SVG

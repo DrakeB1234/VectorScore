@@ -66,6 +66,7 @@ const musicStaffAlto = new MusicStaff(altoRoot, {
 const scrollingStaff = new ScrollingStaff(scrollingRoot, {
   width: 350,
   scale: 1.2,
+  noteStartX: 20,
   staffColor: "var(--font-color)",
   staffBackgroundColor: "var(--bg-color)",
   staffType: "grand",
@@ -117,7 +118,7 @@ let selectedStaff: SelectedStaff = {
   name: "grand"
 };
 
-changeStaff("rhythm");
+changeStaff("grand");
 
 if (selectedStaff.staff instanceof MusicStaff) {
   // selectedStaff.staff.drawChord(["F#4", "A#4", "C5", "E#5", "G#5", "B#5", "D#6"]);

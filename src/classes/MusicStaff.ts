@@ -11,6 +11,7 @@ import SVGRenderer from "./SVGRenderer";
 export type MusicStaffOptions = {
   width?: number;
   scale?: number;
+  noteStartX?: number;
   staffType?: StaffTypes;
   spaceAbove?: number;
   spaceBelow?: number;
@@ -41,6 +42,7 @@ export default class MusicStaff {
 
   private noteEntries: NoteEntry[] = [];
   private noteCursorX: number = 0;
+  private noteStartX: number;
 
   /**
    * Creates an instance of a MusicStaff, A single staff.
@@ -52,6 +54,7 @@ export default class MusicStaff {
     this.options = {
       width: 300,
       scale: 1,
+      noteStartX: 0,
       staffType: "treble",
       spaceAbove: 0,
       spaceBelow: 0,
@@ -104,6 +107,10 @@ export default class MusicStaff {
       if (this.options.staffType === "grand") height -= (STAFF_LINE_SPACING / 2)
       this.svgRendererInstance.addTotalRootSvgHeight(height);
     }
+
+    // Apply note x offset
+    this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX;
+    this.svgRendererInstance.getLayerByName("notes").setAttribute("transform", `translate(${this.noteStartX}, 0)`);
 
     // Commit to DOM for one batch operation
     this.svgRendererInstance.applySizingToRootSvg();
