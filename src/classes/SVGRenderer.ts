@@ -1,4 +1,4 @@
-import { NAMESPACE, NOTE_LAYER_START_X } from "../constants";
+import { NAMESPACE } from "../constants";
 import { GLPYH_ENTRIES, type GlyphNames } from "../glyphs";
 
 export const SVG_HREF = "http://www.w3.org/2000/svg";
