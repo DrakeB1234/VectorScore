@@ -1,6 +1,8 @@
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/vector-score-icon.svg)
 
 # Vector Score
+![NPM Version](https://img.shields.io/npm/v/vector-score)
+[![Bundlephobia](https://img.shields.io/bundlephobia/minzip/vector-score)](https://bundlephobia.com/package/vector-score)
 
 A lightweight, SVG-based TypeScript library for rendering musical staves, notes, and rhythm patterns in the browser.
 
