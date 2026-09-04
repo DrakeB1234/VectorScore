@@ -25,8 +25,9 @@ type SelectedStaff = {
 
 const musicStaffGrand = new MusicStaff(grandRoot, {
   staffType: "grand",
+  keySignature: "Eb",
   width: 350,
-  scale: 1.2,
+  scale: 1.4,
   staffColor: "var(--font-color)",
   staffBackgroundColor: "var(--bg-color)",
   spaceAbove: 0,
@@ -35,37 +36,43 @@ const musicStaffGrand = new MusicStaff(grandRoot, {
 
 const musicStaffTreble = new MusicStaff(trebleRoot, {
   width: 350,
-  scale: 1.2,
+  scale: 1.4,
   staffColor: "var(--font-color)",
   staffBackgroundColor: "var(--bg-color)",
   staffType: "treble",
+  keySignature: "G",
+
   spaceBelow: 2,
   spaceAbove: 4
 });
 
 const musicStaffBass = new MusicStaff(bassRoot, {
   width: 350,
-  scale: 1.2,
+  scale: 1.4,
   staffColor: "var(--font-color)",
   staffBackgroundColor: "var(--bg-color)",
   staffType: "bass",
+  keySignature: "G",
+
   spaceAbove: 2,
   spaceBelow: 0,
 });
 
 const musicStaffAlto = new MusicStaff(altoRoot, {
   width: 350,
-  scale: 1.2,
+  scale: 1.4,
   staffColor: "var(--font-color)",
   staffBackgroundColor: "var(--bg-color)",
   staffType: "alto",
+  keySignature: "F#",
+
   spaceAbove: 1,
   spaceBelow: 1,
 });
 
 const scrollingStaff = new ScrollingStaff(scrollingRoot, {
   width: 350,
-  scale: 1.2,
+  scale: 1.4,
   noteStartX: 20,
   staffColor: "var(--font-color)",
   staffBackgroundColor: "var(--bg-color)",
@@ -77,7 +84,7 @@ const scrollingStaff = new ScrollingStaff(scrollingRoot, {
 
 const rhythmStaff = new RhythmStaff(rhythmRoot, {
   width: 400,
-  scale: 1.2,
+  scale: 1.4,
   staffColor: "var(--font-color)",
   staffBackgroundColor: "var(--bg-color)",
   currentBeatUIColor: "#24ff7450",
@@ -127,7 +134,7 @@ if (selectedStaff.staff instanceof MusicStaff) {
   // selectedStaff.staff.drawChord(["C4", "E4", "G4"]);
 }
 
-elements.inputNotes.value = "C4/E#4/G4";
+elements.inputNotes.value = "C4/E4/G4";
 
 function onScrollingStaffOut() {
   console.log("OUT HANDLED")

@@ -1,10 +1,11 @@
-import type { NoteObj, StaffTypes } from "../types";
+import type { AccidentalType, NoteObj, StaffTypes } from "../types";
 
 export interface StaffStrategy {
   drawStaff(width: number): void;
   calculateNoteYPos(note: Omit<NoteObj, "accidental">): number;
   getLedgerLinesX(note: Omit<NoteObj, "accidental">, yPos: number): LedgerLineEntry[];
   shouldNoteFlip(noteYPos: number): boolean;
+  getKeySignatureYPositions(type: AccidentalType, count: number): number[][];
 }
 
 export type StaffParams = {

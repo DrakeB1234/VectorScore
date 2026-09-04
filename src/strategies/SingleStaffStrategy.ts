@@ -1,7 +1,8 @@
 import type SVGRenderer from "../classes/SVGRenderer";
 import { HALF_NOTE_LEDGER_LINE_WIDTH, STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams, START_LEDGER_LINE_X, WHOLE_NOTE_LEDGER_LINE_WIDTH } from "../constants";
+import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER } from "../helpers/keySignatures";
 import { getGlyphNameByClef, getNoteSpacingFromReference } from "../helpers/notehelpers";
-import type { NoteObj, StaffTypes } from "../types";
+import type { AccidentalType, NoteObj, StaffTypes } from "../types";
 import type { LedgerLineEntry, StaffParams, StaffStrategy } from "./StrategyInterface";
 
 const MIDDLE_LINE_Y_POS = 20;
@@ -87,5 +88,16 @@ export default class SingleStaffStrategy implements StaffStrategy {
     let yPos = spaceCount * (STAFF_LINE_SPACING / 2);
 
     return yPos;
+  }
+
+  getKeySignatureYPositions(type: AccidentalType, count: number): number[][] {
+    const letters = KEY_SIGNATURE_ORDER[type].slice(0, count);
+    const octaves = KEY_SIG_OCTAVES[this.params.staffType][type];
+
+    const yPositions = letters.map((name, i) =>
+      this.calculateNoteYPos({ name, octave: octaves[i] })
+    );
+
+    return [yPositions];
   }
 }

@@ -1,7 +1,8 @@
 import type SVGRenderer from "../classes/SVGRenderer";
 import { GRAND_STAFF_SPACING, HALF_NOTE_LEDGER_LINE_WIDTH, STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams, START_LEDGER_LINE_X, WHOLE_NOTE_LEDGER_LINE_WIDTH } from "../constants";
+import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER } from "../helpers/keySignatures";
 import { getGlyphNameByClef, getNoteSpacingFromReference, noteToAbsoluteSemitone } from "../helpers/notehelpers";
-import type { NoteObj, StaffTypes } from "../types";
+import type { AccidentalType, NoteObj, StaffTypes } from "../types";
 import type { LedgerLineEntry, StaffParams, StaffStrategy } from "./StrategyInterface";
 
 const MIDDLE_C_SEMITONE = 48;
@@ -14,6 +15,7 @@ export default class GrandStaffStrategy implements StaffStrategy {
   private params: StaffParams;
   private rendererRef: SVGRenderer;
   private width: number = 0;
+  private trebleStaffHeight: number = 0;
 
   constructor(rendererRef: SVGRenderer, staffType: StaffTypes) {
     this.rendererRef = rendererRef;
@@ -43,6 +45,8 @@ export default class GrandStaffStrategy implements StaffStrategy {
     // Draw Staff end lines
     this.rendererRef.drawLine(0, 0, 0, bassStaffHeight, musicStaffLayer);
     this.rendererRef.drawLine(this.width, 0, this.width, bassStaffHeight, musicStaffLayer);
+
+    this.trebleStaffHeight = trebleStaffHeight;
 
     // Add height from staff lines
     let newHeight = bassStaffHeight;
@@ -129,5 +133,21 @@ export default class GrandStaffStrategy implements StaffStrategy {
     }
 
     return yPos;
+  }
+
+  getKeySignatureYPositions(type: AccidentalType, count: number): number[][] {
+    const letters = KEY_SIGNATURE_ORDER[type].slice(0, count);
+    const trebleOctaves = KEY_SIG_OCTAVES.treble[type];
+    const bassOctaves = KEY_SIG_OCTAVES.bass[type];
+
+    const trebleY = letters.map((name, i) =>
+      getNoteSpacingFromReference(staffParams.treble.topLineNote, { name, octave: trebleOctaves[i] }) * (STAFF_LINE_SPACING / 2)
+    );
+    const bassY = letters.map((name, i) =>
+      getNoteSpacingFromReference(staffParams.bass.topLineNote, { name, octave: bassOctaves[i] }) * (STAFF_LINE_SPACING / 2)
+      + this.trebleStaffHeight + GRAND_STAFF_SPACING
+    );
+
+    return [trebleY, bassY];
   }
 }

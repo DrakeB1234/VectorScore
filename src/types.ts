@@ -12,3 +12,6 @@ export type Durations = 'w' | 'h' | 'q' | 'e' | 's';
 export type Accidentals = '#' | 'b' | '##' | 'bb' | 'n';
 
 export type DurationsBeatValues = 4 | 2 | 1 | 0.5;
+
+export type AccidentalType = "sharp" | "flat";
+export type KeySignatureDef = { type: AccidentalType; count: number };

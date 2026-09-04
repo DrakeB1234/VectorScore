@@ -3,6 +3,7 @@
 # Vector Score
 ![NPM Version](https://img.shields.io/npm/v/vector-score)
 [![Bundlephobia](https://img.shields.io/bundlephobia/minzip/vector-score)](https://bundlephobia.com/package/vector-score)
+![NPM Downloads](https://img.shields.io/npm/d18m/vector-score)
 
 A lightweight, SVG-based TypeScript library for rendering musical staves, notes, and rhythm patterns in the browser.
 
@@ -58,7 +59,8 @@ const staff = new MusicStaff(container, {
   staffType: 'treble', // 'treble', 'bass', 'alto', or 'grand'
   width: 400,
   scale: 1.2,
-  spaceBelow: 1
+  spaceBelow: 1,
+  keySignature: "Bb"
 });
 
 // Draw a C Minor scale (quarter notes)
@@ -226,10 +228,11 @@ Notes are defined using a specific string format parsed by the library:
 ### MusicStaffOptions
 * `width`: Total width of the SVG in pixels.
 * `scale`: Zoom factor (default: 1).
-* `noteStartX`: Position where notes start to draw.
 * `staffType`: `'treble' | 'bass' | 'alto' | 'grand'`.
+* `keySignature`: Change key signature to display on the staff.
 * `spaceAbove`: Padding units above the staff (in staff line spaces).
 * `spaceBelow`: Padding units below the staff (in staff line spaces).
+* `noteStartX`: Position where notes start to draw.
 * `staffColor`: CSS color string for lines and notes.
 * `staffBackgroundColor`: CSS color string for background.
 

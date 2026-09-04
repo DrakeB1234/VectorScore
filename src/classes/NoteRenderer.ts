@@ -1,5 +1,5 @@
 import { ACCIDENTAL_OFFSET_X, CHORD_MAX_CONSECUTIVE_ACCIDENTALS, DOUBLE_FLAT_ACCIDENTAL_OFFSET_X, DOUBLE_SHARP_ACCIDENTAL_OFFSET_X, HALF_NOTEHEAD_WIDTH, NOTE_SPACING, NOTEHEAD_STEM_HEIGHT } from "../constants";
-import { getNameOctaveIdx, parseNoteString } from "../helpers/notehelpers";
+import { getNoteSpacingFromReference, parseNoteString } from "../helpers/notehelpers";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
 import type { NoteObj } from "../types";
 import type SVGRenderer from "./SVGRenderer";
@@ -77,7 +77,7 @@ export default class NoteRenderer {
     let closeNotesXOffset = 0;
     for (let i = 1; i < notes.length; i++) {
       const currNote = notes[i];
-      const nameDiff = getNameOctaveIdx(currNote.noteObj.name, currNote.noteObj.octave) - getNameOctaveIdx(prevNote.noteObj.name, prevNote.noteObj.octave);
+      const nameDiff = -getNoteSpacingFromReference(prevNote.noteObj, currNote.noteObj);
 
       if (nameDiff === 1) {
         closeNotesXOffset = NOTE_SPACING / 2

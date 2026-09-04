@@ -20,12 +20,6 @@ export function parseNoteString(noteString: string): NoteObj {
   name = name.toUpperCase();
   duration = duration.toLowerCase();
 
-  if (!name) {
-    throw new Error(`Invalid note name: ${name}. Valid note names are: C, D, E, F, G, A, B.`);
-  };
-  if (!octave) {
-    throw new Error(`Invalid octave: ${octave}. Octave must be a number between 0 and 9.`);
-  }
   if (!duration) {
     duration = 'w';
   }
@@ -46,7 +40,7 @@ export function parseNoteString(noteString: string): NoteObj {
 export function parseDurationNoteString(note: string): Durations {
   const match = note.match(REGEX_DURATION_NOTE_STRING);
   if (!match) throw new Error(`Invalid note duration '${note}'. Use w | h | q | e.`);
-  let string = match.toString().toLowerCase() as Durations;
+  let string = match[0].toString().toLowerCase() as Durations;
 
   return string;
 };
@@ -58,7 +52,7 @@ export function parseRestString(rest: string): Durations {
     throw new Error(`Invalid rest string format: ${rest}. Expected format: [r][w|h|q|e].`);
   };
 
-  let duration = match.groups[1];
+  let duration = match.groups.duration;
 
   // Normalize input
   duration = duration.toLowerCase();
@@ -89,14 +83,6 @@ export function getGlyphNameByClef(clef: string): GlyphNames {
   return searchKey;
 }
 
-export function getNoteSpacingFromReference(referenceNote: NoteObj, targetNote: NoteObj): number {
-  const nameDiff = NOTE_NAMES.indexOf(referenceNote.name) - NOTE_NAMES.indexOf(targetNote.name);
-  let octaveDiff = referenceNote.octave - targetNote.octave;
-  octaveDiff *= 7;
-
-  return nameDiff + octaveDiff;
-}
-
 // DOES NOT CONSIDER ACCIDENTAL INTO FINAL SEMITONE AMOUNT
 export function noteToAbsoluteSemitone(note: NoteObj): number {
   let semitone = NOTE_NAMES.indexOf(note.name);
@@ -104,7 +90,7 @@ export function noteToAbsoluteSemitone(note: NoteObj): number {
   return semitone;
 }
 
-export function getNameOctaveIdx(name: string, octave: number): number {
-  const idx = NOTE_NAMES.findIndex(e => e === name) + 1;
-  return idx + octave * 7;
+export function getNoteSpacingFromReference(referenceNote: Pick<NoteObj, "name" | "octave">, targetNote: Pick<NoteObj, "name" | "octave">): number {
+  const nameDiff = NOTE_NAMES.indexOf(referenceNote.name) - NOTE_NAMES.indexOf(targetNote.name);
+  return nameDiff + (referenceNote.octave - targetNote.octave) * 7;
 }

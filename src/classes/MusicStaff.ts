@@ -1,5 +1,6 @@
 import { NOTE_LAYER_START_X, NOTE_SPACING, STAFF_LINE_SPACING } from "../constants";
 import type { GlyphNames } from "../glyphs";
+import { drawKeySignature, KEY_SIGNATURE_START_X } from "../helpers/keySignatures";
 import { parseNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
@@ -13,6 +14,7 @@ export type MusicStaffOptions = {
   scale?: number;
   noteStartX?: number;
   staffType?: StaffTypes;
+  keySignature?: string;
   spaceAbove?: number;
   spaceBelow?: number;
   staffColor?: string;
@@ -106,15 +108,24 @@ export default class MusicStaff {
       // Due to how different grand staff is setup, handle edge case of bottom spacing
       if (this.options.staffType === "grand") height -= (STAFF_LINE_SPACING / 2)
       this.svgRendererInstance.addTotalRootSvgHeight(height);
+    };
+
+    let keySignatureWidth = 0;
+    if (this.options.keySignature) {
+      keySignatureWidth = this.createKeySignature(this.options.keySignature);
     }
 
     // Apply note x offset
-    this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX;
+    this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX + keySignatureWidth;
     this.svgRendererInstance.getLayerByName("notes").setAttribute("transform", `translate(${this.noteStartX}, 0)`);
 
     // Commit to DOM for one batch operation
     this.svgRendererInstance.applySizingToRootSvg();
     this.svgRendererInstance.commitElementsToDOM(rootSvgElement);
+  }
+
+  private createKeySignature(key: string): number {
+    return drawKeySignature(this.svgRendererInstance, this.strategyInstance, key, KEY_SIGNATURE_START_X);
   }
 
 
@@ -217,7 +228,7 @@ export default class MusicStaff {
    * @returns Returns early if no notes are on the staff
   */
   justifyNotes() {
-    const containerWidth = this.options.width - NOTE_LAYER_START_X;
+    const containerWidth = this.options.width - this.noteStartX;
     const notesCount = this.noteEntries.length;
     if (notesCount <= 0 || containerWidth <= 0) return;
     const noteSpacing = Math.round(containerWidth / notesCount);
