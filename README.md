@@ -5,41 +5,49 @@
 [![Bundlephobia](https://img.shields.io/bundlephobia/minzip/vector-score)](https://bundlephobia.com/package/vector-score)
 ![NPM Downloads](https://img.shields.io/npm/d18m/vector-score)
 
-A lightweight, SVG-based TypeScript library for rendering musical staves, notes, and rhythm patterns in the browser.
+A lightweight, SVG-based TypeScript library for rendering simple musical notation, rhythm staves, and guitar chords. Designed for simple displaying musical information for musical oriented web applications.
+
+<br/>
 
 ## Features
 
-* **Multiple Staff Types**: Supports Treble, Bass, Alto, and Grand staves (MusicStaff and ScrollingStaff).
-* [**Music Staff**](#Standard-Music-Staff):Standard music staff for notation.
-* [**Rhythm Staff**](#Rhythm-Staff): Dedicated staff for rhythm exercises with customizable time signatures and bar handling.
-* [**Scrolling Staff**](#Scrolling-Staff) Staff made to allow for 'endless' style of notes.
-* **SVG Rendering**: Scalable Vector graphics suitable for any screen size.
-* **Flexible Note Input**: Simple string-based syntax for defining notes.
+### Rendering Standard Musical Notation
+* Supports grand, treble, bass, and alto clefs.
+* Easy to add notes and provides justifying alignment functions.
+* Simple single line staff for display chords, notes, or scales.
+* [**Go to Music Staffs**](#Standard-Music-Staff) 
+
+### Render and Display Guitar Chords
+* Write explicitly which string, fret, and optionally finger to display on the diagram.
+* Supports explicity barre chords.
+* Label each string below diagram, useful for showing tuning of chord.
+* [**Go to Guitar Chords**](#Guitar-Chords)
+
+### Extra Classes
+* Dedicated staff for rhythm exercises with customizable time signatures and bar handling. [**Go to Rhythm Staff**](#Rhythm-Staff)
+* Staff made to allow for 'endless' style of notes. [**Go to Scrolling Staff**](#Scrolling-Staff)
+
+<br />
+
+## Notes
+
+* Main targeting class for css is 'vs-svg-renderer-parent'
+  * Could be useful if needing to add in specific colors or styling to any SVG element rendered.
+
+
+<br />
 
 ## Installation
 
 ```bash
 npm i vector-score
-````
-
-## Development
-
-To start the development server with a playground:
-
-```bash
-npm run dev
 ```
 
-To build the library for production:
-
-```bash
-npm run build
-```
+<br />
 
 ## Usage
 
 ### 1. Setup HTML
-
 Create a container element in your HTML where the staff will be rendered.
 
 ```html
@@ -47,8 +55,7 @@ Create a container element in your HTML where the staff will be rendered.
 ```
 
 ### 2. Import and Initialize
-
-### Standard Music Staff
+Import desired class (MusicStaff, GuitarChord, etc.). Declare variable with reference to container element. Pass in options for specific class (options are typed).
 
 ```typescript
 import { MusicStaff } from 'vector-score';
@@ -73,10 +80,17 @@ staff.drawChord(['C4w', 'E4w', 'G4w']);
 // Evenly space all notes on the staff
 staff.justifyNotes();
 ```
-#### Resulting Staff
+
+### Resulting Staff
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/MusicStaffTrebleResult.svg)
 
-### Grand Staff
+<br/>
+
+## Grand Staff
+
+See [**Note String Syntax**](#Note-String-Syntax) to see how to write notes on music staff (i.e. ['G4q', 'E4h', 'C4w', "A3h", "F3h"] )
+
+See [**MusicStaffOptions**](#MusicStaffOptions) to see how configuration options during class instantiation.
 
 ```typescript
 import { MusicStaff } from 'vector-score';
@@ -93,10 +107,51 @@ grandStaff.drawNote(['G4q', 'E4h', 'C4w', "A3h", "F3h"]);
 
 grandStaff.drawChord(["G3w", "C4w", "E4w"]);
 ```
-#### Resulting Staff
+### Resulting Staff
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/MusicStaffGrandResult.svg)
 
-### Rhythm Staff
+<br/>
+
+## Guitar Chords
+
+See [**Guitar String Syntax**](#Guitar-String-Syntax) to see how to write **frets**, **fingers**, and **barre lines** on Guitar Chord diagrams (i.e., `"x32010"`, `"032010"`).
+
+See [**GuitarChordOptions**](#GuitarChordOptions) to see how configuration options during class instantiation.
+
+```typescript
+import { GuitarChord } from 'vector-score';
+
+const grandStaff = new GuitarChord(container, {
+  fretCount: 5,
+  stringCount: 6,
+  stringLabels: ["E", "A", "D", "G", "B", "E"],
+  width: 300,
+  scale: 1,
+  color: "var(--font-color)",
+  backgroundColor: "var(--bg-color)"
+});
+
+// C chord
+guitarChordsSection.addChord("x32010", "032010", {
+  label: "C",
+});
+
+// Bbmaj7 Barre Chord (Automatically calculates the starting fret and barre positioning)
+const frets = "x13231";
+const fingers = "013241";
+const barres = guitarChordsSection.determineBarreOptions(frets, fingers, [1]);
+
+guitarChordsSection.addChord(frets, fingers, {
+  label: "Bbmaj7",
+  barres: barres
+});
+```
+### Result
+![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/GuitarChordsResult.svg)
+
+<br />
+
+## Rhythm Staff
 
 ```typescript
 import { RhythmStaff } from 'vector-score';
@@ -122,10 +177,12 @@ rhythm.drawNote(['q', 'q']);
 // Increment the UI to show the first beat in the bar
 rhythm.incrementCurrentBeatUI();
 ```
-#### Resulting Staff
+### Resulting Staff
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/RhythmStaffResult.svg)
 
-### Scrolling Staff
+<br />
+
+## Scrolling Staff
 
 ```typescript
 import { ScrollingStaff } from 'vector-score';
@@ -165,8 +222,10 @@ scrollingStaff.queueNotes([
 
 // The button event listener calls 'advanceNotes()' to move the notes over, one step at a time.
 ```
-#### Resulting Staff
+### Resulting Staff
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/ScrollingStaffResult.webp)
+
+<br />
 
 ## Note String Syntax
 
@@ -188,6 +247,35 @@ Notes are defined using a specific string format parsed by the library:
 * `F#5q`: F Sharp, Octave 5, Quarter note
 * `Bb3e`: B Flat, Octave 3, Eighth note
 
+<br />
+
+## Guitar String Syntax
+
+Chords are defined using two continuous strings: one for **frets** and one for **fingers**. The length of both strings must match the configured string count of the diagram (default is 6). Notes are written in ***string order***, with the first character representing the lowest string (e.g., low E in standard tuning).
+
+### Frets String format: `[xX\da-zA-Z]+`
+* `x` or `X`: Muted string.
+* `0`: Open string.
+* `1-9`: Fretted at the specified fret.
+* `a-z` / `A-Z`: Base-36 alphanumeric encoding for double-digit frets (e.g., `a` = 10, `b` = 11, `c` = 12).
+
+### Fingers String format: `[\d]+`
+* `0`: No finger labeled.
+* `1-9`: Finger number to display on the dot.
+
+**Example:**
+* `guitarChordsSection.addChord("x32010", "032010")`: Displays an open C major chord.
+  * The lowest string is muted (`x`) and has no finger label (`0`).
+  * The A string is played at the 3rd fret (`3`) with the 3rd finger (`3`).
+  * *Note: The `startFret` option is now automatically calculated based on the lowest fretted note if left undefined.*
+
+### Barre Lines
+Barre lines can be added dynamically using the built-in helper method, `determineBarreOptions(frets, fingers, barreFrets)`. 
+* Pass in your fret string, finger string, and an array of the target frets you wish to barre. 
+* The method will automatically calculate the stretch (`fromString` to `toString`) based on the matching finger numbers and return a definition array to pass directly into your `addChord` options.
+
+<br />
+
 ## API Reference
 
 ### MusicStaff Class
@@ -202,6 +290,22 @@ Notes are defined using a specific string format parsed by the library:
 | `changeChordByIndex(notes: string[], index: number)` | Replaces a chord at a specific index with a new chord. |
 | `destroy()` | Destroys internal arrays and elements |
 
+<br/>
+
+### GuitarChord Class
+
+| Method | Description |
+| :--- | :--- |
+| `addChord(frets: string, fingers: string, options?: GuitarChordDrawOptions)` | Draws notes on the diagram using string configurations. Options include manual `startFret`, `label`, and `barres`. |
+| `modifyChordByIndex(frets: string, fingers: string, chordIndex: number, options?: GuitarChordDrawOptions)` | Modifies the chord at the specified index with new definitions and options. |
+| `determineBarreOptions(frets: string, fingers: string, barreFrets: number[])` | Automatically calculates barre line dimensions based on fingering and returns `GuitarBarreDef[]` to be used in chord options. |
+| `removeChordByIndex(chordIndex: number)` | Removes the chord diagram at the specified index and recalculates layout. |
+| `clearAllChords()` | Removes all chords in the container. |
+| `destroy()` | Destroys internal arrays and elements. |
+
+
+<br/>
+
 ### RhythmStaff Class
 
 | Method | Description |
@@ -214,6 +318,8 @@ Notes are defined using a specific string format parsed by the library:
 | `resetCurrentBeatUI()` | Must be called if current beat goes over the total beats in the bar to reset its state |
 | `destroy()` | Destroys internal arrays and elements |
 
+<br/>
+
 ### ScrollingStaff Class
 
 | Method | Description |
@@ -222,6 +328,8 @@ Notes are defined using a specific string format parsed by the library:
 | `advanceNotes()` | Advances notes to the next position |
 | `clearAllNote()` | Clears all notes on the staff |
 | `destroy()` | Destroys internal arrays and elements | 
+
+<br />
 
 ## Configuration Options
 
@@ -235,6 +343,15 @@ Notes are defined using a specific string format parsed by the library:
 * `noteStartX`: Position where notes start to draw.
 * `staffColor`: CSS color string for lines and notes.
 * `staffBackgroundColor`: CSS color string for background.
+
+### GuitarChordOptions
+* `stringCount`: Amount of strings to show in diagram, default is 6.
+* `fretCount`: Amount of frets to show in diagram, default is 5.
+* `stringLabels`: Labels to show under each string in each chord diagram. Provided string values will display in order of strings in this array value.
+* `width`: Total width of the SVG in pixels.
+* `scale`: Zoom factor (default: 1).
+* `color`: CSS color string for lines and notes.
+* `backgroundColor`: CSS color string for background.
 
 ### RhythmStaffOptions
 * `topNumber`: The top number of the time signature (e.g., 4 for 4/4 time).

@@ -70,3 +70,31 @@ export const durationBeatValueMap: Record<Durations, number> = {
   e: 0.5,
   s: 0.25
 };
+
+// Guitar chord diagram constants
+export const GUITAR_STRING_COUNT_DEFAULT = 6;
+export const GUITAR_FRET_COUNT_DEFAULT = 5;
+
+export const GUITAR_STRING_SPACING = 22;
+export const GUITAR_FRET_SPACING = 30;
+
+export const GUITAR_DOT_RADIUS = 10;
+export const GUITAR_MARKER_RADIUS = 6; // radius for the open/muted (o/x) markers above the nut
+
+export const GUITAR_STRING_LABEL_OFFSET = 4;
+export const GUITAR_STRING_LABEL_HEIGHT = GUITAR_DOT_RADIUS * 2;
+
+export const GUITAR_DIAGRAM_H_SPACING = 40; // horizontal gap between adjacent chord diagrams
+export const GUITAR_DIAGRAM_V_SPACING = 16; // vertical gap between rows of chord diagrams when wrapping
+export const GUITAR_DIAGRAM_BOTTOM_PADDING = 1; // includes padding for the dot markers under diagram
+
+export const GUITAR_NUT_THICKNESS = 4;
+export const GUITAR_NUT_X_OFFSET = 1;
+export const GUITAR_NUT_SPACE_ABOVE = (GUITAR_MARKER_RADIUS * 2) + GUITAR_NUT_THICKNESS + 4;
+
+export const GUITAR_LABEL_FONT_SIZE = 16;
+export const GUITAR_FINGER_FONT_SIZE = 14;
+export const GUITAR_FRET_LABEL_FONT_SIZE = 14;
+
+export const GUITAR_LABEL_HEIGHT = GUITAR_LABEL_FONT_SIZE; // space reserved above the diagram for the chord name label
+export const GUITAR_FRET_LABEL_OFFSET_X = GUITAR_DOT_RADIUS + 2; // gap between the grid and the "2fr" side label

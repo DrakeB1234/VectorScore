@@ -25,6 +25,20 @@ type DrawRectOptions = {
   x?: number;
   y?: number;
   fill?: string;
+  rx?: number;
+}
+
+type DrawCircleOptions = {
+  filled?: boolean;
+  fill?: string;
+  strokeWidth?: number;
+}
+
+type DrawTextOptions = {
+  fontSize?: number;
+  anchor?: "start" | "middle" | "end";
+  fill?: string;
+  fontWeight?: string;
 }
 
 export default class SVGRenderer {
@@ -138,6 +152,10 @@ export default class SVGRenderer {
     this.totalHeight += amount;
   }
 
+  setTotalRootSvgHeight(amount: number) {
+    this.totalHeight = amount;
+  }
+
   addTotalRootSvgYOffset(amount: number) {
     this.totalYOffset += amount;
   }
@@ -187,6 +205,8 @@ export default class SVGRenderer {
     if (options?.fill) rect.setAttribute("fill", options.fill);
     else rect.setAttribute("fill", "currentColor");
 
+    if (options?.rx) rect.setAttribute("rx", options.rx.toString());
+
     parent.appendChild(rect);
     return rect;
   }
@@ -204,6 +224,39 @@ export default class SVGRenderer {
     if (options.xOffset || options.yOffset) useElement.setAttribute("transform", `translate(${options.xOffset}, ${options.yOffset})`);
 
     parent.appendChild(useElement);
+  }
+
+  drawCircle(cx: number, cy: number, radius: number, parent: SVGElement, options?: DrawCircleOptions): SVGCircleElement {
+    const circle = document.createElementNS(SVG_HREF, "circle");
+    circle.setAttribute("cx", cx.toString());
+    circle.setAttribute("cy", cy.toString());
+    circle.setAttribute("r", radius.toString());
+
+    if (options?.filled === false) {
+      circle.setAttribute("fill", "none");
+      circle.setAttribute("stroke", "currentColor");
+      circle.setAttribute("stroke-width", (options?.strokeWidth ?? 1.5).toString());
+    } else {
+      circle.setAttribute("fill", options?.fill ?? "currentColor");
+    }
+
+    parent.appendChild(circle);
+    return circle;
+  }
+
+  drawText(text: string, x: number, y: number, parent: SVGElement, options?: DrawTextOptions): SVGTextElement {
+    const textElement = document.createElementNS(SVG_HREF, "text");
+    textElement.setAttribute("x", x.toString());
+    textElement.setAttribute("y", y.toString());
+    textElement.setAttribute("text-anchor", options?.anchor ?? "middle");
+    textElement.setAttribute("font-size", (options?.fontSize ?? 10).toString());
+    textElement.setAttribute("fill", options?.fill ?? "currentColor");
+
+    if (options?.fontWeight) textElement.setAttribute("font-weight", options.fontWeight);
+
+    textElement.textContent = text;
+    parent.appendChild(textElement);
+    return textElement;
   }
 
   destroy() {

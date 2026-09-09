@@ -15,3 +15,18 @@ export type DurationsBeatValues = 4 | 2 | 1 | 0.5;
 
 export type AccidentalType = "sharp" | "flat";
 export type KeySignatureDef = { type: AccidentalType; count: number };
+
+export type GuitarStringState = { fret: string; finger: string };
+
+export type GuitarBarreDef = {
+  fret: number;
+  fromString: number;
+  toString: number;
+  finger?: number;
+}
+
+export type GuitarChordDrawOptions = {
+  startFret?: number;
+  label?: string;
+  barres?: GuitarBarreDef[];
+}

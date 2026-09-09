@@ -7,33 +7,41 @@
   <title>vector-score</title>
   <script type="module" src="/src/dev/main.ts"></script>
   <link rel="icon" href="/public/vector-score-icon.svg" />
+  <link rel="stylesheet" href="/src/dev/style.css" />
 </head>
 
 <body data-theme="light">
-  <div class="staffs-container">
-    <div id="staff-root-grand"></div>
-    <div id="staff-root-treble"></div>
-    <div id="staff-root-bass"></div>
-    <div id="staff-root-alto"></div>
-    <div id="staff-root-scrolling"></div>
-    <div id="staff-root-rhythm"></div>
-  </div>
+  <section class="navbar">
+    <img width="32px" height="32px" src="public/vector-score-icon.svg" />
 
-  <div class="card-wrapper">
-    <div class="controls-card">
-      <div class="header">
-        <h3>Controls</h3>
-        <button class="icon" id="button-theme-toggle">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
-            <path
-              d="M440-760v-160h80v160h-80Zm266 110-55-55 112-115 56 57-113 113Zm54 210v-80h160v80H760ZM440-40v-160h80v160h-80ZM254-652 140-763l57-56 113 113-56 54Zm508 512L651-255l54-54 114 110-57 59ZM40-440v-80h160v80H40Zm157 300-56-57 112-112 29 27 29 28-114 114Zm283-100q-100 0-170-70t-70-170q0-100 70-170t170-70q100 0 170 70t70 170q0 100-70 170t-170 70Zm0-80q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47Zm0-160Z" />
-          </svg>
-        </button>
-      </div>
-      <div class="input-stack">
-        <label>
-          Staff Selection
-          <select id="input-select-staff">
+    <div class="navbar__buttons">
+      <button id="nav-button-notation" class="active text">Music Staffs</button>
+      <button id="nav-button-guitar" class="text">Guitar Chords</button>
+    </div>
+
+    <button class="icon text" id="button-theme-toggle">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
+        <path
+          d="M440-760v-160h80v160h-80Zm266 110-55-55 112-115 56 57-113 113Zm54 210v-80h160v80H760ZM440-40v-160h80v160h-80ZM254-652 140-763l57-56 113 113-56 54Zm508 512L651-255l54-54 114 110-57 59ZM40-440v-80h160v80H40Zm157 300-56-57 112-112 29 27 29 28-114 114Zm283-100q-100 0-170-70t-70-170q0-100 70-170t170-70q100 0 170 70t70 170q0 100-70 170t-170 70Zm0-80q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47Zm0-160Z" />
+      </svg>
+    </button>
+  </section>
+
+  <section id="section-notation">
+    <div class="staffs-container">
+      <div id="staff-root-grand"></div>
+      <div id="staff-root-treble"></div>
+      <div id="staff-root-bass"></div>
+      <div id="staff-root-alto"></div>
+      <div id="staff-root-scrolling"></div>
+      <div id="staff-root-rhythm"></div>
+    </div>
+
+    <div class="card">
+      <div class="card__controls">
+        <div class="card__input">
+          <label for="notation-select-staff">Choose Staff</label>
+          <select id="notation-select-staff">
             <option value="grand">Grand</option>
             <option value="treble">Treble</option>
             <option value="bass">Bass</option>
@@ -41,45 +49,123 @@
             <option value="scrolling">Scrolling</option>
             <option value="rhythm">Rhythm</option>
           </select>
-        </label>
-        <label>
-          Note Index
-          <input type="number" id="input-number-index" value="0" min="0">
-        </label>
-        <label>
-          Note Input
-          <input type="text" id="input-text-notes" placeholder="e.g. C#4w/B3q..." autocomplete="off">
-        </label>
+        </div>
       </div>
-      <hr>
-      <div class="button-grid">
-        <button id="button-draw">Draw Notes</button>
-        <button id="button-draw-chord">Draw Chord</button>
-        <button id="button-draw-beam">Draw Beamed Note</button>
-        <button id="button-draw-rest">Draw rest</button>
-      </div>
-      <hr>
-      <div class="button-grid">
-        <button id="button-change-note">Change Note</button>
-        <button id="button-change-chord">Change Chord</button>
-        <button id="button-justify">Justify Notes</button>
-        <button id="button-error">Set Error Note</button>
-        <button id="button-clear" class="danger">Clear Notes</button>
-      </div>
-      <hr>
-      <div class="button-grid">
-        <button id="button-test">Test</button>
-        <button id="button-advance">Advance</button>
-      </div>
-      <hr>
-      <div class="button-grid">
-        <button id="button-increment-beat">Increment Current Beat UI</button>
-        <button id="button-reset-beat">Reset Current Beat UI</button>
-        <button id="button-compare">Compare Notes</button>
-        <button id="button-reset-compare">Reset Compare Notes</button>
+      <div class="card__controls">
+        <p class="card__control-label">Add Notes</p>
+        <div class="card__input">
+          <label for="notation-input-notes">Note Input</label>
+          <input type="text" id="notation-input-notes" placeholder="e.g. C#4w/B3q..." autocomplete="off">
+        </div>
+        <div class="card__buttons">
+          <button id="notation-button-addchord" class="outlined">Add Chord</button>
+          <button id="notation-button-addnotes" class="outlined">Add Notes</button>
+        </div>
       </div>
     </div>
-  </div>
+
+    <div class="card">
+      <div class="card__controls">
+        <p class="card__control-label">Music Staff Actions</p>
+
+        <div class="card__input">
+          <label for="notation-input-index">Note Index</label>
+          <input type="number" id="notation-input-index" value="0" min="0">
+        </div>
+        <div class="card__input">
+          <label for="notation-input-actionsnotes">Input</label>
+          <input type="text" id="notation-input-actionnotes" placeholder="e.g. C#4w/B3q..." autocomplete="off">
+        </div>
+
+        <div class="card__buttons">
+          <button id="notation-button-changechord" class="outlined">Change Chord</button>
+          <button id="notation-button-changenote" class="outlined">Change Note</button>
+        </div>
+        <div class="card__buttons">
+          <button id="notation-button-justify" class="outlined">Justify Notes</button>
+          <button id="notation-button-clearnotes" class="danger">Clear Notes</button>
+        </div>
+      </div>
+
+      <div class="card__controls">
+        <p class="card__control-label">Rhythm Staff Actions</p>
+        <div class="card__buttons">
+          <button id="notation-button-drawbeam" class="outlined">Draw Beamed Note</button>
+          <button id="notation-button-drawrest" class="outlined">Draw rest</button>
+        </div>
+        <div class="card__buttons">
+          <button id="notation-button-incrementbeat" class="outlined">Increment Current Beat UI</button>
+          <button id="notation-button-resetbeat" class="outlined">Reset Current Beat UI</button>
+        </div>
+        <div class="card__buttons">
+          <button id="notation-button-compare" class="outlined">Compare Notes</button>
+          <button id="notation-button-resetcompare" class="outlined">Reset Compare Notes</button>
+        </div>
+
+        <div class="card__controls">
+          <p class="card__control-label">Scrolling Staff Actions</p>
+          <div class="card__buttons">
+            <button id="notation-button-test" class="outlined">Fill Notes</button>
+            <button id="notation-button-advance">Advance</button>
+          </div>
+        </div>
+      </div>
+
+  </section>
+
+  <section id="section-guitar">
+    <div class="staffs-container">
+      <div id="guitar-chords-root"></div>
+    </div>
+
+    <div class="card">
+      <div class="card__controls">
+        <p class="card__control-label">Add / Modify Chord</p>
+        <div class="card__input">
+          <label for="guitar-input-modifychord-frets">Frets</label>
+          <input id="guitar-input-modifychord-frets" placeholder="x32010" value="x32010" />
+        </div>
+        <div class="card__input">
+          <label for="guitar-input-modifychord-fingers">Fingers</label>
+          <input id="guitar-input-modifychord-fingers" placeholder="032010" value="032010" />
+        </div>
+        <div class="card__input">
+          <label for="guitar-input-modifychord-startingfret">Starting Fret</label>
+          <input id="guitar-input-modifychord-startingfret" type="number" placeholder="1" min="0" />
+        </div>
+        <div class="card__input">
+          <label for="guitar-input-modifychord-label">Label</label>
+          <input id="guitar-input-modifychord-label" placeholder="C" value="C" />
+        </div>
+        <div class="card__input">
+          <label for="guitar-input-modifychord-barrefret">Barre Fret</label>
+          <input id="guitar-input-modifychord-barrefret" placeholder="1" value="0"
+            pattern="/^\d{1,2}(?:\/\d{1,2})+?$/gm" />
+        </div>
+        <div class="card__input">
+          <label for="guitar-input-modifychord-idx">Chord #</label>
+          <input id="guitar-input-modifychord-idx" type="number" placeholder="1" value="1" min="1" />
+        </div>
+        <div class="card__buttons">
+          <button id="guitar-button-test" class="text">Test</button>
+          <button id="guitar-button-modifychord" class="outlined">Modify</button>
+          <button id="guitar-button-addchord">Add</button>
+        </div>
+      </div>
+
+      <div class="card__controls">
+        <p class="card__control-label">Remove Chord</p>
+
+        <div class="card__input">
+          <label for="guitar-input-removechord-idx">Chord #</label>
+          <input id="guitar-input-removechord-idx" placeholder="1" value="1" />
+        </div>
+        <div class="card__buttons">
+          <button id="guitar-button-removechord">Remove</button>
+        </div>
+      </div>
+    </div>
+  </section>
 
 </body>
 
