@@ -26,12 +26,14 @@ type DrawRectOptions = {
   y?: number;
   fill?: string;
   rx?: number;
+  classes?: string | string[];
 }
 
 type DrawCircleOptions = {
   filled?: boolean;
   fill?: string;
   strokeWidth?: number;
+  classes?: string | string[];
 }
 
 type DrawTextOptions = {
@@ -39,6 +41,7 @@ type DrawTextOptions = {
   anchor?: "start" | "middle" | "end";
   fill?: string;
   fontWeight?: string;
+  classes?: string | string[];
 }
 
 export default class SVGRenderer {
@@ -116,6 +119,11 @@ export default class SVGRenderer {
     });
 
     this.rootSvgElement.appendChild(defsElement);
+  }
+
+  private addNamespacedClassesToElement(classes: string | string[], parent: SVGElement) {
+    const classesArr = [classes].flat();
+    classesArr.forEach(className => parent.classList.add(`${NAMESPACE}-${className}`));
   }
 
   createGroup(className?: string): SVGGElement {
@@ -207,6 +215,8 @@ export default class SVGRenderer {
 
     if (options?.rx) rect.setAttribute("rx", options.rx.toString());
 
+    if (options?.classes) this.addNamespacedClassesToElement(options.classes, rect);
+
     parent.appendChild(rect);
     return rect;
   }
@@ -240,6 +250,8 @@ export default class SVGRenderer {
       circle.setAttribute("fill", options?.fill ?? "currentColor");
     }
 
+    if (options?.classes) this.addNamespacedClassesToElement(options.classes, circle);
+
     parent.appendChild(circle);
     return circle;
   }
@@ -249,10 +261,11 @@ export default class SVGRenderer {
     textElement.setAttribute("x", x.toString());
     textElement.setAttribute("y", y.toString());
     textElement.setAttribute("text-anchor", options?.anchor ?? "middle");
-    textElement.setAttribute("font-size", (options?.fontSize ?? 10).toString());
     textElement.setAttribute("fill", options?.fill ?? "currentColor");
 
+    if (options?.fontSize) textElement.setAttribute("font-size", options.fontSize + "px")
     if (options?.fontWeight) textElement.setAttribute("font-weight", options.fontWeight);
+    if (options?.classes) this.addNamespacedClassesToElement(options.classes, textElement);
 
     textElement.textContent = text;
     parent.appendChild(textElement);

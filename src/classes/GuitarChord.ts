@@ -1,14 +1,14 @@
 import {
   GUITAR_DIAGRAM_BOTTOM_PADDING,
   GUITAR_DIAGRAM_H_SPACING,
+  GUITAR_DIAGRAM_TOP_PADDING,
   GUITAR_DIAGRAM_V_SPACING,
   GUITAR_DOT_RADIUS,
-  GUITAR_FINGER_FONT_SIZE,
   GUITAR_FRET_COUNT_DEFAULT,
-  GUITAR_FRET_LABEL_FONT_SIZE,
+  GUITAR_FONT_SMALL,
   GUITAR_FRET_LABEL_OFFSET_X,
   GUITAR_FRET_SPACING,
-  GUITAR_LABEL_FONT_SIZE,
+  GUITAR_FONT_BASE,
   GUITAR_LABEL_HEIGHT,
   GUITAR_MARKER_RADIUS,
   GUITAR_NUT_SPACE_ABOVE,
@@ -25,6 +25,7 @@ import SVGRenderer from "./SVGRenderer";
 
 export type GuitarChordOptions = {
   width?: number;
+  inlineChordsAmount?: number;
   scale?: number;
   stringCount?: number;
   fretCount?: number;
@@ -59,7 +60,6 @@ export default class GuitarChord {
   private cursorX: number = 0;
   private cursorY: number = 0;
 
-  // Fixed per-instance sizing, derived once from options
   private readonly diagramWidth: number;
   private readonly diagramHeight: number;
   private readonly gridTopY: number;
@@ -74,11 +74,11 @@ export default class GuitarChord {
   */
   constructor(rootElementCtx: HTMLElement, options?: GuitarChordOptions) {
     this.options = {
-      width: 300,
-      scale: 1,
       stringCount: GUITAR_STRING_COUNT_DEFAULT,
       fretCount: GUITAR_FRET_COUNT_DEFAULT,
       stringLabels: [],
+      inlineChordsAmount: 2,
+      scale: 1,
       color: "black",
       backgroundColor: "transparent",
       ...options
@@ -88,6 +88,9 @@ export default class GuitarChord {
     this.diagramHeight = this.options.fretCount * GUITAR_FRET_SPACING;
     this.gridTopY = GUITAR_LABEL_HEIGHT + GUITAR_NUT_SPACE_ABOVE;
     this.rowHeight = this.gridTopY + this.diagramHeight + GUITAR_DIAGRAM_BOTTOM_PADDING;
+
+    if (options?.width) this.options.width = options.width
+    else this.options.width = (this.diagramWidth + GUITAR_DIAGRAM_H_SPACING) * this.options.inlineChordsAmount;
 
     if (this.options.stringLabels.length >= 1) {
       this.rowHeight += GUITAR_STRING_LABEL_HEIGHT + GUITAR_STRING_LABEL_OFFSET;
@@ -115,7 +118,23 @@ export default class GuitarChord {
     this.svgRendererInstance.commitElementsToDOM(rootSvgElement);
   }
 
-  private drawStringDots(frets: string[], fingers: string[], startFret: number, group: SVGGElement) {
+  private getDotsToHide(barres?: GuitarBarreDef[]): Set<string> {
+    const hiddenDots = new Set<string>();
+    if (!barres) return hiddenDots;
+
+    barres.forEach(barre => {
+      const startIdx = barre.fromString - 1;
+      const endIdx = barre.toString - 1;
+
+      for (let i = startIdx; i <= endIdx; i++) {
+        hiddenDots.add(`${i}-${barre.fret}`);
+      }
+    });
+
+    return hiddenDots;
+  }
+
+  private drawFretDots(frets: string[], fingers: string[], startFret: number, hiddenDots: Set<string>, group: SVGGElement) {
     const markerY = this.gridTopY - GUITAR_NUT_SPACE_ABOVE / 2;
     for (let i = 0; i < this.options.stringCount; i++) {
       const x = i * GUITAR_STRING_SPACING;
@@ -132,20 +151,31 @@ export default class GuitarChord {
         this.svgRendererInstance.drawCircle(x, markerY, GUITAR_MARKER_RADIUS, group, { filled: false });
       }
       else {
+
+        const absoluteFret = parseInt(fret, 36);
+
+        // Skip rendering this specific dot if it is covered by a barre
+        if (hiddenDots.has(`${i}-${absoluteFret}`)) {
+          continue;
+        }
+
         // Fretted note - position relative to the diagram's visible fret range
-        const relativeFret = parseInt(fret, 36) - startFret + 1; // Parse int method used due to alphanumeric numbers being used
+        const relativeFret = absoluteFret - startFret + 1; // Parse int method used due to alphanumeric numbers being used
         if (relativeFret < 1 || relativeFret > this.options.fretCount) {
           throw new Error(`Fret ${fret} on string ${i + 1} is outside the visible range (${startFret}-${startFret + this.options.fretCount - 1}). Adjust 'startFret' or 'fretCount'.`);
         }
 
         const dotY = this.gridTopY + (relativeFret - 0.5) * GUITAR_FRET_SPACING;
-        this.svgRendererInstance.drawCircle(x, dotY, GUITAR_DOT_RADIUS, group);
+        this.svgRendererInstance.drawCircle(x, dotY, GUITAR_DOT_RADIUS, group, {
+          classes: "guitar-fret-dot"
+        });
 
         if (finger !== "0") {
           const fingerTextFill = this.options.backgroundColor === "transparent" ? "white" : this.options.backgroundColor;
-          this.svgRendererInstance.drawText(finger, x, dotY + GUITAR_FINGER_FONT_SIZE / 3, group, {
-            fontSize: GUITAR_FINGER_FONT_SIZE,
-            fill: fingerTextFill
+          this.svgRendererInstance.drawText(finger, x, dotY + GUITAR_FONT_SMALL / 3, group, {
+            fontSize: GUITAR_FONT_SMALL,
+            fill: fingerTextFill,
+            classes: "guitar-text-small"
           });
         }
       }
@@ -155,7 +185,7 @@ export default class GuitarChord {
   private drawStringLabels(group: SVGElement, stringLabels?: string[]) {
     if (!stringLabels || stringLabels.length === 0) return;
 
-    const radius = GUITAR_DOT_RADIUS - 1;
+    const radius = GUITAR_DOT_RADIUS;
     const yPos = this.rowHeight - radius - GUITAR_DIAGRAM_BOTTOM_PADDING;
 
     for (let i = 0; i < this.options.stringCount; i++) {
@@ -165,8 +195,11 @@ export default class GuitarChord {
       const x = i * GUITAR_STRING_SPACING;
       const labelYPos = yPos + radius / 2;
 
-      this.svgRendererInstance.drawCircle(x, yPos, radius, group, { filled: false });
-      this.svgRendererInstance.drawText(labelText, x, labelYPos, group, { fontSize: GUITAR_LABEL_FONT_SIZE });
+      // this.svgRendererInstance.drawCircle(x, yPos, radius, group, { filled: false });
+      this.svgRendererInstance.drawText(labelText, x, labelYPos, group, {
+        fontSize: GUITAR_FONT_SMALL,
+        classes: "guitar-text-small"
+      });
     }
   }
 
@@ -191,17 +224,21 @@ export default class GuitarChord {
 
     const y = (this.gridTopY + GUITAR_DOT_RADIUS / 2) + (GUITAR_FRET_SPACING * relativeFret);
 
+    const labelY = this.gridTopY + (GUITAR_FRET_SPACING * relativeFret) + GUITAR_DOT_RADIUS * 2;
+
     this.svgRendererInstance.drawRect(width, height, group, {
       x: startX - GUITAR_DOT_RADIUS,
       y: y,
-      rx: GUITAR_DOT_RADIUS
+      rx: GUITAR_DOT_RADIUS,
+      classes: "guitar-barre"
     });
 
     if (options.finger) {
       const fingerTextFill = this.options.backgroundColor === "transparent" ? "white" : this.options.backgroundColor;
-      this.svgRendererInstance.drawText(options.finger.toString(), (startX + endX) / 2, y + GUITAR_FINGER_FONT_SIZE, group, {
-        fontSize: GUITAR_FINGER_FONT_SIZE,
-        fill: fingerTextFill
+      this.svgRendererInstance.drawText(options.finger.toString(), (startX + endX) / 2, labelY, group, {
+        fontSize: GUITAR_FONT_SMALL,
+        fill: fingerTextFill,
+        classes: "guitar-text-small"
       });
     }
   }
@@ -213,8 +250,9 @@ export default class GuitarChord {
 
     if (options?.label) {
       this.svgRendererInstance.drawText(options.label, this.diagramWidth / 2, GUITAR_LABEL_HEIGHT - 5, group, {
-        fontSize: GUITAR_LABEL_FONT_SIZE,
-        fontWeight: "bold"
+        fontSize: GUITAR_FONT_BASE,
+        fontWeight: "bold",
+        classes: "guitar-text-base"
       });
     }
 
@@ -234,10 +272,11 @@ export default class GuitarChord {
     }
 
     if (startFret > 1) {
-      this.svgRendererInstance.drawText(`${startFret}fr`, this.diagramWidth + GUITAR_FRET_LABEL_OFFSET_X, this.gridTopY + GUITAR_FRET_SPACING / 2 + 4, group, {
+      this.svgRendererInstance.drawText(`${startFret}fr`, this.diagramWidth + GUITAR_DOT_RADIUS + GUITAR_FRET_LABEL_OFFSET_X, this.gridTopY + GUITAR_FRET_SPACING / 2 + 4, group, {
         anchor: "start",
-        fontSize: GUITAR_FRET_LABEL_FONT_SIZE,
-        fontWeight: "bold"
+        fontSize: GUITAR_FONT_SMALL,
+        fontWeight: "bold",
+        classes: "guitar-text-small"
       });
     }
 
@@ -247,7 +286,8 @@ export default class GuitarChord {
       this.svgRendererInstance.drawLine(x, this.gridTopY, x, this.gridTopY + this.diagramHeight, group);
     }
 
-    this.drawStringDots(frets, fingers, startFret, group);
+    const hiddenDots = this.getDotsToHide(options?.barres);
+    this.drawFretDots(frets, fingers, startFret, hiddenDots, group);
 
     if (this.options.stringLabels.length >= 1) {
       this.drawStringLabels(group, this.options.stringLabels);
@@ -272,7 +312,7 @@ export default class GuitarChord {
   private relayoutChords() {
     // Start with initial offset of first chord (prevent overflowing)
     this.cursorX = GUITAR_DOT_RADIUS;
-    this.cursorY = 0;
+    this.cursorY = GUITAR_DIAGRAM_TOP_PADDING;
 
     if (this.chordEntries.length === 1) {
       const entry = this.chordEntries[0];
@@ -455,33 +495,47 @@ export default class GuitarChord {
     const barres: GuitarBarreDef[] = [];
 
     barreFrets.forEach(targetFret => {
-      const fingerOccurrences: Record<string, number[]> = {};
+      if (targetFret === 0) return;
+
+      let highestFinger = 0;
+      const fretIndexes: number[] = [];
+      const fingerOccurrences: Record<number, number> = {};
 
       for (let i = 0; i < fretParts.length; i++) {
         if (fretParts[i].toLowerCase() === 'x') continue;
 
         // Use base-36 parsing to convert 'a' to 10, 'b' to 11, etc.
         const currentFret = parseInt(fretParts[i], 36);
+        const finger = Number(fingerParts[i]);
 
-        if (currentFret === targetFret && fingerParts[i] !== "0") {
-          const finger = fingerParts[i];
-          if (!fingerOccurrences[finger]) {
-            fingerOccurrences[finger] = [];
-          }
-          fingerOccurrences[finger].push(i);
+        if (currentFret === targetFret) {
+          if (!fingerOccurrences[finger]) fingerOccurrences[finger] = 1;
+          else fingerOccurrences[finger] += 1;
+
+          highestFinger = Math.max(finger, highestFinger);
+          fretIndexes.push(i + 1);
         }
       }
+      fretIndexes.sort();
 
-      // Create a barre definition for any finger covering more than one string
-      for (const [finger, stringIndices] of Object.entries(fingerOccurrences)) {
-        if (stringIndices.length > 1) {
-          barres.push({
-            fret: targetFret,
-            fromString: Math.min(...stringIndices) + 1,
-            toString: Math.max(...stringIndices) + 1,
-            finger: Number(finger)
-          });
+      let mostOccurringFinger = 0;
+      let maxCount = 0;
+      for (const [fingerStr, count] of Object.entries(fingerOccurrences)) {
+        if (count > maxCount) {
+          maxCount = count;
+          mostOccurringFinger = Number(fingerStr);
         }
+      }
+      const fromString = fretIndexes[0];
+      const toString = fretIndexes.at(-1);
+
+      if (fretIndexes.length > 1 && toString) {
+        barres.push({
+          fret: targetFret,
+          fromString: fromString,
+          toString: toString,
+          finger: mostOccurringFinger
+        });
       }
     });
 

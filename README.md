@@ -15,7 +15,7 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
 * Supports grand, treble, bass, and alto clefs.
 * Easy to add notes and provides justifying alignment functions.
 * Simple single line staff for display chords, notes, or scales.
-* [**Go to Music Staffs**](#Standard-Music-Staff) 
+* [**Go to Music Staffs**](#Grand-Staff) 
 
 ### Render and Display Guitar Chords
 * Write explicitly which string, fret, and optionally finger to display on the diagram.
@@ -26,22 +26,6 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
 ### Extra Classes
 * Dedicated staff for rhythm exercises with customizable time signatures and bar handling. [**Go to Rhythm Staff**](#Rhythm-Staff)
 * Staff made to allow for 'endless' style of notes. [**Go to Scrolling Staff**](#Scrolling-Staff)
-
-<br />
-
-## Notes
-
-* Main targeting class for css is 'vs-svg-renderer-parent'
-  * Could be useful if needing to add in specific colors or styling to any SVG element rendered.
-
-
-<br />
-
-## Installation
-
-```bash
-npm i vector-score
-```
 
 <br />
 
@@ -71,13 +55,7 @@ const staff = new MusicStaff(container, {
 });
 
 // Draw a C Minor scale (quarter notes)
-// Format: NoteName + Accidental(optional) + Octave + Duration
 staff.drawNote(['C4q', 'D4q', 'Eb4q', 'F4q', 'G4q', 'Ab4q', 'Bb4q', 'C5q']);
-
-// Draw a C Chord
-staff.drawChord(['C4w', 'E4w', 'G4w']);
-
-// Evenly space all notes on the staff
 staff.justifyNotes();
 ```
 
@@ -85,6 +63,29 @@ staff.justifyNotes();
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/MusicStaffTrebleResult.svg)
 
 <br/>
+
+## Notes
+
+### CSS Classes
+Listed below will be all the specific classes that can be targeted to change their repsective elements styling. All elements that are designed to be targeted with classes are prefixed with `vs-`.
+
+* `svg.vs-svg-renderer-root`: The actual svg element.
+* `g.vs-svg-renderer-parent`: The main group element.
+* `text.vs-guitar-text-base && text.vs-guitar-text-small`: The \<text\> elements for the labels on the guitar chord diagram.
+* `circle.vs-guitar-fret-dot`: The element for the guitar fret dots.
+* `rect.vs-guitar-barre`: The element for the guitar barre lines.
+* `g.vs-scrolling-notes-layer > g.vs-note-wrapper`: Targeting the scrolling staff's notes, which a transition property can be added for smooth animation.
+
+Example
+
+```css
+/* Target and change the fret dot colors */
+.vs-guitar-fret-dot {
+  fill: oklch(67% 0.05 240.864);
+}
+```
+
+<br />
 
 ## Grand Staff
 
@@ -125,10 +126,10 @@ const grandStaff = new GuitarChord(container, {
   fretCount: 5,
   stringCount: 6,
   stringLabels: ["E", "A", "D", "G", "B", "E"],
-  width: 300,
+  inlineChordsAmount: 2, // Choose how many chords are in a single line
   scale: 1,
   color: "var(--font-color)",
-  backgroundColor: "var(--bg-color)"
+  backgroundColor: "white"
 });
 
 // C chord
@@ -137,9 +138,9 @@ guitarChordsSection.addChord("x32010", "032010", {
 });
 
 // Bbmaj7 Barre Chord (Automatically calculates the starting fret and barre positioning)
-const frets = "x13231";
-const fingers = "013241";
-const barres = guitarChordsSection.determineBarreOptions(frets, fingers, [1]);
+const frets = "687766";
+const fingers = "142311";
+const barres = guitarChordsSection.determineBarreOptions(frets, fingers, [6]);
 
 guitarChordsSection.addChord(frets, fingers, {
   label: "Bbmaj7",
@@ -348,10 +349,11 @@ Barre lines can be added dynamically using the built-in helper method, `determin
 * `stringCount`: Amount of strings to show in diagram, default is 6.
 * `fretCount`: Amount of frets to show in diagram, default is 5.
 * `stringLabels`: Labels to show under each string in each chord diagram. Provided string values will display in order of strings in this array value.
-* `width`: Total width of the SVG in pixels.
+* `inlineChordsAmount`: Max amount of chords to display on a single line (default: 2).
 * `scale`: Zoom factor (default: 1).
 * `color`: CSS color string for lines and notes.
 * `backgroundColor`: CSS color string for background.
+* `width`: Total width of the SVG in pixels, overrides inlineChordAmount auto width calculation (default: undefined).
 
 ### RhythmStaffOptions
 * `topNumber`: The top number of the time signature (e.g., 4 for 4/4 time).

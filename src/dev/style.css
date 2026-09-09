@@ -263,3 +263,23 @@ select {
 g.vs-scrolling-notes-layer>g.vs-note-wrapper {
   transition: transform 0.2s ease-in;
 }
+
+/* text.vs-guitar-text-small {
+  font-size: 16px;
+}
+
+text.vs-guitar-text-base {
+  font-size: 1px;
+} */
+
+.vs-guitar-fret-dot:nth-of-type(odd) {
+  fill: oklch(60% 0.25 200);
+}
+
+.vs-guitar-fret-dot:nth-of-type(even) {
+  fill: oklch(50% 0.05 220);
+}
+
+rect.vs-guitar-barre {
+  fill: oklch(40% 0.05 220);
+}
