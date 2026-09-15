@@ -308,6 +308,7 @@ export default class MusicStaff {
     // Replace with new note
     const notesLayer = this.svgRendererInstance.getLayer("notes");
     if (!notesLayer) throw new Error("ChangeNoteByIndex Error: Failed to retrieve notesLayer to append notes.");
+    notesLayer.replaceChild(res.noteGroup, noteEntry.gElement);
 
     // Replace place in list with new note data
     this.noteEntries[noteIndex] = {

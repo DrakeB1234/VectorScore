@@ -374,7 +374,8 @@ export default class GuitarChord {
       // Calculate starting X pos based on the centerChords val
       if (this.options.centerChords) {
         const totalRowWidth = (row.length * this.diagramWidth) + ((row.length - 1) * GUITAR_DIAGRAM_H_SPACING);
-        this.cursorX = (this.options.width / 2) - (totalRowWidth / 2);
+        const calculatedX = (this.options.width / 2) - (totalRowWidth / 2) - 16;
+        this.cursorX = calculatedX;
       } else {
         this.cursorX = GUITAR_DOT_RADIUS;
       }
