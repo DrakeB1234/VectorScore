@@ -20,7 +20,8 @@ export default class SingleStaffStrategy implements StaffStrategy {
   }
 
   drawStaff = (width: number) => {
-    const musicStaffLayer = this.rendererRef.getLayerByName('staff');
+    const musicStaffLayer = this.rendererRef.createLayer("staff");
+
     let yCurrent = 0;
 
     for (let i = 0; i < STAFF_LINE_COUNT; i++) {

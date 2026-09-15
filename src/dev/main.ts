@@ -18,7 +18,7 @@ const domElements = {
   buttonThemeToggle: document.getElementById("button-theme-toggle") as HTMLButtonElement,
 }
 
-changeSection("guitar");
+changeSection("notation");
 
 function changeSection(section: Section) {
   if (!guitarSection || !notationSection) return;

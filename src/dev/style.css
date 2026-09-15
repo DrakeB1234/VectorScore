@@ -3,6 +3,12 @@
   box-sizing: border-box;
 }
 
+* {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -107,6 +113,7 @@ button {
   color: var(--primary-text);
   border-radius: 4px;
   font-weight: 600;
+  font-size: 0.875rem;
 
   transition: background-color 0.2s ease;
 }
@@ -217,6 +224,10 @@ section>.card:nth-of-type(n + 3) {
   padding: 0.5rem;
 }
 
+#guitar-chords-root {
+  overflow-x: auto;
+}
+
 .staffs-container:nth-child(2) {
   margin-top: 1rem;
 }
@@ -260,26 +271,81 @@ select {
   box-sizing: border-box;
 }
 
-g.vs-scrolling-notes-layer>g.vs-note-wrapper {
+/* VS TARGETING CLASSES */
+
+div>svg.vs-svg-renderer-root {
+  /* background-color: white; */
+  /* max-width: unset !important; */
+}
+
+.vs-staff-layer {
+  color: var(--font-color);
+}
+
+.vs-notes-layer {
+  color: var(--font-color);
+}
+
+.vs-rhythm-current-beat {
+  /* fill: greenyellow; */
+  transition: x 0.2s ease-in;
+}
+
+.vs-scrolling-notes-layer>g {
   transition: transform 0.2s ease-in;
 }
 
-/* text.vs-guitar-text-small {
-  font-size: 16px;
+.vs-guitar-text {
+  color: var(--font-color);
+  font-size: 0.875rem;
 }
 
-text.vs-guitar-text-base {
-  font-size: 1px;
-} */
-
-.vs-guitar-fret-dot:nth-of-type(odd) {
-  fill: oklch(60% 0.25 200);
+.vs-guitar-diagram-label {
+  font-weight: bold;
+  /* font-size: 0.875rem; */
 }
 
-.vs-guitar-fret-dot:nth-of-type(even) {
-  fill: oklch(50% 0.05 220);
+.vs-guitar-fret-label {
+  font-size: 0.75rem;
 }
 
-rect.vs-guitar-barre {
+.vs-guitar-group-fret-lines {
+  color: var(--font-color);
+}
+
+.vs-guitar-group-string-lines {
+  color: var(--font-color);
+}
+
+.vs-guitar-group-fret-dots {
+  color: var(--font-color);
+}
+
+.vs-guitar-fret-muted {
+  /* color: red; */
+}
+
+.vs-guitar-fret-open {
+  /* color: blue; */
+}
+
+.vs-guitar-fret-text {
+  color: white;
+  font-weight: bold;
+}
+
+.vs-guitar-fret-dot {
+  color: oklch(50% 0.05 220);
+}
+
+.vs-guitar-fret-dot:nth-child(odd of .vs-guitar-fret-dot) {
+  color: oklch(60% 0.25 200);
+}
+
+.vs-guitar-barre {
   fill: oklch(40% 0.05 220);
+}
+
+.vs-guitar-group-string-labels text {
+  font-size: 0.75rem;
 }

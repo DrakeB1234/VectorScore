@@ -14,8 +14,7 @@ export type ScrollingStaffOptions = {
   staffType?: StaffTypes;
   spaceAbove?: number;
   spaceBelow?: number;
-  staffColor?: string;
-  staffBackgroundColor?: string;
+  svgAutoFill?: boolean;
   onNotesOut?: () => void;
 };
 
@@ -69,8 +68,7 @@ export default class ScrollingStaff {
       staffType: "treble",
       spaceAbove: 0,
       spaceBelow: 0,
-      staffColor: "black",
-      staffBackgroundColor: "transparent",
+      svgAutoFill: true,
       ...options
     } as Required<ScrollingStaffOptions>;
 
@@ -79,9 +77,8 @@ export default class ScrollingStaff {
       width: this.options.width,
       height: 100,
       scale: this.options.scale,
-      staffColor: this.options.staffColor,
-      staffBackgroundColor: this.options.staffBackgroundColor,
-      useGlyphs: USE_GLPYHS
+      useGlyphs: USE_GLPYHS,
+      svgAutoFill: this.options.svgAutoFill
     });
     const rootSvgElement = this.svgRendererInstance.rootSvgElement;
 
@@ -120,12 +117,14 @@ export default class ScrollingStaff {
     }
 
     // Add class for transition css animation IF provided
-    this.notesLayer = this.svgRendererInstance.getLayerByName("notes");
-    this.notesLayer.classList.add(`${NAMESPACE}-scrolling-notes-layer`);
+    const notesLayer = this.svgRendererInstance.createLayer("notes");
+    this.notesLayer = notesLayer;
+
+    notesLayer.classList.add(`${NAMESPACE}-scrolling-notes-layer`);
 
     // Apply note x offset
     this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX;
-    this.svgRendererInstance.getLayerByName("notes").setAttribute("transform", `translate(${this.noteStartX}, 0)`);
+    notesLayer.setAttribute("transform", `translate(${this.noteStartX}, 0)`);
 
     // Commit to DOM for one batch operation
     this.svgRendererInstance.applySizingToRootSvg();

@@ -59,7 +59,9 @@ export function drawKeySignature(
   if (keyDef.count === 0) return 0;
 
   const glyph = keyDef.type === "sharp" ? "ACCIDENTAL_SHARP" : "ACCIDENTAL_FLAT";
-  const staffLayer = svgRenderer.getLayerByName("staff");
+  const staffLayer = svgRenderer.getLayer("staff");
+  if (!staffLayer) throw new Error("Staff Init Error: Failed to retrieve staff layer for key signature renderering.");
+
   const yPositionGroups = strategy.getKeySignatureYPositions(keyDef.type, keyDef.count);
 
   yPositionGroups.forEach(group => {

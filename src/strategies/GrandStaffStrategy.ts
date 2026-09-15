@@ -38,7 +38,7 @@ export default class GrandStaffStrategy implements StaffStrategy {
 
   drawStaff = (width: number) => {
     this.width = width;
-    const musicStaffLayer = this.rendererRef.getLayerByName('staff');
+    const musicStaffLayer = this.rendererRef.createLayer("staff");
 
     let trebleStaffHeight = this.drawStaffLines(0, musicStaffLayer);
     let bassStaffHeight = this.drawStaffLines(trebleStaffHeight + GRAND_STAFF_SPACING, musicStaffLayer);

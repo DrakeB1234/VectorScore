@@ -27,17 +27,17 @@ const guitarChordsSection = new GuitarChord(rendererRootElement, {
   stringCount: 6,
   stringLabels: ["E", "A", "D", "G", "B", "E"],
   inlineChordsAmount: 4,
+  centerChords: true,
   scale: 1,
-  color: "var(--font-color)",
-  backgroundColor: "var(--card-color)"
+  svgAutoFill: false
 });
 
 addChordC();
 addChordEaug9();
-addChordBbmaj7();
+// addChordBbmaj7();
 addChordF();
 // addChordBmaj9();
-// addChordBm7b5();
+addChordBm7b5();
 
 function addChordC() {
   guitarChordsSection.addChord("x32010", "032010", {

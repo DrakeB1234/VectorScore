@@ -17,8 +17,7 @@ export type MusicStaffOptions = {
   keySignature?: string;
   spaceAbove?: number;
   spaceBelow?: number;
-  staffColor?: string;
-  staffBackgroundColor?: string;
+  svgAutoFill?: boolean;
 };
 
 const USE_GLPYHS: GlyphNames[] = [
@@ -60,8 +59,7 @@ export default class MusicStaff {
       staffType: "treble",
       spaceAbove: 0,
       spaceBelow: 0,
-      staffColor: "black",
-      staffBackgroundColor: "transparent",
+      svgAutoFill: true,
       ...options
     } as Required<MusicStaffOptions>;
 
@@ -70,9 +68,8 @@ export default class MusicStaff {
       width: this.options.width,
       height: 100,
       scale: this.options.scale,
-      staffColor: this.options.staffColor,
-      staffBackgroundColor: this.options.staffBackgroundColor,
-      useGlyphs: USE_GLPYHS
+      useGlyphs: USE_GLPYHS,
+      svgAutoFill: this.options.svgAutoFill
     });
     const rootSvgElement = this.svgRendererInstance.rootSvgElement;
 
@@ -94,6 +91,8 @@ export default class MusicStaff {
         throw new Error(`The staff type ${this.options.staffType} is not supported. Please use "treble", "bass", "alto", or "grand".`);
     };
     this.strategyInstance.drawStaff(this.options.width);
+
+    const notesLayer = this.svgRendererInstance.createLayer("notes");
 
     // Create instance of NoteRenderer, with ref to svgRenderer and the strategy
     this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance, this.strategyInstance);
@@ -117,7 +116,7 @@ export default class MusicStaff {
 
     // Apply note x offset
     this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX + keySignatureWidth;
-    this.svgRendererInstance.getLayerByName("notes").setAttribute("transform", `translate(${this.noteStartX}, 0)`);
+    notesLayer.setAttribute("transform", `translate(${this.noteStartX}, 0)`);
 
     // Commit to DOM for one batch operation
     this.svgRendererInstance.applySizingToRootSvg();
@@ -152,7 +151,8 @@ export default class MusicStaff {
   drawNote(notes: string | string[]) {
     // Normalizes input by converting a single string into an array
     const normalizedNotesArray = Array.isArray(notes) ? notes : [notes];
-    const notesLayer = this.svgRendererInstance.getLayerByName("notes");
+    const notesLayer = this.svgRendererInstance.getLayer("notes");
+    if (!notesLayer) throw new Error("DrawNote Error: Failed to retrieve notesLayer to append notes.");
 
     const noteGroups: SVGGElement[] = [];
     for (const noteString of normalizedNotesArray) {
@@ -201,7 +201,8 @@ export default class MusicStaff {
   */
   drawChord(notes: string[]) {
     if (notes.length < 2) throw new Error("Provide more than one note for a chord.");
-    const notesLayer = this.svgRendererInstance.getLayerByName("notes");
+    const notesLayer = this.svgRendererInstance.getLayer("notes");
+    if (!notesLayer) throw new Error("DrawChord Error: Failed to retrieve notesLayer to append chord.");
 
     const res = this.noteRendererInstance.renderChord(notes);
 
@@ -270,7 +271,8 @@ export default class MusicStaff {
   clearAllNotes() {
     this.noteCursorX = 0;
 
-    this.svgRendererInstance.getLayerByName("notes").replaceChildren();
+    const notesLayer = this.svgRendererInstance.getLayer("notes");
+    notesLayer?.replaceChildren();
     this.noteEntries = [];
   }
 
@@ -304,7 +306,8 @@ export default class MusicStaff {
     res.noteGroup.setAttribute("transform", `translate(${newXPos}, ${res.noteYPos})`);
 
     // Replace with new note
-    this.svgRendererInstance.getLayerByName("notes").replaceChild(res.noteGroup, noteEntry.gElement);
+    const notesLayer = this.svgRendererInstance.getLayer("notes");
+    if (!notesLayer) throw new Error("ChangeNoteByIndex Error: Failed to retrieve notesLayer to append notes.");
 
     // Replace place in list with new note data
     this.noteEntries[noteIndex] = {
@@ -347,7 +350,9 @@ export default class MusicStaff {
     res.noteGroup.setAttribute("transform", `translate(${newXPos}, 0)`);
 
     // Replace with new note
-    this.svgRendererInstance.getLayerByName("notes").replaceChild(res.noteGroup, chordEntry.gElement);
+    const notesLayer = this.svgRendererInstance.getLayer("notes");
+    if (!notesLayer) throw new Error("DrawNote Error: Failed to retrieve notesLayer to append notes.");
+    notesLayer.replaceChild(res.noteGroup, chordEntry.gElement);
 
     // Replace place in list with new note data
     this.noteEntries[chordIndex] = {

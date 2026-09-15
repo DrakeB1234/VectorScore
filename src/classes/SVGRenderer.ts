@@ -3,22 +3,24 @@ import { GLPYH_ENTRIES, type GlyphNames } from "../glyphs";
 
 export const SVG_HREF = "http://www.w3.org/2000/svg";
 const GLOBAL_SYMBOL_SCALE = 0.1;
-const MAX_WIDTH_STAFF = 1200;
+const VIEWBOX_PADDING = 2;
 
 type SVGRendererOptions = {
   width: number;
   height: number;
   scale: number;
-  staffColor: string;
-  staffBackgroundColor: string;
   useGlyphs: GlyphNames[];
+  svgAutoFill: boolean;
 }
-
-type LayerNames = 'staff' | 'notes' | 'ui';
 
 type DrawGlyphOptions = {
   yOffset?: number;
   xOffset?: number;
+}
+
+type DrawLineOptions = {
+  strokeWidth?: number;
+  classes?: string | string[];
 }
 
 type DrawRectOptions = {
@@ -39,6 +41,7 @@ type DrawCircleOptions = {
 type DrawTextOptions = {
   fontSize?: number;
   anchor?: "start" | "middle" | "end";
+  baseline?: "central"
   fill?: string;
   fontWeight?: string;
   classes?: string | string[];
@@ -50,9 +53,7 @@ export default class SVGRenderer {
 
   // Layers
   private parentGroupContainer: SVGGElement;
-  private musicStaffLayer: SVGGElement;
-  private musicNotesLayer: SVGGElement
-  private musicUILayer: SVGGElement;
+  private layers: Record<string, SVGGElement> = {};
 
   // Positioning variables
   private width: number;
@@ -69,34 +70,19 @@ export default class SVGRenderer {
     this.width = options.width;
     this.scale = options.scale;
 
-    if (this.width > MAX_WIDTH_STAFF) {
-      this.width = MAX_WIDTH_STAFF;
-      console.warn(`Width provided for the staff ${this.width} exceeds the limit ${MAX_WIDTH_STAFF}. Please use this value to fix positioning issues.`);
-    };
-
     this.svgElementRef = document.createElementNS(SVG_HREF, "svg");
     this.svgElementRef.classList.add(`${NAMESPACE}-svg-renderer-root`);
 
     // SET ROOT SVG ATTRIBUTES, WIDTH/HEIGHT * SCALE APPLIED AFTER STAFF IS DRAWN
-    this.svgElementRef.style.maxWidth = `100%`;
-    this.svgElementRef.style.height = `auto`;
-    this.svgElementRef.style.display = "block";
-
-    // Applies coloring to staff
-    this.svgElementRef.setAttribute("color", options.staffColor);
-    this.svgElementRef.style.backgroundColor = options.staffBackgroundColor;
+    if (options.svgAutoFill) {
+      this.svgElementRef.style.maxWidth = `100%`;
+      this.svgElementRef.style.height = `auto`;
+    }
 
     // CREATE DEFS THEN PARENT GROUP IN ORDER
     this.makeGlyphDefs(options.useGlyphs);
     this.parentGroupContainer = this.createGroup("svg-renderer-parent");
     this.svgElementRef.appendChild(this.parentGroupContainer);
-
-    this.musicStaffLayer = this.createGroup("music-staff-layer");
-    this.musicNotesLayer = this.createGroup("music-notes-layer");
-    this.musicUILayer = this.createGroup("music-ui-layer");
-    this.parentGroupContainer.appendChild(this.musicStaffLayer);
-    this.parentGroupContainer.appendChild(this.musicNotesLayer);
-    this.parentGroupContainer.appendChild(this.musicUILayer);
   }
 
   // Creates SVG defs for all glyphs in GLYPH_ENTRIES, applies global scale and offsets, appends to root SVG
@@ -126,6 +112,29 @@ export default class SVGRenderer {
     classesArr.forEach(className => parent.classList.add(`${NAMESPACE}-${className}`));
   }
 
+
+  /**
+   * Creates a layer that is appended to parent element.
+   * layerName arg is the key that is appended to the internal list of layers, which
+   * can be used in method getLayer() arg. Best to call on construction.
+   *
+   * @param {string} layerName 
+   * @returns {SVGGElement} 
+   */
+  createLayer(layerName: string): SVGGElement {
+    const layer = document.createElementNS(SVG_HREF, "g");
+    layer.classList.add(`${NAMESPACE}-${layerName}-layer`);
+    this.layers[layerName] = layer;
+    this.parentGroupContainer.appendChild(this.layers[layerName]);
+
+    return layer;
+  }
+
+  getLayer(layerName: string): SVGGElement | null {
+    const layer = this.layers[layerName];
+    return layer ?? null;
+  }
+
   createGroup(className?: string): SVGGElement {
     const g = document.createElementNS(SVG_HREF, "g");
     if (className) g.classList.add(`${NAMESPACE}-${className}`);
@@ -147,15 +156,6 @@ export default class SVGRenderer {
     parent.appendChild(fragment);
   }
 
-  getLayerByName(name: LayerNames): SVGGElement {
-    switch (name) {
-      case 'staff': return this.musicStaffLayer;
-      case 'notes': return this.musicNotesLayer;
-      case 'ui': return this.musicUILayer;
-      default: throw new Error(`Layer with name '${name}' does not exist.`);
-    }
-  }
-
   addTotalRootSvgHeight(amount: number) {
     this.totalHeight += amount;
   }
@@ -169,18 +169,18 @@ export default class SVGRenderer {
   }
 
   applySizingToRootSvg() {
-    this.parentGroupContainer.setAttribute("transform", `translate(0, ${this.totalYOffset})`);
+    this.parentGroupContainer.setAttribute("transform", `translate(${VIEWBOX_PADDING / 2}, ${this.totalYOffset})`);
 
-    let newWidth = this.width * this.scale;
+    let newWidth = Math.round(this.width * this.scale);
     const newHeight = (this.totalHeight + this.totalYOffset) * this.scale;
 
     // Apply padding to sides to prevent clipping of staff end lines
-    newWidth += 2;
+    newWidth += VIEWBOX_PADDING;
 
     this.svgElementRef.setAttribute("width", newWidth.toString());
     this.svgElementRef.setAttribute("height", newHeight.toString());
 
-    this.svgElementRef.setAttribute("viewBox", `0 0 ${this.width} ${this.totalHeight + this.totalYOffset}`);
+    this.svgElementRef.setAttribute("viewBox", `0 0 ${this.width + VIEWBOX_PADDING} ${this.totalHeight + this.totalYOffset}`);
   }
 
   get rootSvgElement(): SVGElement { return this.svgElementRef; }
@@ -188,14 +188,18 @@ export default class SVGRenderer {
 
 
   // Drawing Methods
-  drawLine(x1: number, y1: number, x2: number, y2: number, parent: SVGElement) {
+  drawLine(x1: number, y1: number, x2: number, y2: number, parent: SVGElement, options?: DrawLineOptions) {
+    const strokeWidth = options?.strokeWidth ?? 1;
+
     const line = document.createElementNS(SVG_HREF, "line");
     line.setAttribute("x1", x1.toString());
     line.setAttribute("y1", y1.toString());
     line.setAttribute("x2", x2.toString());
     line.setAttribute("y2", y2.toString());
     line.setAttribute("stroke", "currentColor");
-    line.setAttribute("stroke-width", "1");
+    line.setAttribute("stroke-width", strokeWidth.toString());
+
+    if (options?.classes) this.addNamespacedClassesToElement(options.classes, parent);
 
     parent.appendChild(line);
   }
@@ -265,6 +269,7 @@ export default class SVGRenderer {
 
     if (options?.fontSize) textElement.setAttribute("font-size", options.fontSize + "px")
     if (options?.fontWeight) textElement.setAttribute("font-weight", options.fontWeight);
+    if (options?.baseline) textElement.setAttribute("dominant-baseline", options.baseline);
     if (options?.classes) this.addNamespacedClassesToElement(options.classes, textElement);
 
     textElement.textContent = text;

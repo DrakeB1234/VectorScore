@@ -11,9 +11,7 @@ export type RhythmStaffOptions = {
   barsCount?: number;
   spaceAbove?: number;
   spaceBelow?: number;
-  staffColor?: string;
-  staffBackgroundColor?: string;
-  currentBeatUIColor?: string;
+  svgAutoFill?: boolean;
 };
 
 // Applies to top and bottom
@@ -66,9 +64,7 @@ export default class RhythmStaff {
       barsCount: 2,
       spaceAbove: 0,
       spaceBelow: 0,
-      staffColor: "black",
-      staffBackgroundColor: "white",
-      currentBeatUIColor: "#24ff7450",
+      svgAutoFill: true,
       ...options
     } as Required<RhythmStaffOptions>;
 
@@ -76,11 +72,14 @@ export default class RhythmStaff {
       width: this.options.width,
       height: 100,
       scale: this.options.scale,
-      staffColor: this.options.staffColor,
-      staffBackgroundColor: this.options.staffBackgroundColor,
-      useGlyphs: USE_GLPYHS
+      useGlyphs: USE_GLPYHS,
+      svgAutoFill: this.options.svgAutoFill
     });
     const rootSvgElement = this.rendererInstance.rootSvgElement;
+
+    const staffLayer = this.rendererInstance.createLayer("staff");
+    const notesLayer = this.rendererInstance.createLayer("notes");
+    this.rendererInstance.createLayer("ui");
 
     // Determine the time signature, if top number isn't supported throw early
     let topNumberGlyphName: GlyphNames = "TIME_4";
@@ -103,7 +102,6 @@ export default class RhythmStaff {
       this.rendererInstance.addTotalRootSvgHeight(height);
     }
 
-    const staffLayer = this.rendererInstance.getLayerByName("staff");
     this.rendererInstance.addTotalRootSvgHeight(STAFF_SPACING * 2);
 
     // Draw time signature in its own group
@@ -139,7 +137,7 @@ export default class RhythmStaff {
     };
 
     // Translate entire notes layer to match single line on staff
-    this.rendererInstance.getLayerByName("notes").setAttribute("transform", `translate(${NOTE_LAYER_START_X}, ${STAFF_SPACING})`);
+    notesLayer.setAttribute("transform", `translate(${NOTE_LAYER_START_X}, ${STAFF_SPACING})`);
 
     // Commit to DOM for one batch operation
     this.rendererInstance.applySizingToRootSvg();
@@ -147,7 +145,8 @@ export default class RhythmStaff {
   };
 
   private createBeatUIElement() {
-    const uiLayer = this.rendererInstance.getLayerByName("ui");
+    const uiLayer = this.rendererInstance.getLayer("ui");
+    if (!uiLayer) throw new Error("BeatUI Error: Failed to retrieve ui layer");
 
     this.currentBeatUIElement = this.rendererInstance.drawRect(
       this.quarterNoteSpacing / 2,
@@ -155,7 +154,8 @@ export default class RhythmStaff {
       uiLayer,
       {
         x: CURRENT_BEAT_UI_START_X_POS,
-        fill: this.options.currentBeatUIColor
+        fill: "rgba(0,255,40,0.4)",
+        classes: "rhythm-current-beat"
       }
     );
   }
@@ -272,7 +272,6 @@ export default class RhythmStaff {
       {
         x: HALF_NOTEHEAD_WIDTH,
         y: -NOTEHEAD_STEM_HEIGHT + (yOffset ?? 0),
-        fill: this.options.staffColor
       }
     );
   }
@@ -297,7 +296,8 @@ export default class RhythmStaff {
   */
   drawNote(notes: string | string[]) {
     const normalizedNotesArray = Array.isArray(notes) ? notes : [notes];
-    const notesLayer = this.rendererInstance.getLayerByName("notes");
+    const notesLayer = this.rendererInstance.getLayer("notes");
+    if (!notesLayer) throw new Error("DrawNote Error: Failed to retrieve notes layer");
 
     const noteGroups: SVGGElement[] = [];
     for (const noteString of normalizedNotesArray) {
@@ -361,7 +361,8 @@ export default class RhythmStaff {
   */
   drawRest(rests: string | string[]) {
     const normalizedNotesArray = Array.isArray(rests) ? rests : [rests];
-    const notesLayer = this.rendererInstance.getLayerByName("notes");
+    const notesLayer = this.rendererInstance.getLayer("notes");
+    if (!notesLayer) throw new Error("DrawRest Error: Failed to retrieve notes layer");
 
     const restGroups: SVGGElement[] = [];
     for (const restString of normalizedNotesArray) {
@@ -438,7 +439,8 @@ export default class RhythmStaff {
 
     this.checkAndCreateNewBar();
 
-    const notesLayer = this.rendererInstance.getLayerByName("notes");
+    const notesLayer = this.rendererInstance.getLayer("notes");
+    if (!notesLayer) throw new Error("drawBeamedNotes Error: Failed to retrieve notes layer");
     const beatValue = durationBeatValueMap[durationString];
     const spacingAmount = beatValue * this.quarterNoteSpacing;
 
@@ -520,7 +522,8 @@ export default class RhythmStaff {
     this.noteCursorX = 0;
     this.currentBeatCount = 0;
 
-    this.rendererInstance.getLayerByName("notes").replaceChildren();
+    const notesLayer = this.rendererInstance.getLayer("notes");
+    notesLayer?.replaceChildren();
     this.noteEntries = [];
   }
 

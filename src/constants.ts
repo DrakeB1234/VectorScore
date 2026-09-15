@@ -91,7 +91,7 @@ export const GUITAR_DIAGRAM_BOTTOM_PADDING = 1; // includes padding for the dot 
 
 export const GUITAR_NUT_THICKNESS = 4;
 export const GUITAR_NUT_X_OFFSET = 1;
-export const GUITAR_NUT_SPACE_ABOVE = (GUITAR_MARKER_RADIUS * 2) + GUITAR_NUT_THICKNESS + 4;
+export const GUITAR_NUT_SPACE_ABOVE = (GUITAR_MARKER_RADIUS * 2) + GUITAR_NUT_THICKNESS + 8;
 
 export const GUITAR_FONT_BASE = 16;
 export const GUITAR_FONT_SMALL = 12;

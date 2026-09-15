@@ -1,4 +1,6 @@
-![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/vector-score-icon.svg)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/vector-score-icon.svg" alt="Vector Score Logo" />
+</p>
 
 # Vector Score
 ![NPM Version](https://img.shields.io/npm/v/vector-score)
@@ -7,7 +9,8 @@
 
 A lightweight, SVG-based TypeScript library for rendering simple musical notation, rhythm staves, and guitar chords. Designed for simple displaying musical information for musical oriented web applications.
 
-<br/>
+[**See CSS class styling guide**](#Notes)
+
 
 ## Features
 
@@ -27,7 +30,6 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
 * Dedicated staff for rhythm exercises with customizable time signatures and bar handling. [**Go to Rhythm Staff**](#Rhythm-Staff)
 * Staff made to allow for 'endless' style of notes. [**Go to Scrolling Staff**](#Scrolling-Staff)
 
-<br />
 
 ## Usage
 
@@ -51,7 +53,7 @@ const staff = new MusicStaff(container, {
   width: 400,
   scale: 1.2,
   spaceBelow: 1,
-  keySignature: "Bb"
+  keySignature: "Bb",
 });
 
 // Draw a C Minor scale (quarter notes)
@@ -59,33 +61,88 @@ staff.drawNote(['C4q', 'D4q', 'Eb4q', 'F4q', 'G4q', 'Ab4q', 'Bb4q', 'C5q']);
 staff.justifyNotes();
 ```
 
-### Resulting Staff
-![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/MusicStaffTrebleResult.svg)
-
-<br/>
 
 ## Notes
 
-### CSS Classes
-Listed below will be all the specific classes that can be targeted to change their repsective elements styling. All elements that are designed to be targeted with classes are prefixed with `vs-`.
+### CSS Classes & Theming
+The GuitarChord diagram uses CSS classes for styling. All elements that can be targeted for theming are prefixed with `.vs-`.
 
-* `svg.vs-svg-renderer-root`: The actual svg element.
-* `g.vs-svg-renderer-parent`: The main group element.
-* `text.vs-guitar-text-base && text.vs-guitar-text-small`: The \<text\> elements for the labels on the guitar chord diagram.
-* `circle.vs-guitar-fret-dot`: The element for the guitar fret dots.
-* `rect.vs-guitar-barre`: The element for the guitar barre lines.
-* `g.vs-scrolling-notes-layer > g.vs-note-wrapper`: Targeting the scrolling staff's notes, which a transition property can be added for smooth animation.
+#### General SVG Classes
+* `svg.vs-svg-renderer-root`: The root SVG element.
+* `g.vs-svg-renderer-parent`: The main parent group element containing all drawn elements.
 
-Example
+#### Staff Theming
+* `.vs-staff-layer`: The layer containing the staff lines, clef, and time signature.
+* `.vs-notes-layer`: The layer containing all notes, chords, stems, and rests.
+* `.vs-ui-layer`: Contains UI elements like the RhythmStaff beat tracker.
+  * `vs-rhythm-current-beat`: Targets the highlighting rectangle for the current beat in the RhythmStaff. Also possible to add in transition animation on `x` property.
 
+#### Guitar Chord Theming
+The `GuitarChord` class is entirely styled via CSS. Here are the specific layout targets:
+* **Text & Labels:**
+  * `.vs-guitar-text`: Base class for all text elements in the diagram.
+  * `.vs-guitar-diagram-label`: The chord name label above the diagram.
+  * `.vs-guitar-fret-label`: The fret number indicator (e.g., "5fr").
+  * `.vs-guitar-fret-text`: The finger numbers inside the dots and barres.
+* **Grid Lines:**
+  * `.vs-guitar-group-fret-lines`: The horizontal fret lines and the top nut.
+  * `.vs-guitar-group-string-lines`: The vertical string lines.
+* **Dots & Markers:**
+  * `.vs-guitar-fret-muted`: The 'X' markers for muted strings above the nut.
+  * `.vs-guitar-fret-open`: The 'O' outline markers for open strings above the nut.
+  * `.vs-guitar-fret-dot`: The parent group for fretted dots.
+  * `.vs-guitar-fret-circle`: The actual SVG circle shape for a fretted note.
+* **Barres:**
+  * `.vs-guitar-group-barre`: The group containing the elements for the barre line.
+  * `.vs-guitar-barre`: The rectangle element spanning across strings for barre chords.
+
+#### Scrolling Staff Theming
+* `g.vs-scrolling-notes-layer > g`: Targets the scrolling staff's notes, where a transition property can be added for smooth animation.
+
+
+**Example: Custom Staff Theme Implementation**
 ```css
-/* Target and change the fret dot colors */
-.vs-guitar-fret-dot {
-  fill: oklch(67% 0.05 240.864);
-}
+  /* Adds background color to root SVG element */
+  svg.vs-svg-renderer-root {
+    background-color: white;
+  }
+  
+  /* Set base staff color */
+  .vs-staff-layer,
+  .vs-notes-layer {
+    color: #d4d4d8;
+  }
+
+  /* Animate current beat rect UI  */
+  .vs-rhythm-current-beat {
+    transition: x 0.2s ease-in
+  }
 ```
 
-<br />
+**Example: Custom Guitar Chord Theme Implementation**
+```css
+/* Set base grid colors */
+.vs-guitar-group-fret-lines,
+.vs-guitar-group-string-lines {
+  color: #d4d4d8;
+}
+
+/* Format the text labels */
+.vs-guitar-text { fill: #1a1827; }
+.vs-guitar-fret-text { fill: #ffffff; }
+
+/* Style the open/muted markers */
+.vs-guitar-fret-muted { color: #dc2626; }
+.vs-guitar-fret-open { color: #3b82f6; }
+
+/* Apply alternating fret dot colors */
+.vs-guitar-fret-dot { color: oklch(50% 0.05 220); }
+
+.vs-guitar-fret-dot:nth-child(odd of .vs-guitar-fret-dot) { color: oklch(60% 0.25 200); }
+
+/* Style the barre */
+.vs-guitar-barre { fill: #1e40af; }
+```
 
 ## Grand Staff
 
@@ -111,7 +168,6 @@ grandStaff.drawChord(["G3w", "C4w", "E4w"]);
 ### Resulting Staff
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/MusicStaffGrandResult.svg)
 
-<br/>
 
 ## Guitar Chords
 
@@ -125,11 +181,10 @@ import { GuitarChord } from 'vector-score';
 const grandStaff = new GuitarChord(container, {
   fretCount: 5,
   stringCount: 6,
-  stringLabels: ["E", "A", "D", "G", "B", "E"],
-  inlineChordsAmount: 2, // Choose how many chords are in a single line
+  stringLabels: ["E", "A", "D", "G", "B", "E"], // Labels under each string, in order
+  inlineChordsAmount: 4, // Choose how many chords are in a single line
+  centerChords: true, // Centers the diagrams inside their rows
   scale: 1,
-  color: "var(--font-color)",
-  backgroundColor: "white"
 });
 
 // C chord
@@ -150,7 +205,6 @@ guitarChordsSection.addChord(frets, fingers, {
 ### Result
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/GuitarChordsResult.svg)
 
-<br />
 
 ## Rhythm Staff
 
@@ -181,7 +235,6 @@ rhythm.incrementCurrentBeatUI();
 ### Resulting Staff
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/RhythmStaffResult.svg)
 
-<br />
 
 ## Scrolling Staff
 
@@ -226,7 +279,6 @@ scrollingStaff.queueNotes([
 ### Resulting Staff
 ![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/ScrollingStaffResult.webp)
 
-<br />
 
 ## Note String Syntax
 
@@ -248,7 +300,6 @@ Notes are defined using a specific string format parsed by the library:
 * `F#5q`: F Sharp, Octave 5, Quarter note
 * `Bb3e`: B Flat, Octave 3, Eighth note
 
-<br />
 
 ## Guitar String Syntax
 
@@ -275,7 +326,6 @@ Barre lines can be added dynamically using the built-in helper method, `determin
 * Pass in your fret string, finger string, and an array of the target frets you wish to barre. 
 * The method will automatically calculate the stretch (`fromString` to `toString`) based on the matching finger numbers and return a definition array to pass directly into your `addChord` options.
 
-<br />
 
 ## API Reference
 
@@ -291,7 +341,6 @@ Barre lines can be added dynamically using the built-in helper method, `determin
 | `changeChordByIndex(notes: string[], index: number)` | Replaces a chord at a specific index with a new chord. |
 | `destroy()` | Destroys internal arrays and elements |
 
-<br/>
 
 ### GuitarChord Class
 
@@ -305,7 +354,6 @@ Barre lines can be added dynamically using the built-in helper method, `determin
 | `destroy()` | Destroys internal arrays and elements. |
 
 
-<br/>
 
 ### RhythmStaff Class
 
@@ -319,7 +367,6 @@ Barre lines can be added dynamically using the built-in helper method, `determin
 | `resetCurrentBeatUI()` | Must be called if current beat goes over the total beats in the bar to reset its state |
 | `destroy()` | Destroys internal arrays and elements |
 
-<br/>
 
 ### ScrollingStaff Class
 
@@ -330,7 +377,6 @@ Barre lines can be added dynamically using the built-in helper method, `determin
 | `clearAllNote()` | Clears all notes on the staff |
 | `destroy()` | Destroys internal arrays and elements | 
 
-<br />
 
 ## Configuration Options
 
@@ -342,18 +388,18 @@ Barre lines can be added dynamically using the built-in helper method, `determin
 * `spaceAbove`: Padding units above the staff (in staff line spaces).
 * `spaceBelow`: Padding units below the staff (in staff line spaces).
 * `noteStartX`: Position where notes start to draw.
-* `staffColor`: CSS color string for lines and notes.
-* `staffBackgroundColor`: CSS color string for background.
+* `svgAutoFill`: Sets inline styles on root SVG element to allow for screen scaling (default: true).
+
 
 ### GuitarChordOptions
 * `stringCount`: Amount of strings to show in diagram, default is 6.
 * `fretCount`: Amount of frets to show in diagram, default is 5.
 * `stringLabels`: Labels to show under each string in each chord diagram. Provided string values will display in order of strings in this array value.
 * `inlineChordsAmount`: Max amount of chords to display on a single line (default: 2).
+* `centerChords`: Boolean to center the chord diagrams on their respective rows (default: true).
 * `scale`: Zoom factor (default: 1).
-* `color`: CSS color string for lines and notes.
-* `backgroundColor`: CSS color string for background.
 * `width`: Total width of the SVG in pixels, overrides inlineChordAmount auto width calculation (default: undefined).
+* `svgAutoFill`: Sets inline styles on root SVG element to allow for screen scaling (default: true).
 
 ### RhythmStaffOptions
 * `topNumber`: The top number of the time signature (e.g., 4 for 4/4 time).
@@ -369,6 +415,7 @@ Barre lines can be added dynamically using the built-in helper method, `determin
 * `staffColor`: CSS color string for lines and notes.
 * `staffBackgroundColor`: CSS color string for background.
 * `currentBeatUIColor`: CSS color string for current beat UI indicator.
+* `svgAutoFill`: Sets inline styles on root SVG element to allow for screen scaling (default: true).
 
 ### ScrollingStaffOptions
 * `width`: Total width of the SVG in pixels.
@@ -380,3 +427,4 @@ Barre lines can be added dynamically using the built-in helper method, `determin
 * `staffColor`: CSS color string for lines and notes.
 * `staffBackgroundColor`: CSS color string for background.
 * `onNotesOut`: Callback function for when there are no more notes on the staff to advance.
+* `svgAutoFill`: Sets inline styles on root SVG element to allow for screen scaling (default: true).

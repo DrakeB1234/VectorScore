@@ -49,17 +49,14 @@ const musicStaffGrand = new MusicStaff(rootGrand, {
   keySignature: "Eb",
   width: 350,
   scale: 1.4,
-  staffColor: "var(--font-color)",
-  staffBackgroundColor: "var(--bg-color)",
   spaceAbove: 0,
-  spaceBelow: 3
+  spaceBelow: 3,
+  noteStartX: 0,
 });
 
 const musicStaffTreble = new MusicStaff(rootTreble, {
   width: 350,
   scale: 1.4,
-  staffColor: "var(--font-color)",
-  staffBackgroundColor: "var(--bg-color)",
   staffType: "treble",
   keySignature: "G",
 
@@ -70,8 +67,6 @@ const musicStaffTreble = new MusicStaff(rootTreble, {
 const musicStaffBass = new MusicStaff(rootBass, {
   width: 350,
   scale: 1.4,
-  staffColor: "var(--font-color)",
-  staffBackgroundColor: "var(--bg-color)",
   staffType: "bass",
   keySignature: "G",
 
@@ -82,8 +77,6 @@ const musicStaffBass = new MusicStaff(rootBass, {
 const musicStaffAlto = new MusicStaff(rootAlto, {
   width: 350,
   scale: 1.4,
-  staffColor: "var(--font-color)",
-  staffBackgroundColor: "var(--bg-color)",
   staffType: "alto",
   keySignature: "F#",
 
@@ -95,8 +88,6 @@ const scrollingStaff = new ScrollingStaff(rootScrolling, {
   width: 350,
   scale: 1.4,
   noteStartX: 20,
-  staffColor: "var(--font-color)",
-  staffBackgroundColor: "var(--bg-color)",
   staffType: "grand",
   spaceAbove: 1,
   spaceBelow: 1,
@@ -106,9 +97,6 @@ const scrollingStaff = new ScrollingStaff(rootScrolling, {
 const rhythmStaff = new RhythmStaff(rootRhythm, {
   width: 400,
   scale: 1.4,
-  staffColor: "var(--font-color)",
-  staffBackgroundColor: "var(--bg-color)",
-  currentBeatUIColor: "#24ff7450",
   topNumber: 4,
   barsCount: 2,
   spaceAbove: 0,
