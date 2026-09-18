@@ -1,8 +1,10 @@
 import type { GlyphNames } from "../glyphs";
 import SVGRenderer from "../classes/SVGRenderer";
 import { BARLINE_MEASURE_PADDING, drawBarLine, drawStaff, GRAND_STAFF_SPACING, type StaffTypes } from "./devStaffHelpers";
-import { calculateMeasureSpacing, renderPositionedNotes, measureInputNotesParser, scaleMeasureSpacing } from "./devNoteHelpers";
+import { ACCIDENTAL_X_OFFSET, calculateAccidentalCollisions, calculateSecondIntervalCollisions, drawAccidental, drawFlag, drawLedgerLines, drawNotehead, drawRest, drawStem, getAccidentalGlyph, getNoteheadGlyphByDuration, getPitchStepClefDifference, getPitchYCoordinate, LEDGER_LINE_X_OFFSET, NOTE_STEM_LENGTH, sortVSNoteObjs, type NoteDurations, type PositionedNote, type VSNoteObj } from "./devNoteHelpers";
 import { STAFF_LINE_COUNT, STAFF_LINE_SPACING } from "../constants";
+import { ScoreFormatter, type ScaledStaffData } from "./ScoreFormatter";
+import type { DevGlyphEntry } from "./devGlyphs";
 
 export type DevStaffOptions = {
   width?: number;
@@ -18,8 +20,49 @@ const USE_GLPYHS: GlyphNames[] = [
   "ACCIDENTAL_SHARP", "ACCIDENTAL_FLAT", "ACCIDENTAL_NATURAL", "ACCIDENTAL_DOUBLE_SHARP", "ACCIDENTAL_DOUBLE_FLAT"
 ];
 
+// Knows about page size, scale, and holds all Systems.
+interface Score {
+  width: number;
+  systems: System[];
+};
+
+// A single horizontal row of music across the screen
+// If the music hits the right edge of the page, it wraps to a new System.
+interface System {
+  x: number;
+  y: number;
+  measures: Measure[];
+};
+
+// Holds pre-calculated raw widths from note durations for a measure
+interface Measure {
+  rawWidth: number;
+  staves: Staff[];
+};
+
+// A single 5-line staff, for grand staffs, voices array will contain two (treble and bass)
+interface Staff {
+  clef: "treble" | "bass" | "alto";
+  voices: Voice[];
+};
+
+interface Voice {
+  notes: PositionedNote[];
+};
+
+export interface PitchRenderData {
+  pitch: string;
+  step: number;
+  y: number;
+  xOffset: number;
+  accidental: string | null;
+  accidentalGlyph: DevGlyphEntry | null;
+  accidentalColumn: number;
+}
+
 export default class DevStaff {
   private svgRendererInstance: SVGRenderer;
+  private scoreFormatterInstance: ScoreFormatter;
   private options: Required<DevStaffOptions>;
 
   private staffLayer: SVGGElement;
@@ -42,6 +85,12 @@ export default class DevStaff {
     });
     this.systemStaffType = "grand";
 
+    this.scoreFormatterInstance = new ScoreFormatter({
+      paddingPerMeasure: BARLINE_MEASURE_PADDING,
+      startX: 60,
+      targetWidth: this.options.width
+    });
+
     const rootSvgElement = this.svgRendererInstance.rootSvgElement;
 
     // Creating staff, applying height / offset / padding values
@@ -62,122 +111,157 @@ export default class DevStaff {
     this.svgRendererInstance.commitElementsToDOM(rootSvgElement);
 
     this.staffLayer = staffObj.staffLayer;
-  }
-
-  testMethod(measureNoteInput: string) {
-    const startX = 100;
-    const targetMeasureWidth = this.options.width - startX - BARLINE_MEASURE_PADDING;
-
-    // --- STEP 1: PARSE AND GET RAW WIDTHS ---
-    const parsedStaffNotes = measureInputNotesParser(measureNoteInput);
-    const rawStaffObj = calculateMeasureSpacing(parsedStaffNotes);
-
-    let rawBassObj = null;
-    let maxRawWidth = rawStaffObj.rawWidth;
-
-    if (this.systemStaffType === "grand") {
-      const parsedBassNotes = measureInputNotesParser("C3q [Eb3,G3]q [Eb3,G3]q");
-      rawBassObj = calculateMeasureSpacing(parsedBassNotes);
-
-      // Find the widest staff so they scale together proportionately
-      maxRawWidth = Math.max(rawStaffObj.rawWidth, rawBassObj.rawWidth);
-    };
-
-    // --- STEP 2: CALCULATE UNIFIED SCALE RATIO ---
-    const scaleRatio = targetMeasureWidth / maxRawWidth;
-
-    // --- STEP 3: SCALE AND RENDER ---
-    const justifiedStaffObj = scaleMeasureSpacing(rawStaffObj, startX, scaleRatio);
-    const staffElements = renderPositionedNotes(justifiedStaffObj, this.systemStaffType, 0, this.svgRendererInstance);
-    this.svgRendererInstance.commitElementsToDOM(staffElements, this.staffLayer);
-
-    if (this.systemStaffType === "grand" && rawBassObj) {
-      const justifiedBassObj = scaleMeasureSpacing(rawBassObj, startX, scaleRatio);
-
-      const trebleStaffHeight = (STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING;
-      const bassStaffY = trebleStaffHeight + GRAND_STAFF_SPACING;
-
-      const bassElements = renderPositionedNotes(justifiedBassObj, "bass", bassStaffY, this.svgRendererInstance);
-      this.svgRendererInstance.commitElementsToDOM(bassElements, this.staffLayer);
-    }
-
-    const maxNextStartX = startX + (maxRawWidth * scaleRatio);
-    const barlineX = maxNextStartX + BARLINE_MEASURE_PADDING;
-
-    drawBarLine(this.svgRendererInstance, this.staffLayer, this.systemStaffType, barlineX);
   };
 
-  testMethodMultiple(trebleMeasures: string[], bassMeasures: string[] = []) {
-    const startX = 100;
+  private renderPositionedNotes(
+    positionedNotes: ScaledStaffData,
+    systemStaffType: SystemStaffTypes,
+    staffYOffset: number
+  ) {
+    const parsedStaffType = systemStaffType !== "grand" ? systemStaffType : "treble";
 
-    // Total padding we want per measure (e.g., 20px before the barline, 20px after)
-    const paddingPerMeasure = 40;
+    positionedNotes.positionedNotes.forEach(note => {
+      const xPos = note.x;
+      const groupType = note.isRest ? "rest" : note.pitches.length > 1 ? "chord" : "note";
 
-    // The total horizontal real estate we are allowed to use for notes
-    const targetTotalWidth = this.options.width - startX - (paddingPerMeasure * trebleMeasures.length);
+      const noteGroup = this.svgRendererInstance.createGroup(groupType);
+      noteGroup.setAttribute(`data-${groupType}`, note.pitches.join(",") + note.duration);
+      noteGroup.setAttribute(`data-clef`, parsedStaffType);
 
-    // --- STEP 1: PRE-CALCULATE RAW WIDTHS ---
-    let totalRawWidth = 0;
-    const parsedMeasuresData = [];
+      noteGroup.setAttribute("transform", `translate(${xPos}, ${staffYOffset})`);
 
-    for (let i = 0; i < trebleMeasures.length; i++) {
-      const parsedTreble = measureInputNotesParser(trebleMeasures[i]);
-      const rawTreble = calculateMeasureSpacing(parsedTreble);
-
-      let rawBass = null;
-      let measureRawWidth = rawTreble.rawWidth;
-
-      // Handle grand staff syncing for this specific measure index
-      if (this.systemStaffType === "grand" && bassMeasures[i]) {
-        const parsedBass = measureInputNotesParser(bassMeasures[i]);
-        rawBass = calculateMeasureSpacing(parsedBass);
-        measureRawWidth = Math.max(measureRawWidth, rawBass.rawWidth);
+      if (note.isRest) {
+        drawRest(note.duration, 0, noteGroup);
+      } else {
+        this.renderPitchedGroup(note, parsedStaffType, noteGroup);
       }
 
-      totalRawWidth += measureRawWidth;
-      parsedMeasuresData.push({ rawTreble, rawBass, measureRawWidth });
-    }
+      this.staffLayer.appendChild(noteGroup);
+    });
+  };
 
-    // --- STEP 2: CALCULATE GLOBAL SCALE RATIO ---
-    const globalScaleRatio = targetTotalWidth / totalRawWidth;
+  private renderPitchedGroup(
+    note: PositionedNote,
+    staffType: StaffTypes,
+    noteGroup: SVGGElement
+  ) {
+    const noteheadGlyph = getNoteheadGlyphByDuration(note.duration);
+    const noteheadWidth = noteheadGlyph.glyphWidth;
 
-    // --- STEP 3: RENDER LOOP ---
-    // This cursor tracks where the previous measure finished drawing
-    let currentMeasureStartX = startX;
+    const vsNotes: VSNoteObj[] = note.pitches.map(pitch =>
+      this.convertPitchToVSNoteObj(pitch, note.duration)
+    );
 
-    for (let i = 0; i < parsedMeasuresData.length; i++) {
-      const { rawTreble, rawBass, measureRawWidth } = parsedMeasuresData[i];
+    // Sorts highest to lowest pitch
+    sortVSNoteObjs(vsNotes);
 
-      // 1. Scale and Render Treble
-      const justifiedTreble = scaleMeasureSpacing(rawTreble, currentMeasureStartX, globalScaleRatio);
-      const trebleElements = renderPositionedNotes(justifiedTreble, this.systemStaffType, 0, this.svgRendererInstance);
-      this.svgRendererInstance.commitElementsToDOM(trebleElements, this.staffLayer);
+    const offsetMap = calculateSecondIntervalCollisions(vsNotes, noteheadWidth);
+    const accidentalMap = calculateAccidentalCollisions(vsNotes);
 
-      // 2. Scale and Render Bass
-      if (this.systemStaffType === "grand" && rawBass) {
-        const justifiedBass = scaleMeasureSpacing(rawBass, currentMeasureStartX, globalScaleRatio);
+    let averageStep = 0;
+    let highestY = Infinity;
+    let lowestY = -Infinity;
 
-        const trebleStaffHeight = (STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING;
-        const bassStaffY = trebleStaffHeight + GRAND_STAFF_SPACING;
+    // Draw the notes
+    vsNotes.forEach((vsNote, index) => {
+      const step = getPitchStepClefDifference(vsNote.letter, vsNote.octave, staffType);
+      const y = getPitchYCoordinate(step);
 
-        const bassElements = renderPositionedNotes(justifiedBass, "bass", bassStaffY, this.svgRendererInstance);
-        this.svgRendererInstance.commitElementsToDOM(bassElements, this.staffLayer);
+      averageStep += step;
+      if (y < highestY) highestY = y;
+      if (y > lowestY) lowestY = y;
+
+      // Pull from the dictionaries, default to 0 if no collision/shift is needed
+      const xOffset = offsetMap[index] || 0;
+      const colIndex = accidentalMap[index] || 0;
+
+      drawNotehead(note.duration, xOffset, y, noteGroup);
+
+      drawLedgerLines({
+        noteheadWidth,
+        xPos: xOffset,
+        rawPitchStep: step,
+        group: noteGroup,
+        svgRendererRef: this.svgRendererInstance
+      });
+
+      if (vsNote.accidental) {
+        const accidentalGlyph = getAccidentalGlyph(vsNote.accidental);
+
+        const baseX = -(accidentalGlyph.glyphWidth + ACCIDENTAL_X_OFFSET);
+        const columnShift = colIndex * (accidentalGlyph.glyphWidth + ACCIDENTAL_X_OFFSET);
+
+        drawAccidental(vsNote.accidental, baseX - columnShift, y, noteGroup);
+      }
+    });
+
+    // Stem / Flag drawing
+    if (note.duration !== "w") {
+      const avgStep = averageStep / vsNotes.length;
+      const isStemDown = avgStep < 4;
+
+      let stemX: number, stemStartY: number, stemEndY: number;
+
+      if (isStemDown) {
+        stemX = LEDGER_LINE_X_OFFSET;
+        stemStartY = highestY;
+        stemEndY = lowestY + NOTE_STEM_LENGTH;
+      } else {
+        stemX = noteheadWidth - LEDGER_LINE_X_OFFSET;
+        stemStartY = lowestY;
+        stemEndY = highestY - NOTE_STEM_LENGTH;
       }
 
-      // 3. Draw Barline and Advance Cursor
-      const measureScaledWidth = measureRawWidth * globalScaleRatio;
-      const halfPaddingPerMeasure = paddingPerMeasure / 2;
+      drawStem({
+        startY: stemStartY,
+        endY: stemEndY,
+        xPos: stemX,
+        group: noteGroup,
+        svgRendererRef: this.svgRendererInstance
+      });
 
-      // Place the barline exactly in the middle of our padding
-      let barlineX = currentMeasureStartX + measureScaledWidth + halfPaddingPerMeasure;
-
-      if (i === parsedMeasuresData.length - 1) barlineX += halfPaddingPerMeasure;
-      drawBarLine(this.svgRendererInstance, this.staffLayer, this.systemStaffType, barlineX);
-
-      // Update the cursor so the next measure starts immediately after the barline's padding
-      currentMeasureStartX = barlineX + halfPaddingPerMeasure;
+      if (note.duration === "e" || note.duration === "s") {
+        drawFlag({
+          duration: note.duration,
+          isStemDown,
+          xPos: stemX,
+          yPos: stemEndY,
+          group: noteGroup
+        });
+      }
     }
   }
+
+  private convertPitchToVSNoteObj(pitchStr: string, duration: NoteDurations): VSNoteObj {
+    const letter = pitchStr.charAt(0).toUpperCase();
+    const octave = parseInt(pitchStr.slice(-1), 10);
+
+    const accidentalSlice = pitchStr.slice(1, -1);
+    const accidental = accidentalSlice.length > 0 ? accidentalSlice : undefined;
+
+    return {
+      letter,
+      octave,
+      accidental,
+      duration
+    };
+  }
+
+  testMethod(trebleMeasures: string[], bassMeasures: string[] = []) {
+    const systemLayout = this.scoreFormatterInstance.formatSystem(trebleMeasures, bassMeasures, this.systemStaffType);
+
+    const trebleStaffHeight = (STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING;
+    const bassStaffY = trebleStaffHeight + GRAND_STAFF_SPACING;
+
+    systemLayout.measures.forEach(measure => {
+      measure.staves.forEach(staff => {
+        const yOffset = staff.clef === "bass" ? bassStaffY : 0;
+        this.renderPositionedNotes(staff.notesData, staff.clef, yOffset);
+      });
+
+      drawBarLine(this.svgRendererInstance, this.staffLayer, this.systemStaffType, measure.barlineX);
+    });
+  };
 
   destroy() {
     this.svgRendererInstance.destroy();

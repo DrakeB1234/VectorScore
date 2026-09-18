@@ -26,13 +26,13 @@ export function drawStaff(
     const staffLinesObjTreble = drawStaffLines(svgRendererRef, staffGroup, svgWidth, 0);
     totalHeight += staffLinesObjTreble.height;
 
-    drawClefOnStaff(svgRendererRef, staffGroup, "treble");
+    drawClefOnStaff(staffGroup, "treble");
 
     currentY += staffLinesObjTreble.height + GRAND_STAFF_SPACING;
     const staffLinesObjBass = drawStaffLines(svgRendererRef, staffGroup, svgWidth, currentY);
     totalHeight += staffLinesObjBass.height + GRAND_STAFF_SPACING;
 
-    drawClefOnStaff(svgRendererRef, staffGroup, "bass", currentY);
+    drawClefOnStaff(staffGroup, "bass", currentY);
   }
   else {
     const staffType = systemStaffType as StaffTypes;
@@ -40,7 +40,7 @@ export function drawStaff(
     const staffObj = drawStaffLines(svgRendererRef, staffGroup, svgWidth, 0);
     totalHeight += staffObj.height;
 
-    drawClefOnStaff(svgRendererRef, staffGroup, staffType);
+    drawClefOnStaff(staffGroup, staffType);
   }
 
   // Apply padding on top / bottom of new staff
@@ -79,7 +79,6 @@ export function drawStaffLines(
 // Doesn't rely on preset offset for clefs, instead relies on STAFF_PADDING to handle overflow
 // TEMP, AVOIDS USING SVGRENDERER METHOD FOR NEW DEV VERSION
 export function drawClefOnStaff(
-  svgRendererRef: SVGRenderer,
   staffGroup: SVGGElement,
   staffType: StaffTypes,
   yOffset?: number
@@ -90,8 +89,6 @@ export function drawClefOnStaff(
     y: yOffset,
     x: CLEF_X_OFFSET
   });
-
-  // svgRendererRef.drawGlyph(clefGlpyh, staffGroup);
 }
 
 export function drawBarLine(
