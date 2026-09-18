@@ -92,7 +92,7 @@ export function calculateMeasureSpacing(notes: ParsedNote[]) {
   let currentX = 0;
   const positionedNotes: PositionedNote[] = [];
 
-  for (const note of notes) {
+  notes.forEach(note => {
     positionedNotes.push({
       ...note,
       x: currentX
@@ -100,7 +100,7 @@ export function calculateMeasureSpacing(notes: ParsedNote[]) {
 
     let noteWidth = noteDurationPositioningMap[note.duration];
     currentX += noteWidth;
-  }
+  });
 
   return {
     positionedNotes,

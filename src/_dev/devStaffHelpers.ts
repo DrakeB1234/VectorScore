@@ -8,6 +8,7 @@ export type StaffTypes = "treble" | "bass" | "alto";
 export const BASE_STAFF_PADDING = 36;
 export const GRAND_STAFF_SPACING = 60;
 export const BARLINE_MEASURE_PADDING = 20;
+export const CLEF_X_OFFSET = 10;
 
 export function drawStaff(
   systemStaffType: SystemStaffTypes,
@@ -31,7 +32,7 @@ export function drawStaff(
     const staffLinesObjBass = drawStaffLines(svgRendererRef, staffGroup, svgWidth, currentY);
     totalHeight += staffLinesObjBass.height + GRAND_STAFF_SPACING;
 
-    drawClefOnStaff(svgRendererRef, staffGroup, "bass", { y: currentY });
+    drawClefOnStaff(svgRendererRef, staffGroup, "bass", currentY);
   }
   else {
     const staffType = systemStaffType as StaffTypes;
@@ -81,19 +82,13 @@ export function drawClefOnStaff(
   svgRendererRef: SVGRenderer,
   staffGroup: SVGGElement,
   staffType: StaffTypes,
-  offsets?: {
-    x?: number,
-    y?: number,
-  }
+  yOffset?: number
 ) {
-
-  const xOffset = offsets?.x ?? 0;
-  const yOffset = offsets?.y ?? 0;
 
   const glyphEntry = DEV_GLYPH_CLEF_MAP[staffType];
   drawDevGlyph(glyphEntry, staffGroup, {
     y: yOffset,
-    x: xOffset
+    x: CLEF_X_OFFSET
   });
 
   // svgRendererRef.drawGlyph(clefGlpyh, staffGroup);

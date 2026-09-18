@@ -105,6 +105,78 @@ export default class DevStaff {
     const barlineX = maxNextStartX + BARLINE_MEASURE_PADDING;
 
     drawBarLine(this.svgRendererInstance, this.staffLayer, this.systemStaffType, barlineX);
+  };
+
+  testMethodMultiple(trebleMeasures: string[], bassMeasures: string[] = []) {
+    const startX = 100;
+
+    // Total padding we want per measure (e.g., 20px before the barline, 20px after)
+    const paddingPerMeasure = 40;
+
+    // The total horizontal real estate we are allowed to use for notes
+    const targetTotalWidth = this.options.width - startX - (paddingPerMeasure * trebleMeasures.length);
+
+    // --- STEP 1: PRE-CALCULATE RAW WIDTHS ---
+    let totalRawWidth = 0;
+    const parsedMeasuresData = [];
+
+    for (let i = 0; i < trebleMeasures.length; i++) {
+      const parsedTreble = measureInputNotesParser(trebleMeasures[i]);
+      const rawTreble = calculateMeasureSpacing(parsedTreble);
+
+      let rawBass = null;
+      let measureRawWidth = rawTreble.rawWidth;
+
+      // Handle grand staff syncing for this specific measure index
+      if (this.systemStaffType === "grand" && bassMeasures[i]) {
+        const parsedBass = measureInputNotesParser(bassMeasures[i]);
+        rawBass = calculateMeasureSpacing(parsedBass);
+        measureRawWidth = Math.max(measureRawWidth, rawBass.rawWidth);
+      }
+
+      totalRawWidth += measureRawWidth;
+      parsedMeasuresData.push({ rawTreble, rawBass, measureRawWidth });
+    }
+
+    // --- STEP 2: CALCULATE GLOBAL SCALE RATIO ---
+    const globalScaleRatio = targetTotalWidth / totalRawWidth;
+
+    // --- STEP 3: RENDER LOOP ---
+    // This cursor tracks where the previous measure finished drawing
+    let currentMeasureStartX = startX;
+
+    for (let i = 0; i < parsedMeasuresData.length; i++) {
+      const { rawTreble, rawBass, measureRawWidth } = parsedMeasuresData[i];
+
+      // 1. Scale and Render Treble
+      const justifiedTreble = scaleMeasureSpacing(rawTreble, currentMeasureStartX, globalScaleRatio);
+      const trebleElements = renderPositionedNotes(justifiedTreble, this.systemStaffType, 0, this.svgRendererInstance);
+      this.svgRendererInstance.commitElementsToDOM(trebleElements, this.staffLayer);
+
+      // 2. Scale and Render Bass
+      if (this.systemStaffType === "grand" && rawBass) {
+        const justifiedBass = scaleMeasureSpacing(rawBass, currentMeasureStartX, globalScaleRatio);
+
+        const trebleStaffHeight = (STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING;
+        const bassStaffY = trebleStaffHeight + GRAND_STAFF_SPACING;
+
+        const bassElements = renderPositionedNotes(justifiedBass, "bass", bassStaffY, this.svgRendererInstance);
+        this.svgRendererInstance.commitElementsToDOM(bassElements, this.staffLayer);
+      }
+
+      // 3. Draw Barline and Advance Cursor
+      const measureScaledWidth = measureRawWidth * globalScaleRatio;
+      const halfPaddingPerMeasure = paddingPerMeasure / 2;
+
+      // Place the barline exactly in the middle of our padding
+      let barlineX = currentMeasureStartX + measureScaledWidth + halfPaddingPerMeasure;
+
+      if (i === parsedMeasuresData.length - 1) barlineX += halfPaddingPerMeasure;
+      drawBarLine(this.svgRendererInstance, this.staffLayer, this.systemStaffType, barlineX);
+
+      // Update the cursor so the next measure starts immediately after the barline's padding
+      currentMeasureStartX = barlineX + halfPaddingPerMeasure;
+    }
   }
 
   destroy() {
