@@ -2,15 +2,6 @@ import { NAMESPACE } from "../constants";
 import { type GlyphDef } from "../glyphs";
 
 export const SVG_HREF = "http://www.w3.org/2000/svg";
-const VIEWBOX_PADDING = 2;
-
-type SVGRendererOptions = {
-  width: number;
-  height: number;
-  scale: number;
-  useGlyphs: GlyphDef[];
-  svgAutoFill: boolean;
-}
 
 type DrawGlyphOptions = {
   yOffset?: number;
@@ -48,40 +39,27 @@ type DrawTextOptions = {
 
 export default class SVGRenderer {
   private rootElementRef: HTMLElement;
-  private svgElementRef: SVGElement;
+  svgElementRef: SVGElement;
 
   // Layers
-  private parentGroupContainer: SVGGElement;
   private layers: Record<string, SVGGElement> = {};
 
   // Positioning variables
-  private width: number;
-  private scale: number;
-  private totalYOffset: number = 0;
-  private totalHeight: number = 0;
+  private viewBoxWidth: number = 0;
+  private viewBoxHeight: number = 0;
+  private scale: number = 1;
 
   // Setups root SVG element and layers, sets attributes for scaling, creates defs for glyphs
   // Does not append to DOM automatically, must be done manually with commitElementsToDOM and passing rootSvgElement
   // from get rootSvgElement().
   // HEIGHT and YOfsset should be set externally, values are calculated internally.
-  constructor(rootElementCtx: HTMLElement, options: SVGRendererOptions) {
+  constructor(rootElementCtx: HTMLElement, useGlyphs?: GlyphDef[]) {
     this.rootElementRef = rootElementCtx;
-    this.width = options.width;
-    this.scale = options.scale;
 
     this.svgElementRef = document.createElementNS(SVG_HREF, "svg");
     this.svgElementRef.classList.add(`${NAMESPACE}-svg-renderer-root`);
 
-    // SET ROOT SVG ATTRIBUTES, WIDTH/HEIGHT * SCALE APPLIED AFTER STAFF IS DRAWN
-    if (options.svgAutoFill) {
-      this.svgElementRef.style.maxWidth = `100%`;
-      this.svgElementRef.style.height = `auto`;
-    }
-
-    // CREATE DEFS THEN PARENT GROUP IN ORDER
-    this.makeGlyphDefs(options.useGlyphs);
-    this.parentGroupContainer = this.createGroup("svg-renderer-parent");
-    this.svgElementRef.appendChild(this.parentGroupContainer);
+    if (useGlyphs) this.makeGlyphDefs(useGlyphs);
   }
 
   // Creates SVG defs for all glyphs in GLYPH_ENTRIES, applies global scale and offsets, appends to root SVG
@@ -99,7 +77,7 @@ export default class SVGRenderer {
       defsElement.appendChild(path);
     });
 
-    this.rootSvgElement.appendChild(defsElement);
+    this.svgElementRef.appendChild(defsElement);
   }
 
   private addNamespacedClassesToElement(classes: string | string[], parent: SVGElement) {
@@ -107,6 +85,38 @@ export default class SVGRenderer {
     classesArr.forEach(className => parent.classList.add(`${NAMESPACE}-${className}`));
   }
 
+  setRootSVGSizing(width: number, height: number, scale: number) {
+    const scaledWidth = Math.round(width * scale);
+    const scaledHeight = Math.round(height * scale);
+
+    this.svgElementRef.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    this.svgElementRef.setAttribute("width", scaledWidth.toString());
+    this.svgElementRef.setAttribute("height", scaledHeight.toString());
+
+    this.viewBoxWidth = width;
+    this.viewBoxHeight = height;
+    this.scale = scale;
+  }
+
+  setRootSVGHeight(newHeight: number) {
+    const scaledHeight = newHeight * this.scale;
+
+    this.svgElementRef.setAttribute("viewBox", `0 0 ${this.viewBoxWidth} ${newHeight}`);
+    this.svgElementRef.setAttribute("height", scaledHeight.toString());
+
+    this.viewBoxHeight = newHeight;
+  }
+
+  setSVGAutoFill(autoFill: boolean) {
+    if (autoFill) {
+      this.svgElementRef.style.maxWidth = "100%";
+      this.svgElementRef.style.height = "auto";
+    }
+    else {
+      this.svgElementRef.style.maxWidth = "";
+      this.svgElementRef.style.height = "";
+    };
+  }
 
   /**
    * Creates a layer that is appended to parent element.
@@ -120,7 +130,7 @@ export default class SVGRenderer {
     const layer = document.createElementNS(SVG_HREF, "g");
     layer.classList.add(`${NAMESPACE}-${layerName}-layer`);
     this.layers[layerName] = layer;
-    this.parentGroupContainer.appendChild(this.layers[layerName]);
+    this.svgElementRef.appendChild(this.layers[layerName]);
 
     return layer;
   }
@@ -151,38 +161,8 @@ export default class SVGRenderer {
     parent.appendChild(fragment);
   }
 
-  addTotalRootSvgHeight(amount: number) {
-    this.totalHeight += amount;
-  }
+  // ==== Drawing Methods ====
 
-  setTotalRootSvgHeight(amount: number) {
-    this.totalHeight = amount;
-  }
-
-  addTotalRootSvgYOffset(amount: number) {
-    this.totalYOffset += amount;
-  }
-
-  applySizingToRootSvg() {
-    this.parentGroupContainer.setAttribute("transform", `translate(${VIEWBOX_PADDING / 2}, ${this.totalYOffset})`);
-
-    let newWidth = Math.round(this.width * this.scale);
-    const newHeight = (this.totalHeight + this.totalYOffset) * this.scale;
-
-    // Apply padding to sides to prevent clipping of staff end lines
-    newWidth += VIEWBOX_PADDING;
-
-    this.svgElementRef.setAttribute("width", newWidth.toString());
-    this.svgElementRef.setAttribute("height", newHeight.toString());
-
-    this.svgElementRef.setAttribute("viewBox", `0 0 ${this.width + VIEWBOX_PADDING} ${this.totalHeight + this.totalYOffset}`);
-  }
-
-  get rootSvgElement(): SVGElement { return this.svgElementRef; }
-  get parentGroupElement(): SVGElement { return this.parentGroupContainer; }
-
-
-  // Drawing Methods
   drawLine(x1: number, y1: number, x2: number, y2: number, parent: SVGElement, options?: DrawLineOptions) {
     const strokeWidth = options?.strokeWidth ?? 1;
 

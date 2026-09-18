@@ -36,34 +36,26 @@ export default class GrandStaffStrategy implements StaffStrategy {
     return yCurrent - STAFF_LINE_SPACING;
   }
 
-  drawStaff = (width: number) => {
+  drawStaff = (width: number, staffLayer: SVGGElement) => {
     this.width = width;
-    const musicStaffLayer = this.rendererRef.createLayer("staff");
 
-    let trebleStaffHeight = this.drawStaffLines(0, musicStaffLayer);
-    let bassStaffHeight = this.drawStaffLines(trebleStaffHeight + GRAND_STAFF_SPACING, musicStaffLayer);
+    let trebleStaffHeight = this.drawStaffLines(0, staffLayer);
+    let bassStaffHeight = this.drawStaffLines(trebleStaffHeight + GRAND_STAFF_SPACING, staffLayer);
     // Draw Staff end lines
-    this.rendererRef.drawLine(0, 0, 0, bassStaffHeight, musicStaffLayer);
-    this.rendererRef.drawLine(this.width, 0, this.width, bassStaffHeight, musicStaffLayer);
+    this.rendererRef.drawLine(0, 0, 0, bassStaffHeight, staffLayer);
+    this.rendererRef.drawLine(this.width, 0, this.width, bassStaffHeight, staffLayer);
 
     this.trebleStaffHeight = trebleStaffHeight;
 
     // Add height from staff lines
     let newHeight = bassStaffHeight;
-    let newYOffset = 1;
 
     const trebleGlpyh = getGlyphNameByClef("treble");
     const bassGlpyh = getGlyphNameByClef("bass");
-    this.rendererRef.drawGlyph(trebleGlpyh, musicStaffLayer);
-    this.rendererRef.drawGlyph(bassGlpyh, musicStaffLayer, { yOffset: trebleStaffHeight + GRAND_STAFF_SPACING });
+    this.rendererRef.drawGlyph(trebleGlpyh, staffLayer);
+    this.rendererRef.drawGlyph(bassGlpyh, staffLayer, { yOffset: trebleStaffHeight + GRAND_STAFF_SPACING });
 
-
-    // One added for last staff line to prevent clipping
-    newHeight += this.params.paddingBottom + 1;
-    newYOffset += this.params.paddingTop;
-
-    this.rendererRef.addTotalRootSvgHeight(newHeight);
-    this.rendererRef.addTotalRootSvgYOffset(newYOffset);
+    return newHeight;
   }
 
   shouldNoteFlip(noteYPos: number): boolean {

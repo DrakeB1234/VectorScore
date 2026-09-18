@@ -1,7 +1,7 @@
 import type { AccidentalType, NoteObj, StaffTypes } from "../types";
 
 export interface StaffStrategy {
-  drawStaff(width: number): void;
+  drawStaff(width: number, staffLayer: SVGGElement): number;
   calculateNoteYPos(note: Omit<NoteObj, "accidental">): number;
   getLedgerLinesX(note: Omit<NoteObj, "accidental">, yPos: number): LedgerLineEntry[];
   shouldNoteFlip(noteYPos: number): boolean;

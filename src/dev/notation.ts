@@ -48,10 +48,11 @@ const musicStaffGrand = new MusicStaff(rootGrand, {
   staffType: "grand",
   keySignature: "Eb",
   width: 350,
-  scale: 1,
-  spaceAbove: 0,
-  spaceBelow: 3,
+  scale: 1.4,
   noteStartX: 0,
+
+  // spaceAbove: 0,
+  // spaceBelow: 3,
 });
 
 const musicStaffTreble = new MusicStaff(rootTreble, {
@@ -60,8 +61,8 @@ const musicStaffTreble = new MusicStaff(rootTreble, {
   staffType: "treble",
   keySignature: "G",
 
-  spaceBelow: 2,
-  spaceAbove: 4
+  // spaceBelow: 2,
+  // spaceAbove: 4
 });
 
 const musicStaffBass = new MusicStaff(rootBass, {
@@ -70,8 +71,8 @@ const musicStaffBass = new MusicStaff(rootBass, {
   staffType: "bass",
   keySignature: "G",
 
-  spaceAbove: 2,
-  spaceBelow: 0,
+  // spaceAbove: 2,
+  // spaceBelow: 0,
 });
 
 const musicStaffAlto = new MusicStaff(rootAlto, {
@@ -80,8 +81,8 @@ const musicStaffAlto = new MusicStaff(rootAlto, {
   staffType: "alto",
   keySignature: "F#",
 
-  spaceAbove: 1,
-  spaceBelow: 1,
+  // spaceAbove: 1,
+  // spaceBelow: 1,
 });
 
 const scrollingStaff = new ScrollingStaff(rootScrolling, {
@@ -89,9 +90,10 @@ const scrollingStaff = new ScrollingStaff(rootScrolling, {
   scale: 1.4,
   noteStartX: 20,
   staffType: "grand",
-  spaceAbove: 1,
-  spaceBelow: 1,
   onNotesOut: onScrollingStaffOut
+
+  // spaceAbove: 1,
+  // spaceBelow: 1,
 });
 
 const rhythmStaff = new RhythmStaff(rootRhythm, {
@@ -99,8 +101,9 @@ const rhythmStaff = new RhythmStaff(rootRhythm, {
   scale: 1.4,
   topNumber: 4,
   barsCount: 2,
-  spaceAbove: 0,
-  spaceBelow: 0,
+
+  // spaceAbove: 0,
+  // spaceBelow: 0,
 });
 
 let selectedStaff: SelectedStaff = {

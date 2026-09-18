@@ -57,6 +57,8 @@ export default class GuitarChord {
   private svgRendererInstance: SVGRenderer;
   private options: Required<GuitarChordOptions>;
 
+  private rootLayer: SVGGElement;
+
   private chordEntries: ChordEntry[] = [];
   private cursorX: number = 0;
   private cursorY: number = 0;
@@ -85,6 +87,9 @@ export default class GuitarChord {
       ...options
     } as Required<GuitarChordOptions>;
 
+    this.svgRendererInstance = new SVGRenderer(rootElementCtx);
+    const rootSvgElement = this.svgRendererInstance.svgElementRef;
+
     this.diagramWidth = (this.options.stringCount - 1) * GUITAR_STRING_SPACING;
     this.diagramHeight = this.options.fretCount * GUITAR_FRET_SPACING;
     this.gridTopY = GUITAR_LABEL_HEIGHT + GUITAR_NUT_SPACE_ABOVE;
@@ -101,21 +106,15 @@ export default class GuitarChord {
       throw new Error(`The configured width (${this.options.width}) is too small to fit a single ${this.options.stringCount}-string diagram (needs at least ${this.diagramWidth}). Increase 'width'.`);
     }
 
-    // Create the SVGRenderer instance with its options passed into this class.
-    // The 'staff' layer is used for chord grids, and 'notes' for markers/dots - reusing
-    // SVGRenderer's generic layers rather than introducing guitar-specific ones.
-    this.svgRendererInstance = new SVGRenderer(rootElementCtx, {
-      width: this.options.width,
-      height: 100,
-      scale: this.options.scale,
-      useGlyphs: [],
-      svgAutoFill: this.options.svgAutoFill
-    });
-    const rootSvgElement = this.svgRendererInstance.rootSvgElement;
+    // Parent group in which all elements will be appended to
+    this.rootLayer = this.svgRendererInstance.createLayer("guitar-chords");
+    rootSvgElement.appendChild(this.rootLayer);
 
-    this.svgRendererInstance.setTotalRootSvgHeight(this.rowHeight);
-    this.svgRendererInstance.applySizingToRootSvg();
+    this.svgRendererInstance.setRootSVGSizing(this.options.width, this.rowHeight, this.options.scale);
+    this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
+
     this.svgRendererInstance.commitElementsToDOM(rootSvgElement);
+
   }
 
   private getDotsToHide(barres?: GuitarBarreDef[]): Set<string> {
@@ -337,8 +336,7 @@ export default class GuitarChord {
   // Called after any add/remove/change so the layout never has to track pos.
   private relayoutChords() {
     if (this.chordEntries.length === 0) {
-      this.svgRendererInstance.setTotalRootSvgHeight(0);
-      this.svgRendererInstance.applySizingToRootSvg();
+      this.svgRendererInstance.setRootSVGHeight(0);
       return;
     }
 
@@ -391,8 +389,7 @@ export default class GuitarChord {
     });
 
     const totalHeight = this.cursorY + this.rowHeight;
-    this.svgRendererInstance.setTotalRootSvgHeight(totalHeight);
-    this.svgRendererInstance.applySizingToRootSvg();
+    this.svgRendererInstance.setRootSVGHeight(totalHeight);
   }
 
   /**
@@ -432,8 +429,7 @@ export default class GuitarChord {
     const resolvedOptions = { startFret, label, barres };
 
     const gElement = this.renderChordDiagram(fretParts, fingerParts, resolvedOptions);
-    const parent = this.svgRendererInstance.parentGroupElement
-    this.svgRendererInstance.commitElementsToDOM(gElement, parent);
+    this.svgRendererInstance.commitElementsToDOM(gElement, this.rootLayer);
 
     this.chordEntries.push({
       gElement,
@@ -492,8 +488,7 @@ export default class GuitarChord {
     const resolvedOptions = { ...options, label, startFret };
 
     const gElement = this.renderChordDiagram(fretParts, fingerParts, resolvedOptions);
-    const parent = this.svgRendererInstance.parentGroupElement;
-    parent.replaceChild(gElement, oldEntry.gElement);
+    this.rootLayer.replaceChild(gElement, oldEntry.gElement);
 
     this.chordEntries[chordIndex] = {
       gElement,
@@ -527,13 +522,12 @@ export default class GuitarChord {
    * @returns void
   */
   clearAllChords() {
-    this.svgRendererInstance.parentGroupElement.replaceChildren();
+    this.rootLayer.replaceChildren();
     this.chordEntries = [];
     this.cursorX = 0;
     this.cursorY = 0;
 
-    this.svgRendererInstance.setTotalRootSvgHeight(this.rowHeight);
-    this.svgRendererInstance.applySizingToRootSvg();
+    this.svgRendererInstance.setRootSVGHeight(0);
   }
 
   /**

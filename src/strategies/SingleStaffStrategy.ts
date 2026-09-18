@@ -19,33 +19,25 @@ export default class SingleStaffStrategy implements StaffStrategy {
     this.params = params;
   }
 
-  drawStaff = (width: number) => {
-    const musicStaffLayer = this.rendererRef.createLayer("staff");
-
+  drawStaff = (width: number, staffLayer: SVGGElement) => {
     let yCurrent = 0;
 
     for (let i = 0; i < STAFF_LINE_COUNT; i++) {
-      this.rendererRef.drawLine(0, yCurrent, width, yCurrent, musicStaffLayer);
+      this.rendererRef.drawLine(0, yCurrent, width, yCurrent, staffLayer);
       yCurrent += STAFF_LINE_SPACING;
     }
     // Staff End lines
-    this.rendererRef.drawLine(0, 0, 0, yCurrent - STAFF_LINE_SPACING, musicStaffLayer);
-    this.rendererRef.drawLine(width, 0, width, yCurrent - STAFF_LINE_SPACING, musicStaffLayer);
+    this.rendererRef.drawLine(0, 0, 0, yCurrent - STAFF_LINE_SPACING, staffLayer);
+    this.rendererRef.drawLine(width, 0, width, yCurrent - STAFF_LINE_SPACING, staffLayer);
 
     // Add height from staff lines, One added for line thickness compensation
     let newHeight = yCurrent - STAFF_LINE_SPACING + 1;
-    let newYOffset = 1;
 
     // Add clef
     const clefGlpyh = getGlyphNameByClef(this.params.staffType);
-    this.rendererRef.drawGlyph(clefGlpyh, musicStaffLayer);
+    this.rendererRef.drawGlyph(clefGlpyh, staffLayer);
 
-    newHeight += this.params.paddingTop + this.params.paddingBottom;
-    newYOffset += this.params.paddingTop;
-
-    // Add padding to height and y offset to root svg
-    this.rendererRef.addTotalRootSvgHeight(newHeight);
-    this.rendererRef.addTotalRootSvgYOffset(newYOffset);
+    return newHeight;
   }
 
   shouldNoteFlip(noteYPos: number): boolean {

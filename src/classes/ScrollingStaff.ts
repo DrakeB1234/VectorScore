@@ -12,10 +12,14 @@ export type ScrollingStaffOptions = {
   scale?: number;
   noteStartX?: number;
   staffType?: StaffTypes;
-  spaceAbove?: number;
-  spaceBelow?: number;
+  padding?: number;
   svgAutoFill?: boolean;
   onNotesOut?: () => void;
+
+  /** @deprecated Use `padding` instead. */
+  spaceAbove?: number;
+  /** @deprecated Use `padding` instead. */
+  spaceBelow?: number;
 };
 
 const USE_GLPYHS: GlyphDef[] = [
@@ -66,21 +70,16 @@ export default class ScrollingStaff {
       scale: 1,
       noteStartX: 0,
       staffType: "treble",
+      padding: 20,
+      svgAutoFill: true,
       spaceAbove: 0,
       spaceBelow: 0,
-      svgAutoFill: true,
       ...options
     } as Required<ScrollingStaffOptions>;
 
     // Create the SVGRenderer instance with its options passed into this class
-    this.svgRendererInstance = new SVGRenderer(rootElementCtx, {
-      width: this.options.width,
-      height: 100,
-      scale: this.options.scale,
-      useGlyphs: USE_GLPYHS,
-      svgAutoFill: this.options.svgAutoFill
-    });
-    const rootSvgElement = this.svgRendererInstance.rootSvgElement;
+    this.svgRendererInstance = new SVGRenderer(rootElementCtx, USE_GLPYHS);
+    const rootSvgElement = this.svgRendererInstance.svgElementRef;
 
     // Create the strategy instance based on the staffType
     switch (this.options.staffType) {
@@ -99,35 +98,37 @@ export default class ScrollingStaff {
       default:
         throw new Error(`The staff type ${this.options.staffType} is not supported. Please use "treble", "bass", "alto", or "grand".`);
     };
-    this.strategyInstance.drawStaff(this.options.width);
-
     // Create instance of NoteRenderer, with ref to svgRenderer and the strategy
     this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance, this.strategyInstance);
 
-    // Determine staff spacing positioning
-    if (this.options.spaceAbove) {
-      const yOffset = this.options.spaceAbove * (STAFF_LINE_SPACING);
-      this.svgRendererInstance.addTotalRootSvgYOffset(yOffset);
-    }
-    if (this.options.spaceBelow) {
-      let height = this.options.spaceBelow * (STAFF_LINE_SPACING);
-      // Due to how different grand staff is setup, handle edge case of bottom spacing
-      if (this.options.staffType === "grand") height -= (STAFF_LINE_SPACING / 2)
-      this.svgRendererInstance.addTotalRootSvgHeight(height);
-    }
+    // Create layers
+    const staffLayer = this.svgRendererInstance.createLayer("staff");
+    const notesLayer = this.svgRendererInstance.createLayer("notes");
 
     // Add class for transition css animation IF provided
-    const notesLayer = this.svgRendererInstance.createLayer("notes");
     this.notesLayer = notesLayer;
-
     notesLayer.classList.add(`${NAMESPACE}-scrolling-notes-layer`);
 
-    // Apply note x offset
+    // Determine staff spacing positioning
+    if (this.options.spaceAbove) {
+      this.options.padding += this.options.spaceAbove * STAFF_LINE_SPACING;
+    }
+    if (this.options.spaceBelow) {
+      this.options.padding += this.options.spaceBelow * STAFF_LINE_SPACING;
+    };
+
+    const baseStaffHeight = this.strategyInstance.drawStaff(this.options.width, staffLayer);
     this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX;
-    notesLayer.setAttribute("transform", `translate(${this.noteStartX}, 0)`);
+
+    // Apply note x offset
+    const totalHeight = baseStaffHeight + (this.options.padding * 2);
+    staffLayer.setAttribute("transform", `translate(0, ${this.options.padding})`);
+    notesLayer.setAttribute("transform", `translate(${this.noteStartX}, ${this.options.padding})`);
 
     // Commit to DOM for one batch operation
-    this.svgRendererInstance.applySizingToRootSvg();
+    this.svgRendererInstance.setRootSVGSizing(this.options.width, totalHeight, this.options.scale);
+    this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
+
     this.svgRendererInstance.commitElementsToDOM(rootSvgElement);
   }
 
