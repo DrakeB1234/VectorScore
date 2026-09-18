@@ -172,7 +172,8 @@ export default class SVGRenderer {
     this.parentGroupContainer.setAttribute("transform", `translate(${VIEWBOX_PADDING / 2}, ${this.totalYOffset})`);
 
     let newWidth = Math.round(this.width * this.scale);
-    const newHeight = (this.totalHeight + this.totalYOffset) * this.scale;
+    let newHeight = (this.totalHeight + this.totalYOffset) * this.scale;
+    newHeight = Math.round(newHeight);
 
     // Apply padding to sides to prevent clipping of staff end lines
     newWidth += VIEWBOX_PADDING;

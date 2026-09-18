@@ -271,6 +271,23 @@ select {
   box-sizing: border-box;
 }
 
+/* TEMPORARY HIDE */
+section:not(.dev, .navbar) {
+  display: none;
+}
+
+#staff-root-dev {
+  display: block !important;
+}
+
+#staff-root-dev svg {
+  border: 1px dashed rgba(255, 0, 0, 0.212);
+}
+
+#staff-root-dev svg line {
+  color: black !important;
+}
+
 /* VS TARGETING CLASSES */
 
 div>svg.vs-svg-renderer-root {

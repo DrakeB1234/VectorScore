@@ -1,6 +1,7 @@
 import 'render-scan';
 import "./guitar";
 import "./notation";
+import "../_dev/dev";
 
 // Navbar Functionality
 type Section = "notation" | "guitar";

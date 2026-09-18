@@ -7,7 +7,7 @@ export default defineConfig({
     dts({
       insertTypesEntry: true,
       include: ['src'],
-      exclude: ['dev']
+      exclude: ['dev', '_dev']
     }),
   ],
   publicDir: false,
