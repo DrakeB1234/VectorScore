@@ -110,7 +110,7 @@ let selectedStaff: SelectedStaff = {
 };
 
 changeStaff("grand");
-domElements.inputNotes.value = "C4/E4/G4";
+domElements.inputNotes.value = "D4/F4/A4";
 
 function onScrollingStaffOut() {
   console.log("OUT HANDLED")

@@ -118,11 +118,11 @@ export default class NoteRenderer {
 
     switch (noteObj.duration) {
       case "h":
-        this.svgRendererInstance.drawGlyph("NOTE_HEAD_HALF", noteGroup);
+        this.svgRendererInstance.drawGlyph("NOTEHEAD_HALF", noteGroup);
         this.drawStem(noteGroup, noteFlip);
         break;
       case "q":
-        this.svgRendererInstance.drawGlyph("NOTE_HEAD_QUARTER", noteGroup);
+        this.svgRendererInstance.drawGlyph("NOTEHEAD_BLACK", noteGroup);
         this.drawStem(noteGroup, noteFlip);
         break;
       case "e":
@@ -130,7 +130,7 @@ export default class NoteRenderer {
         else this.svgRendererInstance.drawGlyph("EIGHTH_NOTE", noteGroup);
         break;
       default:
-        this.svgRendererInstance.drawGlyph("NOTE_HEAD_WHOLE", noteGroup);
+        this.svgRendererInstance.drawGlyph("NOTEHEAD_WHOLE", noteGroup);
     };
 
     // Draw accidental, add its offset

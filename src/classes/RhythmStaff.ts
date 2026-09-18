@@ -1,5 +1,5 @@
 import { durationBeatValueMap, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
-import type { GlyphNames } from "../glyphs";
+import { NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_3, TIMESIG_4, type GlyphDef } from "../glyphs";
 import { parseDurationNoteString } from "../helpers/notehelpers";
 import type { NoteDurations } from "../types";
 import SVGRenderer from "./SVGRenderer";
@@ -27,11 +27,10 @@ const STAFF_RIGHT_PADDING = 1;
 
 const CURRENT_BEAT_UI_START_X_POS = NOTE_LAYER_START_X;
 
-const USE_GLPYHS: GlyphNames[] = [
-  "TIME_4", "TIME_3",
-  "NOTE_HEAD_WHOLE", "NOTE_HEAD_HALF", "NOTE_HEAD_QUARTER", "EIGHTH_NOTE",
-  "REST_WHOLE", "REST_HALF", "REST_QUARTER", "REST_EIGHTH"
-];
+const USE_GLPYHS: GlyphDef[] = [
+  NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
+  TIMESIG_3, TIMESIG_4
+]
 
 export default class RhythmStaff {
   private rendererInstance: SVGRenderer;
@@ -82,10 +81,10 @@ export default class RhythmStaff {
     this.rendererInstance.createLayer("ui");
 
     // Determine the time signature, if top number isn't supported throw early
-    let topNumberGlyphName: GlyphNames = "TIME_4";
+    let topNumberGlyphName = "TIMESIG_4";
     switch (this.options.topNumber) {
-      case 3: topNumberGlyphName = "TIME_3"; break;
-      case 4: topNumberGlyphName = "TIME_4"; break;
+      case 3: topNumberGlyphName = "TIMESIG_3"; break;
+      case 4: topNumberGlyphName = "TIMESIG_4"; break;
       default:
         throw new Error(`Time signature ${this.options.topNumber} not supported. Please use either 3 or 4.`);
     };
@@ -109,7 +108,7 @@ export default class RhythmStaff {
     staffLayer.appendChild(timeSignatureGroup);
     const groupYPos = STAFF_SPACING - TIME_SIGNATURE_HEIGHT;
     this.rendererInstance.drawGlyph(topNumberGlyphName, timeSignatureGroup);
-    this.rendererInstance.drawGlyph("TIME_4", timeSignatureGroup, { yOffset: TIME_SIGNATURE_HEIGHT });
+    this.rendererInstance.drawGlyph("TIMESIG_4", timeSignatureGroup, { yOffset: TIME_SIGNATURE_HEIGHT });
     timeSignatureGroup.setAttribute("transform", `translate(0, ${groupYPos})`);
 
     // Total width minus starting size of the notes (distance from time signature)
