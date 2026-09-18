@@ -186,92 +186,157 @@ function getAccidentalFromPitch(pitch: string) {
   return accidental.length > 0 ? accidental : null;
 };
 
+// Parses through edge cases of rendering rest, chord, or single pitches.
 export function renderPositionedNotes(positionedNotes: ReturnType<typeof calculateMeasureSpacing>, systemStaffType: SystemStaffTypes, svgRendererRef: SVGRenderer) {
   const startX = 60;
-  const parsedStaffType = systemStaffType !== "grand" ? systemStaffType : "treble"
+  const parsedStaffType = systemStaffType !== "grand" ? systemStaffType : "treble";
 
   let noteElements: SVGGElement[] = [];
 
   positionedNotes.positionedNotes.forEach(note => {
     const xPos = startX + note.x;
 
+    const groupType = note.isRest ? "rest" : note.pitches.length > 1 ? "chord" : "note";
+
+    const noteGroup = svgRendererRef.createGroup(groupType);
+    noteGroup.setAttribute(`data-${groupType}`, note.pitches.join(",") + note.duration);
+
+    // Translate the parent note group
+    noteGroup.setAttribute("transform", `translate(${xPos}, 0)`);
+
     if (note.isRest) {
-      const noteGroup = svgRendererRef.createGroup("rest");
-      noteGroup.setAttribute("data-note", note.pitches[0] + note.duration);
-
-      const glyphEntry = getRestGlyphByDuration(note.duration);
-
-      drawDevGlyph(glyphEntry, noteGroup, {
-        x: xPos
-      });
-
-      noteElements.push(noteGroup);
-      return;
-    }
-
-    const noteToRender = note.pitches[0];
-
-    const noteGroup = svgRendererRef.createGroup("note");
-    noteGroup.setAttribute("data-note", noteToRender + note.duration);
-
-    // Get amount of steps for a pitch based off clef type
-    const stepDifference = getPitchStepDifference(noteToRender, parsedStaffType)
-    const yPos = getPitchYCoordinate(stepDifference);
-
-    const noteheadGlyph = getNoteheadGlyphByDuration(note.duration);
-
-    drawDevGlyph(noteheadGlyph, noteGroup, {
-      x: xPos,
-      y: yPos
-    });
-
-    // Draw ledger lines
-    const ledgerYCoords = getLedgerLineYCoords(stepDifference);
-    ledgerYCoords.forEach(ledgerY => {
-      svgRendererRef.drawLine(
-        xPos - LEDGER_LINE_PADDING,
-        ledgerY,
-        xPos + noteheadGlyph.glyphWidth + LEDGER_LINE_PADDING,
-        ledgerY,
-        noteGroup
-      );
-    });
-
-    // Draw stem
-    if (note.duration !== "w") {
-      // Step 4 is the middle line. Step < 4 means above middle line (points down)
-      const isStemDown = stepDifference < 4;
-
-      let stemX: number;
-      let stemStartY: number;
-      let stemEndY: number;
-
-      if (isStemDown) {
-        stemX = xPos + LEDGER_LINE_X_OFFSET;
-        stemStartY = yPos;
-        stemEndY = yPos + STEM_LENGTH;
-      } else {
-        stemX = xPos + noteheadGlyph.glyphWidth - LEDGER_LINE_X_OFFSET;
-        stemStartY = yPos;
-        stemEndY = yPos - STEM_LENGTH;
-      }
-
-      svgRendererRef.drawLine(stemX, stemStartY, stemX, stemEndY, noteGroup);
-    }
-
-    const accidental = getAccidentalFromPitch(noteToRender);
-    if (accidental) {
-      const glyph = getAccidentalGlyph(accidental);
-      let accidentalX = xPos - (glyph.glyphWidth + ACCIDENTAL_X_OFFSET);
-
-      drawDevGlyph(glyph, noteGroup, {
-        x: accidentalX,
-        y: yPos
-      });
+      renderRest(note, noteGroup);
+    } else {
+      renderPitchedGroup(note, parsedStaffType, noteGroup, svgRendererRef);
     }
 
     noteElements.push(noteGroup);
   });
 
   return noteElements;
+};
+
+function renderPitchedGroup(
+  note: PositionedNote,
+  staffType: StaffTypes,
+  noteGroup: SVGGElement,
+  svgRendererRef: SVGRenderer
+) {
+  const noteheadGlyph = getNoteheadGlyphByDuration(note.duration);
+
+  let averageStep = 0;
+  let highestY = Infinity;
+  let lowestY = -Infinity;
+
+  // Map pitches to a data object so we can manipulate their X-offsets
+  const pitchData = note.pitches.map(pitch => {
+    const step = getPitchStepDifference(pitch, staffType);
+    const y = getPitchYCoordinate(step);
+
+    const accidental = getAccidentalFromPitch(pitch);
+    const accidentalGlyph = accidental ? getAccidentalGlyph(accidental) : null;
+
+    averageStep += step;
+    if (y < highestY) highestY = y;
+    if (y > lowestY) lowestY = y;
+
+    return {
+      pitch,
+      step,
+      y,
+      xOffset: 0,
+      accidental,
+      accidentalGlyph,
+      accidentalColumn: 0
+    };
+  });
+
+  const avgStep = averageStep / note.pitches.length;
+  const isStemDown = avgStep < 4;
+
+  pitchData.sort((a, b) => a.step - b.step);
+
+  // Check for the interval of a second collision
+  for (let i = 0; i < pitchData.length - 1; i++) {
+    if (Math.abs(pitchData[i].step - pitchData[i + 1].step) === 1) {
+      pitchData[i + 1].xOffset = noteheadGlyph.glyphWidth;
+      // Skip the next note so the next don't isn't also shifted if 2nd interval
+      i++;
+    }
+  }
+
+  // Tracking stacked accidentals, to properly offset them in chords if too close
+  const notesWithAccidentals = pitchData.filter(d => d.accidental);
+  const accidentalColumns: number[] = [];
+  notesWithAccidentals.forEach(data => {
+    let placed = false;
+
+    for (let col = 0; col < accidentalColumns.length; col++) {
+      if (Math.abs(data.step - accidentalColumns[col]) >= 5) {
+        accidentalColumns[col] = data.step;
+        data.accidentalColumn = col;
+        placed = true;
+        break;
+      }
+    }
+
+    if (!placed) {
+      accidentalColumns.push(data.step);
+      data.accidentalColumn = accidentalColumns.length - 1;
+    }
+  });
+
+  pitchData.forEach(data => {
+    const finalX = data.xOffset;
+
+    // Draw Notehead
+    drawDevGlyph(noteheadGlyph, noteGroup, { x: finalX, y: data.y });
+
+    // Draw Ledger Lines (centered on the shifted notehead)
+    const ledgerYCoords = getLedgerLineYCoords(data.step);
+    ledgerYCoords.forEach(ledgerY => {
+      svgRendererRef.drawLine(
+        finalX - LEDGER_LINE_PADDING, ledgerY,
+        finalX + noteheadGlyph.glyphWidth + LEDGER_LINE_PADDING, ledgerY,
+        noteGroup
+      );
+    });
+
+    // Draw Accidentals
+    if (data.accidental && data.accidentalGlyph) {
+      const glyph = data.accidentalGlyph;
+
+      // Base x for placing accidental
+      const baseX = -(glyph.glyphWidth + ACCIDENTAL_X_OFFSET);
+      // Shifts determined by data pass earlier, useful for stacked accidental chords
+      const columnShift = data.accidentalColumn * (glyph.glyphWidth + ACCIDENTAL_X_OFFSET);
+      const accidentalX = baseX - columnShift;
+
+      drawDevGlyph(glyph, noteGroup, { x: accidentalX, y: data.y });
+    }
+  });
+
+  // Draw stem (across entire chord if applicable)
+  if (note.duration !== "w") {
+    let stemX: number;
+    let stemStartY: number;
+    let stemEndY: number;
+
+    if (isStemDown) {
+      stemX = LEDGER_LINE_X_OFFSET;
+      stemStartY = highestY;
+      stemEndY = lowestY + STEM_LENGTH;
+    } else {
+      stemX = noteheadGlyph.glyphWidth - LEDGER_LINE_X_OFFSET;
+      stemStartY = lowestY;
+      stemEndY = highestY - STEM_LENGTH;
+    }
+
+    svgRendererRef.drawLine(stemX, stemStartY, stemX, stemEndY, noteGroup);
+  }
+}
+
+function renderRest(note: PositionedNote, noteGroup: SVGGElement) {
+  const glyphEntry = getRestGlyphByDuration(note.duration);
+  drawDevGlyph(glyphEntry, noteGroup);
 }

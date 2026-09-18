@@ -281,12 +281,27 @@ section:not(.dev, .navbar) {
 }
 
 #staff-root-dev svg {
-  border: 1px dashed rgba(255, 0, 0, 0.212);
+  border: 1px dashed rgba(255, 0, 0, 0.452);
 }
 
 #staff-root-dev svg line {
   color: black !important;
 }
+
+/* [data-chord] {
+  fill: red;
+  color: red !important;
+}
+
+[data-rest] {
+  fill: blue;
+  color: blue !important;
+}
+
+[data-note] {
+  fill: green;
+  color: green !important;
+} */
 
 /* VS TARGETING CLASSES */
 
