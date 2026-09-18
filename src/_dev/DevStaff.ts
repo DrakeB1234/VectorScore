@@ -1,7 +1,8 @@
 import type { GlyphNames } from "../glyphs";
 import SVGRenderer from "../classes/SVGRenderer";
-import { drawStaff, type StaffTypes } from "./devStaffHelpers";
-import { calculateMeasureSpacing, renderPositionedNotes, measureInputNotesParser } from "./devNoteHelpers";
+import { BARLINE_MEASURE_PADDING, drawBarLine, drawStaff, GRAND_STAFF_SPACING, type StaffTypes } from "./devStaffHelpers";
+import { calculateMeasureSpacing, renderPositionedNotes, measureInputNotesParser, scaleMeasureSpacing } from "./devNoteHelpers";
+import { STAFF_LINE_COUNT, STAFF_LINE_SPACING } from "../constants";
 
 export type DevStaffOptions = {
   width?: number;
@@ -64,11 +65,46 @@ export default class DevStaff {
   }
 
   testMethod(measureNoteInput: string) {
-    const parsedNoteObj = measureInputNotesParser(measureNoteInput);
-    const positionedNotes = calculateMeasureSpacing(parsedNoteObj, 0);
+    const startX = 100;
+    const targetMeasureWidth = this.options.width - startX - BARLINE_MEASURE_PADDING;
 
-    const noteElements = renderPositionedNotes(positionedNotes, this.systemStaffType, this.svgRendererInstance);
-    this.svgRendererInstance.commitElementsToDOM(noteElements, this.staffLayer);
+    // --- STEP 1: PARSE AND GET RAW WIDTHS ---
+    const parsedStaffNotes = measureInputNotesParser(measureNoteInput);
+    const rawStaffObj = calculateMeasureSpacing(parsedStaffNotes);
+
+    let rawBassObj = null;
+    let maxRawWidth = rawStaffObj.rawWidth;
+
+    if (this.systemStaffType === "grand") {
+      const parsedBassNotes = measureInputNotesParser("C3q [Eb3,G3]q [Eb3,G3]q");
+      rawBassObj = calculateMeasureSpacing(parsedBassNotes);
+
+      // Find the widest staff so they scale together proportionately
+      maxRawWidth = Math.max(rawStaffObj.rawWidth, rawBassObj.rawWidth);
+    };
+
+    // --- STEP 2: CALCULATE UNIFIED SCALE RATIO ---
+    const scaleRatio = targetMeasureWidth / maxRawWidth;
+
+    // --- STEP 3: SCALE AND RENDER ---
+    const justifiedStaffObj = scaleMeasureSpacing(rawStaffObj, startX, scaleRatio);
+    const staffElements = renderPositionedNotes(justifiedStaffObj, this.systemStaffType, 0, this.svgRendererInstance);
+    this.svgRendererInstance.commitElementsToDOM(staffElements, this.staffLayer);
+
+    if (this.systemStaffType === "grand" && rawBassObj) {
+      const justifiedBassObj = scaleMeasureSpacing(rawBassObj, startX, scaleRatio);
+
+      const trebleStaffHeight = (STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING;
+      const bassStaffY = trebleStaffHeight + GRAND_STAFF_SPACING;
+
+      const bassElements = renderPositionedNotes(justifiedBassObj, "bass", bassStaffY, this.svgRendererInstance);
+      this.svgRendererInstance.commitElementsToDOM(bassElements, this.staffLayer);
+    }
+
+    const maxNextStartX = startX + (maxRawWidth * scaleRatio);
+    const barlineX = maxNextStartX + BARLINE_MEASURE_PADDING;
+
+    drawBarLine(this.svgRendererInstance, this.staffLayer, this.systemStaffType, barlineX);
   }
 
   destroy() {

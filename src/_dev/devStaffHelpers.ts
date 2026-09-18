@@ -6,7 +6,8 @@ import { DEV_GLYPH_CLEF_MAP, drawDevGlyph } from "./devGlyphs";
 export type StaffTypes = "treble" | "bass" | "alto";
 
 export const BASE_STAFF_PADDING = 36;
-export const GRAND_STAFF_SPACING = 40;
+export const GRAND_STAFF_SPACING = 60;
+export const BARLINE_MEASURE_PADDING = 20;
 
 export function drawStaff(
   systemStaffType: SystemStaffTypes,
@@ -96,4 +97,19 @@ export function drawClefOnStaff(
   });
 
   // svgRendererRef.drawGlyph(clefGlpyh, staffGroup);
+}
+
+export function drawBarLine(
+  svgRendererRef: SVGRenderer,
+  staffGroup: SVGGElement,
+  systemStaffType: SystemStaffTypes,
+  x: number,
+) {
+  let topY = ((STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING);
+
+  if (systemStaffType === "grand") {
+    topY = topY * 2 + GRAND_STAFF_SPACING;
+  }
+
+  svgRendererRef.drawLine(x, 0, x, topY, staffGroup);
 }
