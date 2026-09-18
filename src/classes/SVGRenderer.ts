@@ -1,15 +1,14 @@
 import { NAMESPACE } from "../constants";
-import { GLPYH_ENTRIES, type GlyphNames } from "../glyphs";
+import { type GlyphDef } from "../glyphs";
 
 export const SVG_HREF = "http://www.w3.org/2000/svg";
-const GLOBAL_SYMBOL_SCALE = 0.1;
 const VIEWBOX_PADDING = 2;
 
 type SVGRendererOptions = {
   width: number;
   height: number;
   scale: number;
-  useGlyphs: GlyphNames[];
+  useGlyphs: GlyphDef[];
   svgAutoFill: boolean;
 }
 
@@ -86,20 +85,16 @@ export default class SVGRenderer {
   }
 
   // Creates SVG defs for all glyphs in GLYPH_ENTRIES, applies global scale and offsets, appends to root SVG
-  private makeGlyphDefs(useGlyphs: GlyphNames[]) {
+  private makeGlyphDefs(useGlyphs: GlyphDef[]) {
     const defsElement = document.createElementNS(SVG_HREF, "defs");
-    // Only get the glyphs specified in the constructor
-    const activeGlyphs = Object.entries(GLPYH_ENTRIES)
-      .filter(([key]) => useGlyphs.includes(key as GlyphNames));
 
-    activeGlyphs.forEach(([name, data]) => {
+    useGlyphs.forEach((glyph) => {
       const path = document.createElementNS(SVG_HREF, "path");
-      path.setAttribute("id", `glyph-${name}`);
-      path.setAttribute("d", data.path);
-      path.setAttribute("fill", "currentColor");
 
-      // BAKE SCALE AND OFFSETS INTO SYMBOL
-      path.setAttribute("transform", `translate(${data.xOffset}, ${data.yOffset}) scale(${GLOBAL_SYMBOL_SCALE})`);
+      path.setAttribute("id", `glyph-${glyph.name}`);
+
+      path.setAttribute("d", glyph.path);
+      path.setAttribute("transform", `translate(0, ${glyph.yOffset})`);
 
       defsElement.appendChild(path);
     });
@@ -225,7 +220,7 @@ export default class SVGRenderer {
     return rect;
   }
 
-  drawGlyph(glyphName: GlyphNames, parent: SVGElement, options?: DrawGlyphOptions) {
+  drawGlyph(glyphName: string, parent: SVGElement, options?: DrawGlyphOptions) {
     options = {
       xOffset: 0,
       yOffset: 0,
@@ -234,6 +229,7 @@ export default class SVGRenderer {
 
     const useElement = document.createElementNS(SVG_HREF, "use");
     useElement.setAttribute("href", `#glyph-${glyphName}`);
+    useElement.setAttribute("fill", `currentColor`);
 
     if (options.xOffset || options.yOffset) useElement.setAttribute("transform", `translate(${options.xOffset}, ${options.yOffset})`);
 

@@ -1,5 +1,5 @@
 import { NOTE_LAYER_START_X, NOTE_SPACING, STAFF_LINE_SPACING } from "../constants";
-import type { GlyphNames } from "../glyphs";
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_BASS, CLEF_TREBLE, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, type GlyphDef } from "../glyphs";
 import { drawKeySignature, KEY_SIGNATURE_START_X } from "../helpers/keySignatures";
 import { parseNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
@@ -20,11 +20,11 @@ export type MusicStaffOptions = {
   svgAutoFill?: boolean;
 };
 
-const USE_GLPYHS: GlyphNames[] = [
-  "CLEF_TREBLE", "CLEF_BASS", "CLEF_ALTO",
-  "NOTE_HEAD_WHOLE", "NOTE_HEAD_HALF", "NOTE_HEAD_QUARTER", "EIGHTH_NOTE", "EIGHTH_NOTE_FLIPPED",
-  "ACCIDENTAL_SHARP", "ACCIDENTAL_FLAT", "ACCIDENTAL_NATURAL", "ACCIDENTAL_DOUBLE_SHARP", "ACCIDENTAL_DOUBLE_FLAT"
-];
+const USE_GLPYHS: GlyphDef[] = [
+  CLEF_TREBLE, CLEF_BASS, CLEF_BASS,
+  NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
+  ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT
+]
 
 type NoteEntry = {
   gElement: SVGGElement;

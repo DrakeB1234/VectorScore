@@ -48,7 +48,7 @@ const musicStaffGrand = new MusicStaff(rootGrand, {
   staffType: "grand",
   keySignature: "Eb",
   width: 350,
-  scale: 1.4,
+  scale: 1,
   spaceAbove: 0,
   spaceBelow: 3,
   noteStartX: 0,
