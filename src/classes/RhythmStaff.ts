@@ -1,7 +1,7 @@
 import { durationBeatValueMap, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
 import type { GlyphNames } from "../glyphs";
 import { parseDurationNoteString } from "../helpers/notehelpers";
-import type { Durations } from "../types";
+import type { NoteDurations } from "../types";
 import SVGRenderer from "./SVGRenderer";
 
 export type RhythmStaffOptions = {
@@ -175,7 +175,7 @@ export default class RhythmStaff {
     this.rendererInstance.drawLine(HALF_NOTEHEAD_WIDTH + (xOffset ?? 0), 0, HALF_NOTEHEAD_WIDTH + (xOffset ?? 0), -NOTEHEAD_STEM_HEIGHT, noteGroup);
   }
 
-  private renderNote(duration: Durations, noteGroup: SVGGElement) {
+  private renderNote(duration: NoteDurations, noteGroup: SVGGElement) {
     switch (duration) {
       case "w":
         this.rendererInstance.drawGlyph("NOTE_HEAD_WHOLE", noteGroup);
@@ -195,7 +195,7 @@ export default class RhythmStaff {
     }
   }
 
-  private renderRest(duration: Durations, restGroup: SVGGElement) {
+  private renderRest(duration: NoteDurations, restGroup: SVGGElement) {
     switch (duration) {
       case "w":
         this.rendererInstance.drawGlyph("REST_WHOLE", restGroup);
@@ -301,7 +301,7 @@ export default class RhythmStaff {
 
     const noteGroups: SVGGElement[] = [];
     for (const noteString of normalizedNotesArray) {
-      let durationString: Durations = "w";
+      let durationString: NoteDurations = "w";
       try {
         durationString = parseDurationNoteString(noteString);
       }
@@ -366,7 +366,7 @@ export default class RhythmStaff {
 
     const restGroups: SVGGElement[] = [];
     for (const restString of normalizedNotesArray) {
-      let durationString: Durations = "w";
+      let durationString: NoteDurations = "w";
       try {
         durationString = parseDurationNoteString(restString);
       }
@@ -429,7 +429,7 @@ export default class RhythmStaff {
     if (this.currentBeatCount >= this.maxBeatCount) {
       throw new Error("Max beat count reached. Can't add additional beamed note.");
     }
-    let durationString: Durations = "s";
+    let durationString: NoteDurations = "s";
     if (note === "s") {
       durationString = "s";
     }

@@ -1,5 +1,5 @@
 import type { StaffParams } from "./strategies/StrategyInterface";
-import type { Durations, StaffTypes } from "./types";
+import type { NoteDurations, StaffTypes } from "./types";
 
 export const NAMESPACE = "vs";
 
@@ -63,7 +63,7 @@ export const staffParams: Record<StaffTypes, StaffParams> = {
   },
 }
 
-export const durationBeatValueMap: Record<Durations, number> = {
+export const durationBeatValueMap: Record<NoteDurations, number> = {
   w: 4,
   h: 2,
   q: 1,

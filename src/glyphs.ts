@@ -1,10 +1,183 @@
 import { ACCIDENTAL_OFFSET_X, DOUBLE_FLAT_ACCIDENTAL_OFFSET_X, DOUBLE_SHARP_ACCIDENTAL_OFFSET_X } from "./constants";
+import type { NoteDurations } from "./types";
+
+export type _GlyphEntry = {
+  path: string;
+  // Width + Height is from Figma, rounded to nearest whole number
+  glyphWidth: number;
+  glyphHeight: number;
+  yOffset: number;
+};
+
+export function getNoteheadGlyphByDuration(duration: NoteDurations) {
+  switch (duration) {
+    case "w": return NOTEHEAD_WHOLE;
+    case "h": return NOTEHEAD_HALF;
+    default: return NOTEHEAD_BLACK;
+  };
+};
+
+export function getRestGlyphByDuration(duration: NoteDurations) {
+  switch (duration) {
+    case "w": return REST_WHOLE;
+    case "h": return REST_HALF;
+    case "q": return REST_QUARTER;
+    case "e": return REST_EIGHTH;
+    default: return REST_SIXTEENTH;
+  };
+};
+
+export function getAccidentalGlyph(accidental: string) {
+  switch (accidental) {
+    case "#": return ACCIDENTAL_SHARP;
+    case "##": return ACCIDENTAL_DOUBLESHARP;
+    case "b": return ACCIDENTAL_FLAT;
+    case "bb": return ACCIDENTAL_DOUBLEFLAT;
+    default: return ACCIDENTAL_NATURAL;
+  };
+};
+
+export function getClefGlyph(clef: string) {
+  switch (clef) {
+    case "treble": return CLEF_TREBLE;
+    case "bass": return CLEF_BASS;
+    default: return CLEF_ALTO;
+  };
+};
+
+export const NOTEHEAD_WHOLE: _GlyphEntry = {
+  path: "M8.6 0C12.4 0 17 2 17 5c0 2.7-2.1 5-8.7 5C2.2 10 0 7.6 0 5c0-2.8 3.3-5 8.6-5M4.4 2.5v1q0 2 1.3 3.5a6 6 0 0 0 2.7 2h2.3q1.5-.5 1.8-2v-.8c0-2.4-2.1-5.3-4.9-5.3-1.2 0-2.7.2-3.2 1.6",
+  glyphWidth: 17,
+  glyphHeight: 10,
+  yOffset: -5
+};
+export const NOTEHEAD_HALF: _GlyphEntry = {
+  path: "M3.9 10C1.7 10 0 8.8 0 6.7S1.9 0 7.8 0q3.8.2 4 3.3c0 1.3-1.3 6.7-8 6.7m3-3.2C9.7 5 10.6 4 10.6 3.2l-.3-.7q-.4-.8-1.5-.9t-4 1.6C2 4.8 1.2 5.9 1.2 6.8l.2.8q.4.7 1.6.9 1.3 0 4-1.7",
+  glyphWidth: 12,
+  glyphHeight: 10,
+  yOffset: -5
+};
+export const NOTEHEAD_BLACK: _GlyphEntry = {
+  path: "M3.9 10C1.7 10 0 8.8 0 6.7 0 3.2 3.5 0 8 0c2.2 0 3.8 1.3 3.8 3.3 0 3.4-4.4 6.7-8 6.7",
+  glyphWidth: 12,
+  glyphHeight: 10,
+  yOffset: -5
+};
+
+export const REST_WHOLE: _GlyphEntry = {
+  path: "M11.3 4.7q-.1 1-1 1H1a1 1 0 0 1-1-1V1q0-1 1-1h9.2q1 0 1 1z",
+  glyphWidth: 11,
+  glyphHeight: 6,
+  yOffset: 20
+};
+export const REST_HALF: _GlyphEntry = {
+  path: REST_WHOLE.path,
+  glyphWidth: 11,
+  glyphHeight: 6,
+  yOffset: 14
+};
+export const REST_QUARTER: _GlyphEntry = {
+  path: "M3 16.4 1.2 14s-.4-.4-.4-1q0-.4.6-1Q4 9 3.8 6.8C3.7 4 1.4 2 1.2 1.5L1.1.8q.1-.8.8-.8.4 0 .7.3L9.2 8l.2.8-.2.6c-1 1.6-2.5 3.6-2.6 5.9v.5c0 2.2 1.2 3.7 2.7 5.6.4.4 1.5 1.8 1.5 2.2q0 .2-.2.2h-.4Q9 23.1 7 23h-.6c-1.3.3-1.9 1.7-1.9 3l.2 1c0 .4.5 1.4 1 1.4q.6.4.7 1l-.1.3-.6.2q-.5 0-1-.3Q0 26.3 0 23.4c0-2.2 1.6-3.9 3.3-3.9l.6.1.7.2q.3 0 .4-.2v-.2l-.2-.6z",
+  glyphWidth: 11,
+  glyphHeight: 30,
+  yOffset: 3
+};
+export const REST_EIGHTH: _GlyphEntry = {
+  path: "M5.4 2.7V3C6.7 3 8.7.7 9 .4l.4-.1s.5.2.5.6l-.4 1.6-4 14.1q-.8.4-1.5.4c-.2 0-1.1 0-1.1-.5.7-2.7 3.6-10.6 3.7-11.2v-.5q0-.3-.2-.3h-.2q-.6.4-1.4.6-.7.3-1.6.3l-1-.2q-.6 0-1.1-.5Q0 4 0 2.7a2.7 2.7 0 0 1 5.4 0",
+  glyphWidth: 10,
+  glyphHeight: 17,
+  yOffset: 10
+
+};
+export const REST_SIXTEENTH: _GlyphEntry = {
+  path: "M8.3 2.7v.4C9.7 3.1 11.7.7 12 .4l.4-.1s.4.2.4.4V1l-1.1 4-1.8 6-4.7 15.2c-.1.5-.3 1-1.5 1q-1.3-.1-1.2-.8L6.3 15v-.1l-.1-.2q-.6.4-1.3.5-.8.3-1.7.3l-1-.1q-.7-.2-1-.6a3 3 0 0 1-1.2-2c0-1.5 1.2-2.7 2.7-2.7s2.7 1.2 2.7 2.7v.4c.6 0 1.6-.5 2-1.2l2.3-7.2q0-.3-.2-.3h-.3l-1.4.7-1.7.2H5l-1-.7a3 3 0 0 1-1.1-2 2.7 2.7 0 0 1 5.4 0",
+  glyphWidth: 13,
+  glyphHeight: 27,
+  yOffset: 10
+};
+
+export const ACCIDENTAL_SHARP: _GlyphEntry = {
+  path: "m9.5 9.3-1 .4c-.4.1-.6.9-.6 1.1v3.8q.1.7.5.7l1-.4h.3q.2 0 .3.3V18q0 .4-.5.7l-1.1.4q-.5.3-.5 1v5.6q0 .5-.7.5-.4 0-.5-.5v-5q0-.5-.5-.7H6l-2.4 1q-.4.1-.4 1v5.5q0 .3-.7.4-.5 0-.5-.4v-5c0-.1-.2-.6-.5-.6h-.1l-1 .4q-.4 0-.4-.3v-2.8q0-.5.5-.7l1-.4q.5-.2.5-1v-3.9q0-.6-.5-.7h-.1l-1 .4q-.4 0-.4-.3V9.8q0-.5.5-.7l1-.4q.5-.2.5-1.1V2.2q0-.4.6-.4t.6.4V7q0 .6.5.8l2.5-1q.6-.5.5-1.2V.4q0-.4.7-.4.5 0 .5.4v5q0 .4.6.4l1-.3h.2q.2 0 .3.3v2.8q0 .4-.5.7m-2.8 6.5a17 17 0 0 0 0-4.8q0-.3-.6-.3c-1 0-2.8.9-2.9 1.5a24 24 0 0 0 0 5q0 .2.5.2c.9 0 2.8-.8 3-1.6",
+  glyphWidth: 10,
+  glyphHeight: 28,
+  yOffset: -15
+};
+export const ACCIDENTAL_FLAT: _GlyphEntry = {
+  path: "M.5 24.4C.2 24 0 1 0 1c0-.6.7-1 1.2-1Q2 0 2 .7L1.7 12q0 .4.5.6h.2q.4-.1.8-.5a5 5 0 0 1 2.2-.7C7.3 11.6 9 13 9 15.3 9 17 7.8 19.6 4.2 22l-3.1 2.5H.8zm1.4-3.6q-.1.4.4.6l.4-.1q2-1.4 2.9-3 .7-1.3.7-2.4 0-1.3-.7-1.9-.3-.4-1-.4l-1 .2a6 6 0 0 0-1.8 1.7z",
+  glyphWidth: 9,
+  glyphHeight: 25,
+  yOffset: -18
+};
+export const ACCIDENTAL_NATURAL: _GlyphEntry = {
+  path: "m5.6 6.4.6-.2h.2q.3 0 .3.3v20q0 .5-.5.5h-.5l-.5-.4v-6q0-.4-.6-.4c-1.2 0-3.4 1-4 1.2H.3q-.3 0-.3-.3V.5Q0 0 .5 0H1q.4 0 .5.5v6.7q0 .2.4.2c1 0 3.6-1 3.6-1zm-4.1 5.7v4.1q0 .3.5.2c1 0 3.2-.9 3.2-1.6v-4.1q0-.2-.3-.2c-1 0-3.4 1-3.4 1.6",
+  glyphWidth: 7,
+  glyphHeight: 27,
+  yOffset: -15
+};
+export const ACCIDENTAL_DOUBLEFLAT: _GlyphEntry = {
+  path: "M12.6 11.4h.2c1.9 0 3.6 1.6 3.6 3.8 0 1.8-1.2 4.3-4.8 6.8-1 .6-2 1.8-3.2 2.4h-.2l-.3-.1-.3-5.4q-1.2 1.5-3.4 3c-.9.7-1.9 1.9-3.1 2.5H.8l-.3-.1C.2 23.9 0 1 0 1c0-.6.7-1 1.2-1Q2 0 2 .6L1.7 12q0 .5.5.7h.2l1-.5 1.2-.6h.8q1.2 0 2 .6V1q.2-1 1.2-1 .7 0 .8.6L9 12q0 .5.4.7h.2l1-.5 1.3-.6zm-7 6.8a5 5 0 0 0 .7-2.4 3 3 0 0 0-.7-2q-.3-.3-1-.3l-1 .3C3.1 14 2 15 1.8 15.5v5.2q0 .5.5.6l.4-.1q2-1.4 3-3m7.4 0q.6-1.2.6-2.4t-.6-2q-.3-.3-1-.3-.4 0-1 .3c-.6.3-1.7 1.2-1.8 1.7v5.2q0 .5.5.6l.3-.1q2.1-1.4 3-3",
+  glyphWidth: 16,
+  glyphHeight: 25,
+  yOffset: -18
+};
+export const ACCIDENTAL_DOUBLESHARP: _GlyphEntry = {
+  path: "M7.6 6.4H8q1.2 0 1.6.2.3.5.3 1.6t-.3 1.5q-.5.4-1.5.4-1.1 0-1.6-.4-.3-.3-.2-1.5c-.2-.6-.9-1.9-1.4-1.9S4 7.4 3.7 8l-.1.2q0 1-.3 1.5-.5.4-1.5.4-1.1 0-1.6-.4L0 8.2Q0 7 .2 6.6q.5-.2 1.7-.2h.4C3 6.2 4.2 5.5 4.2 5c0-.3-1.5-1-2-1.3H2Q.8 3.7.2 3.3L0 1.8Q0 .5.2.3.7 0 1.8 0t1.5.3c.2.1.3.9.3 1.5.2.6.8 2 1.4 2 .4 0 1-1.5 1.3-2q0-1.2.2-1.5Q6.9 0 8 0t1.5.3q.3.4.3 1.6 0 1-.3 1.4-.5.4-1.5.4h-.5c-.6.2-1.9.8-1.9 1.3 0 .3 1.5 1.1 1.9 1.4",
+  glyphWidth: 10,
+  glyphHeight: 10,
+  yOffset: -5
+};
+
+export const FLAG_EIGHTH_UP: _GlyphEntry = {
+  path: "M9.5 32q-.3.8-.9.8h-.2q-.4-.3-.6-1.2V31q1.1-2.7 1-5.5c0-2.4-.3-4.7-1-6C6.5 16 2.7 10.6 0 10.2V.6Q0-.1.8 0q.6 0 .8.9 1 5.7 4.4 10.4c2.5 4 4.6 8.7 4.6 13.7 0 3.2-1 7-1 7",
+  glyphWidth: 11,
+  glyphHeight: 33,
+  yOffset: 0
+};
+export const FLAG_EIGHTH_DOWN: _GlyphEntry = {
+  path: "m9.6 2-.1-.8q.1-1.1 1-1.2.4 0 .6.6c.3 1.3 1.1 4.1 1.1 7.2 0 5-2.4 9.8-5 13.8-2 3.1-5 6.6-5.6 10.4q-.2.9-1 .9-.5 0-.6-.6v-9.4c5.4-1.8 7.4-5 8.8-8.4a22 22 0 0 0 1.6-7.1 18 18 0 0 0-.8-5.5",
+  glyphWidth: 12,
+  glyphHeight: 33,
+  yOffset: -33
+};
+export const FLAG_SIXTEENTH_UP: _GlyphEntry = {
+  path: "M10.9 32q-.4.6-.8.6h-.3q-.5-.3-.6-1v-.4l.4-3.6q0-3-1.3-6C5.5 16.2 2.7 16 .2 16H0V.4Q.1 0 .7 0q.5-.1.8.5c.7 4.3 2.9 4.9 5 7.2 3 3.1 4 4.3 4.4 7L11 16a15 15 0 0 1-1 5.1v.6a11 11 0 0 1 1.2 4.8v1c0 1.8-.2 4.1-.3 4.3M8.4 18.3q0 .3.2.2l.6-.2q.3-.6.2-1v-.9q0-2-1-3.5c-1.3-2-3.5-4.2-6-4.2h-.2q-.6 0-.6.4c.9 3.4 2.7 4.3 4.6 6.5z",
+  glyphWidth: 11,
+  glyphHeight: 33,
+  yOffset: 0
+};
+export const FLAG_SIXTEENTH_DOWN: _GlyphEntry = {
+  path: "M9.6 1q-.1-1 .7-1c.5 0 .7 0 1 .9q.3 1.9.3 4 0 3.3-1.2 6.1v.6c.1.3 1 2.7 1 5.1l-.1 1.5c-1 6.2-8.9 8-9.8 14.1q-.3.6-.8.5t-.7-.4V17h.2c2.5-.1 5.7-.2 8.5-5.8Q10 8.2 10 5q0-2-.4-4M9 14.2l-.2.2-2.2 2.8c-1.9 2.2-4.1 3-5 6.4q0 .5.6.5h.3c2.4 0 5-2.3 6.3-4.2q1-1.6 1-3.6v-.8l-.2-1z",
+  glyphWidth: 12,
+  glyphHeight: 33,
+  yOffset: -33
+};
+
+export const CLEF_TREBLE: _GlyphEntry = {
+  path: "m15 27.3 1 5.8c.2.7.2.7 1.2.7 5.9 0 9.6 4.6 9.6 9.7a10 10 0 0 1-6.7 9.5q-.7.1-.5.7c.4 2.5 1.2 6.3 1.2 8.5 0 6.8-5.2 8-8 8-6 0-7.5-3.9-7.5-6.5 0-2.5 1.6-4.6 4.3-4.6 2.4 0 3.8 1.9 3.8 4.1 0 2.3-1.4 3.4-2.7 3.8q-1.3.3-1.3.6 0 1 3.2 1.2c2.4 0 6.4-.7 6.4-6.6 0-2-.6-5.4-1-8q-.1-.7-.7-.4l-2.7.2C4.8 54 0 47.4 0 40.4Q.1 34.1 4.5 29c2-2.6 4.8-5 7.4-7.1q.6-.4.3-1c-.2-1.6-.5-4.2-.5-6.5 0-4.2 1-9.2 3.9-12.5.8-.9 2-1.9 2.6-1.9.4 0 1.5 1.1 2 2a17 17 0 0 1 2.7 9.3c0 4.5-2 9.3-5.4 13l-2.2 2.3q-.4.1-.3.7m3.8-21.1c-2.4 0-5.3 3.8-5.3 10q0 2.1.2 3.8.2.7.5.3l2.6-2.4q4.4-4.5 4.4-8.4-.2-3.3-2.4-3.3m-4.4 27.2-.8-5q0-.8-.6-.2c-1.8 1.5-3.7 3-6 5.6a13 13 0 0 0-3.8 9.3c0 5.6 4.5 9.5 11.5 9.5l2.3-.2q.8-.2.5-.6l-2-12q.1-.5-.8-.2-3.8 1.1-4 4.6c0 1.9 1.2 3.6 2.9 4.3q.5.2.6.5 0 .5-.5.5t-1-.3c-2.8-.9-4.7-3.4-4.7-7 0-3.4 2.3-6.6 5.8-7.8.8-.2.8-.2.6-1m2.8 6.4 2 11.4q0 .7.6.2a6 6 0 0 0 3.8-5.6c0-3.6-2.7-6.3-6-6.6q-.6 0-.4.6",
+  glyphWidth: 27,
+  glyphHeight: 70,
+  yOffset: -14
+};
+export const CLEF_BASS: _GlyphEntry = {
+  path: "M10.3 0c6.9 0 11.1 4.6 11.1 11.6q-.1 8-5.5 13.9A48 48 0 0 1 .5 35.9q-.5-.1-.5-.5t.6-.7q7.6-4.4 11.5-10A24 24 0 0 0 15.4 12c0-6.3-1.8-10.5-6-10.5-4.1 0-6.5 3-6.5 4.5q0 .7.6.8.6-.2 2-.3a4 4 0 0 1 3.9 4.1A4 4 0 0 1 5 15C2 14.9.2 12 .2 8.9.2 5.1 3.3 0 10.2 0m15 3.3q2.1.2 2.3 2.2c0 1.2-1 2.2-2.2 2.2s-2.2-1-2.2-2.2q.2-2 2.2-2.2m.1 10c1.2 0 2.2 1 2.2 2.2q-.2 2-2.2 2.1-2-.1-2.2-2.1.2-2 2.2-2.2",
+  glyphWidth: 28,
+  glyphHeight: 36,
+  yOffset: 0
+};
+export const CLEF_ALTO: _GlyphEntry = {
+  path: "M9.2 1v17.5q0 .4.4.2c1-.3 2.7-1.3 3.5-5.8q.2-1 .8-1 .5 0 .8 1c.5 1.8 1.5 3.8 4.3 3.8 2.6 0 3.3-2.6 3.3-7.8 0-5.3-.9-7.6-4.2-7.6l-2.3.3q-1 .3-1.1.8.2.3 1 .6 1.5.3 1.7 2.6-.2 2.6-2.8 2.7c-1.7 0-3-1.1-3-3.3 0-2.5 2.2-5 7-5C25 0 28 4.6 28 8.8c0 5.5-3 9.3-8.4 9.3q-1.8 0-2.4-.3l-.7-.2-.5.2c-.6.4-1.4 1.6-1.4 2.4s.8 2.1 1.4 2.5l.5.1h.7q.7-.3 2.4-.4c5.3 0 8.4 3.8 8.4 9.3 0 4.2-3 8.8-9.5 8.8-4.7 0-7-2.5-7-5 0-2.2 1.4-3.3 3.1-3.3 1.6 0 2.8 1 2.8 2.7q-.2 2.2-1.6 2.6-1 .3-1.1.6 0 .5 1 .8l2.4.3c3.3 0 4.2-2.4 4.2-7.6s-.7-7.8-3.3-7.8c-2.8 0-3.8 2-4.3 3.7q-.2 1-.8 1.1-.6 0-.8-1c-.8-4.5-2.5-5.6-3.5-5.8q-.3-.1-.4.2v17.5q0 .9-.8.9-1 0-1-.9V1q0-.9 1-.9.8 0 .8.9M.8 0h3.5q.7.1.7 1v38.5q0 .9-.8.9H.8q-.8 0-.8-.9V1q0-1 .8-1",
+  glyphWidth: 28,
+  glyphHeight: 40,
+  yOffset: 0
+};
+
+// ==== OLD ====
 
 export type GlyphEntry = {
   path: string;
   xOffset: number;
   yOffset: number;
-}
+};
 
 export type GlyphNames =
   "CLEF_TREBLE" | "CLEF_BASS" | "CLEF_ALTO" |
