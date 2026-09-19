@@ -66,7 +66,7 @@ export function drawKeySignature(
 
   yPositionGroups.forEach(group => {
     group.forEach((yPos, i) => {
-      svgRenderer.drawGlyph(glyph, staffLayer, { xOffset: startX + i * KEY_SIG_ACCIDENTAL_SPACING, yOffset: yPos });
+      svgRenderer.drawGlyph(glyph, staffLayer, { x: startX + i * KEY_SIG_ACCIDENTAL_SPACING, y: yPos });
     });
   });
 

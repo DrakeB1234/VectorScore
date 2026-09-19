@@ -4,8 +4,8 @@ import { type GlyphDef } from "../glyphs";
 export const SVG_HREF = "http://www.w3.org/2000/svg";
 
 type DrawGlyphOptions = {
-  yOffset?: number;
-  xOffset?: number;
+  y?: number;
+  x?: number;
 }
 
 type DrawLineOptions = {
@@ -202,8 +202,8 @@ export default class SVGRenderer {
 
   drawGlyph(glyphName: string, parent: SVGElement, options?: DrawGlyphOptions) {
     options = {
-      xOffset: 0,
-      yOffset: 0,
+      x: 0,
+      y: 0,
       ...options
     };
 
@@ -211,7 +211,7 @@ export default class SVGRenderer {
     useElement.setAttribute("href", `#glyph-${glyphName}`);
     useElement.setAttribute("fill", `currentColor`);
 
-    if (options.xOffset || options.yOffset) useElement.setAttribute("transform", `translate(${options.xOffset}, ${options.yOffset})`);
+    if (options.x || options.y) useElement.setAttribute("transform", `translate(${options.x}, ${options.y})`);
 
     parent.appendChild(useElement);
   }

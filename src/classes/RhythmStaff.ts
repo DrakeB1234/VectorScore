@@ -106,7 +106,7 @@ export default class RhythmStaff {
     staffLayer.appendChild(timeSignatureGroup);
     const groupYPos = STAFF_SPACING - TIME_SIGNATURE_HEIGHT;
     this.svgRendererInstance.drawGlyph(topNumberGlyphName, timeSignatureGroup);
-    this.svgRendererInstance.drawGlyph("TIMESIG_4", timeSignatureGroup, { yOffset: TIME_SIGNATURE_HEIGHT });
+    this.svgRendererInstance.drawGlyph("TIMESIG_4", timeSignatureGroup, { y: TIME_SIGNATURE_HEIGHT });
     timeSignatureGroup.setAttribute("transform", `translate(0, ${groupYPos})`);
 
     // Total width minus starting size of the notes (distance from time signature)
@@ -453,7 +453,7 @@ export default class RhythmStaff {
     let localX = 0;
 
     for (let i = 0; i < fixedNoteCount; i++) {
-      this.svgRendererInstance.drawGlyph("NOTE_HEAD_QUARTER", beamedGroup, { xOffset: localX });
+      this.svgRendererInstance.drawGlyph("NOTE_HEAD_QUARTER", beamedGroup, { x: localX });
       this.drawStem(beamedGroup, localX);
 
       localX += spacingAmount;

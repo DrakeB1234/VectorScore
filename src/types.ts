@@ -1,3 +1,4 @@
+export type SystemTypes = StaffTypes | 'grand';
 export type StaffTypes = 'treble' | 'bass' | 'alto' | 'grand';
 
 export type NoteObj = {

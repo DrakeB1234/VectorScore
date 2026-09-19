@@ -1,19 +1,20 @@
 import { NOTE_LAYER_START_X, NOTE_SPACING, STAFF_LINE_SPACING } from "../constants";
-import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_BASS, CLEF_TREBLE, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, type GlyphDef } from "../glyphs";
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, type GlyphDef } from "../glyphs";
 import { drawKeySignature, KEY_SIGNATURE_START_X } from "../helpers/keySignatures";
 import { parseNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
-import type { NoteObj, StaffTypes } from "../types";
+import type { NoteObj, SystemTypes } from "../types";
 import NoteRenderer, { type RenderNoteReturn } from "./NoteRenderer";
+import StaffRenderer, { GRAND_STAFF_SPACING } from "./StaffRenderer";
 import SVGRenderer from "./SVGRenderer";
 
 export type MusicStaffOptions = {
   width?: number;
   scale?: number;
   noteStartX?: number;
-  staffType?: StaffTypes;
+  staffType?: SystemTypes;
   keySignature?: string;
   padding?: number;
   svgAutoFill?: boolean;
@@ -25,7 +26,7 @@ export type MusicStaffOptions = {
 };
 
 const USE_GLPYHS: GlyphDef[] = [
-  CLEF_TREBLE, CLEF_BASS, CLEF_BASS,
+  CLEF_TREBLE, CLEF_BASS, CLEF_ALTO,
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
   ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT
 ]
@@ -42,6 +43,7 @@ export default class MusicStaff {
   private svgRendererInstance: SVGRenderer;
   private strategyInstance: StaffStrategy;
   private noteRendererInstance: NoteRenderer;
+  private staffRenderer: StaffRenderer;
 
   private options: Required<MusicStaffOptions>;
 
@@ -70,6 +72,7 @@ export default class MusicStaff {
 
     // Create the SVGRenderer instance with its options passed into this class
     this.svgRendererInstance = new SVGRenderer(rootElementCtx, USE_GLPYHS);
+    this.staffRenderer = new StaffRenderer(this.svgRendererInstance);
 
     // Create the strategy instance based on the staffType
     switch (this.options.staffType) {
@@ -108,12 +111,29 @@ export default class MusicStaff {
       keySignatureWidth = this.createKeySignature(this.options.keySignature);
     };
 
-    const baseStaffHeight = this.strategyInstance.drawStaff(this.options.width, staffLayer);
+    // TEMP OVERRIDE OLD STAFF CREATION WITH NEW RENDERER
+    // const baseStaffHeight = this.strategyInstance.drawStaff(this.options.width, staffLayer);
+    const staffGroup = this.svgRendererInstance.createGroup("staff");
+
+    const { totalStaffHeight } = this.staffRenderer.drawStaff({
+      width: this.options.width,
+      staffType: this.options.staffType,
+      startYPos: 0,
+      staffGroup
+    });
+
+    // Draw End Bar line
+    this.staffRenderer.drawStaffBarLine(this.options.width - 0.5, this.options.staffType, staffGroup);
+
+    staffLayer.appendChild(staffGroup);
+
     this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX + keySignatureWidth;
 
     // Applying sizing to root SVG
-    const totalHeight = baseStaffHeight + (this.options.padding * 2);
-    staffLayer.setAttribute("transform", `translate(0, ${this.options.padding})`);
+    const totalHeight = totalStaffHeight + (this.options.padding * 2);
+    const totalYOffset = this.options.padding;
+
+    staffLayer.setAttribute("transform", `translate(0, ${totalYOffset})`);
     notesLayer.setAttribute("transform", `translate(${this.noteStartX}, ${this.options.padding})`);
 
     this.svgRendererInstance.setRootSVGSizing(this.options.width, totalHeight, this.options.scale);
