@@ -47,9 +47,9 @@ const domElements = {
 const musicStaffGrand = new MusicStaff(rootGrand, {
   staffType: "grand",
   keySignature: "Eb",
-  width: 350,
+  width: 500,
   scale: 1.4,
-  noteStartX: 0,
+  svgAutoFill: true
 
   // spaceAbove: 0,
   // spaceBelow: 3,

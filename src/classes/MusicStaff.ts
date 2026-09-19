@@ -1,13 +1,12 @@
 import { NOTE_LAYER_START_X, NOTE_SPACING, STAFF_LINE_SPACING } from "../constants";
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, type GlyphDef } from "../glyphs";
-import { drawKeySignature, KEY_SIGNATURE_START_X } from "../helpers/keySignatures";
 import { parseNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
 import type { NoteObj, SystemTypes } from "../types";
 import NoteRenderer, { type RenderNoteReturn } from "./NoteRenderer";
-import StaffRenderer, { GRAND_STAFF_SPACING } from "./StaffRenderer";
+import StaffRenderer, { CLEF_X_OFFSET } from "./StaffRenderer";
 import SVGRenderer from "./SVGRenderer";
 
 export type MusicStaffOptions = {
@@ -29,7 +28,7 @@ const USE_GLPYHS: GlyphDef[] = [
   CLEF_TREBLE, CLEF_BASS, CLEF_ALTO,
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
   ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT
-]
+];
 
 type NoteEntry = {
   gElement: SVGGElement;
@@ -41,7 +40,6 @@ type NoteEntry = {
 
 export default class MusicStaff {
   private svgRendererInstance: SVGRenderer;
-  private strategyInstance: StaffStrategy;
   private noteRendererInstance: NoteRenderer;
   private staffRenderer: StaffRenderer;
 
@@ -49,7 +47,6 @@ export default class MusicStaff {
 
   private noteEntries: NoteEntry[] = [];
   private noteCursorX: number = 0;
-  private noteStartX: number;
 
   /**
    * Creates an instance of a MusicStaff, A single staff.
@@ -61,7 +58,8 @@ export default class MusicStaff {
     this.options = {
       width: 300,
       scale: 1,
-      noteStartX: 0,
+      /** @description affects overrides the global constant for start padding of notes*/
+      noteStartX: NOTE_LAYER_START_X,
       staffType: "treble",
       padding: 20,
       svgAutoFill: true,
@@ -75,24 +73,25 @@ export default class MusicStaff {
     this.staffRenderer = new StaffRenderer(this.svgRendererInstance);
 
     // Create the strategy instance based on the staffType
+    let _oldStrategyInstance: StaffStrategy;
     switch (this.options.staffType) {
       case "grand":
-        this.strategyInstance = new GrandStaffStrategy(this.svgRendererInstance, "grand");
+        _oldStrategyInstance = new GrandStaffStrategy(this.svgRendererInstance, "grand");
         break;
       case "bass":
-        this.strategyInstance = new SingleStaffStrategy(this.svgRendererInstance, "bass");
+        _oldStrategyInstance = new SingleStaffStrategy(this.svgRendererInstance, "bass");
         break;
       case "treble":
-        this.strategyInstance = new SingleStaffStrategy(this.svgRendererInstance, "treble");
+        _oldStrategyInstance = new SingleStaffStrategy(this.svgRendererInstance, "treble");
         break;
       case "alto":
-        this.strategyInstance = new SingleStaffStrategy(this.svgRendererInstance, "alto");
+        _oldStrategyInstance = new SingleStaffStrategy(this.svgRendererInstance, "alto");
         break;
       default:
         throw new Error(`The staff type ${this.options.staffType} is not supported. Please use "treble", "bass", "alto", or "grand".`);
     };
 
-    this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance, this.strategyInstance);
+    this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance, _oldStrategyInstance);
 
     // Create layers
     const notesLayer = this.svgRendererInstance.createLayer("notes");
@@ -106,46 +105,48 @@ export default class MusicStaff {
       this.options.padding += this.options.spaceBelow * STAFF_LINE_SPACING;
     };
 
-    let keySignatureWidth = 0;
-    if (this.options.keySignature) {
-      keySignatureWidth = this.createKeySignature(this.options.keySignature);
-    };
-
     // TEMP OVERRIDE OLD STAFF CREATION WITH NEW RENDERER
     // const baseStaffHeight = this.strategyInstance.drawStaff(this.options.width, staffLayer);
     const staffGroup = this.svgRendererInstance.createGroup("staff");
 
-    const { totalStaffHeight } = this.staffRenderer.drawStaff({
+    // Draw staff via renderer
+    const { totalStaffHeight, glyphWidth } = this.staffRenderer.drawStaff({
       width: this.options.width,
       staffType: this.options.staffType,
       startYPos: 0,
       staffGroup
     });
 
-    // Draw End Bar line
+    const clefEndX = glyphWidth + CLEF_X_OFFSET;
+    const keySigWidth = this.staffRenderer.drawKeySignature({
+      keySignature: "Gb",
+      staffGroup: staffGroup,
+      staffType: this.options.staffType,
+      clefEndX: clefEndX
+    });
+
+    this.staffRenderer.drawStaffBarLine(0.5, this.options.staffType, staffGroup);
     this.staffRenderer.drawStaffBarLine(this.options.width - 0.5, this.options.staffType, staffGroup);
 
+    // With all elements from staff added through renderer, add their containing group into the staff layer
     staffLayer.appendChild(staffGroup);
 
-    this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX + keySignatureWidth;
+    let noteStartX = this.options.noteStartX + clefEndX + keySigWidth;
+    // TEST SEE START OF NOTE LAYER
+    this.staffRenderer.drawStaffBarLine(0, "grand", notesLayer);
 
     // Applying sizing to root SVG
     const totalHeight = totalStaffHeight + (this.options.padding * 2);
     const totalYOffset = this.options.padding;
 
     staffLayer.setAttribute("transform", `translate(0, ${totalYOffset})`);
-    notesLayer.setAttribute("transform", `translate(${this.noteStartX}, ${this.options.padding})`);
+    notesLayer.setAttribute("transform", `translate(${noteStartX}, ${this.options.padding})`);
 
     this.svgRendererInstance.setRootSVGSizing(this.options.width, totalHeight, this.options.scale);
     this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
 
     this.svgRendererInstance.commitElementsToDOM(this.svgRendererInstance.svgElementRef);
   }
-
-  private createKeySignature(key: string): number {
-    return drawKeySignature(this.svgRendererInstance, this.strategyInstance, key, KEY_SIGNATURE_START_X);
-  }
-
 
   /**
    * Draws a note on the staff.
@@ -248,7 +249,7 @@ export default class MusicStaff {
    * @returns Returns early if no notes are on the staff
   */
   justifyNotes() {
-    const containerWidth = this.options.width - this.noteStartX;
+    const containerWidth = this.options.width;
     const notesCount = this.noteEntries.length;
     if (notesCount <= 0 || containerWidth <= 0) return;
     const noteSpacing = Math.round(containerWidth / notesCount);

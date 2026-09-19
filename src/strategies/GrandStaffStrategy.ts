@@ -17,7 +17,7 @@ export default class GrandStaffStrategy implements StaffStrategy {
   private width: number = 0;
   private trebleStaffHeight: number = 0;
 
-  constructor(rendererRef: SVGRenderer, staffType: StaffTypes) {
+  constructor(rendererRef: SVGRenderer, staffType: any) {
     this.rendererRef = rendererRef;
 
     const params = staffParams[staffType];

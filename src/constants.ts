@@ -6,7 +6,7 @@ export const NAMESPACE = "vs";
 // Staff constants
 export const STAFF_LINE_COUNT = 5;
 export const STAFF_LINE_SPACING = 10;
-export const NOTE_LAYER_START_X = 38;
+export const NOTE_LAYER_START_X = 16;
 export const GRAND_STAFF_SPACING = 30;
 
 // Accidental constants

@@ -30,8 +30,10 @@ export function getRestGlyphByDuration(duration: NoteDurations) {
 export function getAccidentalGlyph(accidental: string) {
   switch (accidental) {
     case "#": return ACCIDENTAL_SHARP;
+    case "sharp": return ACCIDENTAL_SHARP;
     case "##": return ACCIDENTAL_DOUBLESHARP;
     case "b": return ACCIDENTAL_FLAT;
+    case "flat": return ACCIDENTAL_FLAT;
     case "bb": return ACCIDENTAL_DOUBLEFLAT;
     default: return ACCIDENTAL_NATURAL;
   };
