@@ -1,5 +1,5 @@
 import { NOTE_LAYER_START_X, NOTE_SPACING, STAFF_LINE_SPACING } from "../constants";
-import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, type GlyphDef } from "../glyphs";
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
 import { parseNoteString } from "../helpers/notehelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
@@ -15,6 +15,11 @@ export type MusicStaffOptions = {
   noteStartX?: number;
   staffType?: SystemTypes;
   keySignature?: string;
+  timeSignature?: {
+    topNumber: number;
+    bottomNumber: number;
+  };
+
   padding?: number;
   svgAutoFill?: boolean;
 
@@ -27,7 +32,8 @@ export type MusicStaffOptions = {
 const USE_GLPYHS: GlyphDef[] = [
   CLEF_TREBLE, CLEF_BASS, CLEF_ALTO,
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
-  ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT
+  ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT,
+  TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9
 ];
 
 type NoteEntry = {
@@ -90,7 +96,6 @@ export default class MusicStaff {
       default:
         throw new Error(`The staff type ${this.options.staffType} is not supported. Please use "treble", "bass", "alto", or "grand".`);
     };
-
     this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance, _oldStrategyInstance);
 
     // Create layers
@@ -105,11 +110,9 @@ export default class MusicStaff {
       this.options.padding += this.options.spaceBelow * STAFF_LINE_SPACING;
     };
 
-    // TEMP OVERRIDE OLD STAFF CREATION WITH NEW RENDERER
-    // const baseStaffHeight = this.strategyInstance.drawStaff(this.options.width, staffLayer);
+    // Draw staff methods
     const staffGroup = this.svgRendererInstance.createGroup("staff");
 
-    // Draw staff via renderer
     const { totalStaffHeight, glyphWidth } = this.staffRenderer.drawStaff({
       width: this.options.width,
       staffType: this.options.staffType,
@@ -117,23 +120,36 @@ export default class MusicStaff {
       staffGroup
     });
 
-    const clefEndX = glyphWidth + CLEF_X_OFFSET;
-    const keySigWidth = this.staffRenderer.drawKeySignature({
-      keySignature: "Gb",
-      staffGroup: staffGroup,
-      staffType: this.options.staffType,
-      clefEndX: clefEndX
-    });
+    let currentStaffX = glyphWidth + CLEF_X_OFFSET;
+
+    if (this.options.keySignature) {
+      const keySigWidth = this.staffRenderer.drawKeySignature({
+        keySignature: this.options.keySignature,
+        staffGroup: staffGroup,
+        staffType: this.options.staffType,
+        startX: currentStaffX
+      });
+      currentStaffX += keySigWidth;
+    };
+
+    if (this.options.timeSignature) {
+      const timeSigWidth = this.staffRenderer.drawTimeSignature({
+        topNumber: this.options.timeSignature.topNumber,
+        bottomNumber: this.options.timeSignature.bottomNumber,
+        staffGroup: staffGroup,
+        staffType: this.options.staffType,
+        startX: currentStaffX
+      });
+      currentStaffX += timeSigWidth;
+    }
 
     this.staffRenderer.drawStaffBarLine(0.5, this.options.staffType, staffGroup);
     this.staffRenderer.drawStaffBarLine(this.options.width - 0.5, this.options.staffType, staffGroup);
 
-    // With all elements from staff added through renderer, add their containing group into the staff layer
     staffLayer.appendChild(staffGroup);
 
-    let noteStartX = this.options.noteStartX + clefEndX + keySigWidth;
-    // TEST SEE START OF NOTE LAYER
-    this.staffRenderer.drawStaffBarLine(0, "grand", notesLayer);
+    // Start the notes at the end of the drawn glyphs on staff + padding from the note start X
+    let noteStartX = this.options.noteStartX + currentStaffX;
 
     // Applying sizing to root SVG
     const totalHeight = totalStaffHeight + (this.options.padding * 2);

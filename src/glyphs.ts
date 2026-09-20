@@ -23,7 +23,10 @@ export function getRestGlyphByDuration(duration: NoteDurations) {
     case "h": return REST_HALF;
     case "q": return REST_QUARTER;
     case "e": return REST_EIGHTH;
-    default: return REST_SIXTEENTH;
+    case "s": return REST_SIXTEENTH;
+    default: {
+      throw new Error("Unable to retrieve rest glpyh for given value " + duration);
+    };
   };
 };
 
@@ -35,7 +38,10 @@ export function getAccidentalGlyph(accidental: string) {
     case "b": return ACCIDENTAL_FLAT;
     case "flat": return ACCIDENTAL_FLAT;
     case "bb": return ACCIDENTAL_DOUBLEFLAT;
-    default: return ACCIDENTAL_NATURAL;
+    case "n": return ACCIDENTAL_NATURAL;
+    default: {
+      throw new Error("Unable to retrieve accidental glpyh for given value " + accidental);
+    };
   };
 };
 
@@ -43,9 +49,29 @@ export function getClefGlyph(clef: string) {
   switch (clef) {
     case "treble": return CLEF_TREBLE;
     case "bass": return CLEF_BASS;
-    default: return CLEF_ALTO;
+    case "alto": return CLEF_ALTO;
+    default: {
+      throw new Error("Unable to retrieve clef glpyh for given value " + clef);
+    };
   };
 };
+
+export function getTimeSigGlyph(number: number) {
+  switch (number) {
+    case 1: return TIMESIG_1
+    case 2: return TIMESIG_2
+    case 3: return TIMESIG_3
+    case 4: return TIMESIG_4
+    case 5: return TIMESIG_5
+    case 6: return TIMESIG_6
+    case 7: return TIMESIG_7
+    case 8: return TIMESIG_8
+    case 9: return TIMESIG_9
+    default: {
+      throw new Error("Unable to retrieve time signature glpyh for given value " + number);
+    };
+  }
+}
 
 export const NOTEHEAD_WHOLE: GlyphDef = {
   name: "NOTEHEAD_WHOLE",
@@ -193,17 +219,66 @@ export const CLEF_ALTO: GlyphDef = {
   yOffset: 0
 };
 
+export const TIMESIG_1: GlyphDef = {
+  name: "TIMESIG_1",
+  path: "M.2 9.5 4 .8q.2-.7.7-.8H5l2 .2L9 0q.9 0 .9 1v16.4q.2 1.2 1.3 1.4c1.1.2.6.6.6.6s0 .6-.7.6H2.6q-.8 0-.9-.6.1-.7.7-.6c.8 0 1.8-.6 1.8-1.5V7q0-.5-.3-.6l-.4.4-2.1 3.5s-.2.4-.6.4l-.4-.1Q0 10.4 0 10z",
+  glyphWidth: 12,
+  glyphHeight: 20,
+  yOffset: 0
+};
+export const TIMESIG_2: GlyphDef = {
+  name: "TIMESIG_2",
+  path: "M16 13.8c-.6 6.2-3.7 6.4-5.4 6.4C7 20.2 6.4 18 4.8 18c-2.3 0-2.8 2.4-3.7 2.4H.8Q.2 19.9.1 19a10 10 0 0 1 4.5-6c2-1.2 3-2.2 4.5-4a7 7 0 0 0 1.3-4.2c0-1.1 0-3.8-3.6-3.8-2.3 0-3 1-3.1 1.5 0 .8 2.7 1 2.7 3.3 0 1-.3 3.6-2.8 3.6-1.4 0-2.6-1-3.2-2.2Q0 6.3 0 5.4 0 4 1.1 2.5A7 7 0 0 1 5 .3Q6.6-.1 8.4 0c.8 0 4 .2 6 2q1.6 1.2 1.8 4-.1 2.7-1.7 3.8c-1.3 1-3 1.4-3.6 1.5-.9.3-4.3 1.5-5.1 2.9l1.4-.2c1.7 0 3.6.6 4.4 1l1.2.4h.6q1.2-.1 1.6-1.6v-.2q0-.3.6-.4.3 0 .4.6",
+  glyphWidth: 16,
+  glyphHeight: 20,
+  yOffset: 0
+};
 export const TIMESIG_3: GlyphDef = {
   name: "TIMESIG_3",
   path: "M7.7 0c1.7.2 6.7 1.2 6.7 5q0 1.3-.9 2.5-.7.7-1.5 1-.6.4-1.3.4l-.1.4v.2l.4.2 1.3.3.9.5 1 .9a4 4 0 0 1 1 2.8v.2c0 3.6-4 5.6-8 5.6h-.4C3 20 .1 18.7 0 15.6q0-1.4.9-2.4t1.9-1l.4-.1c1.1 0 2.3.6 2.7 1.6q.3.6.2 1.3c0 1.1-.9 1.7-.9 2.6v.2c0 .6.8.6 1.1.6h.4c.9 0 3-.4 3-4.6 0-.6-.3-3.7-5-3.7-.3 0-1 0-1-.5Q4 9 4.8 9c2.5-.2 4.9-1.3 4.9-4.3v-.3c0-1-.3-3-3.7-3-.4 0-1.6.3-1.7 1v.1c0 .6.6.5.8.6s1.2.1 1.3 1.6V5c0 1.4-.9 2.6-2.6 2.6h-.2C1 7.5.2 5.7.2 4.4.2 2.3 3.7 0 7.2 0z",
   glyphWidth: 15,
   glyphHeight: 20,
   yOffset: 0
-}
+};
 export const TIMESIG_4: GlyphDef = {
   name: "TIMESIG_4",
   path: "M13.7 13h2.9q.6 0 .6.8 0 .7-.6.7h-3V17c0 1.3 1 1.5 1.3 1.5q.8 0 .9.8-.1.9-.8.8H6.5q-.8-.1-.8-.8t1-.8c.7 0 1.5-.3 1.5-1.4v-2.5H.8q-.8 0-.8-.7l.1-.4v-.1l.3-.3C1.6 11.3 5.5 5.7 5.5.8q.2-1 1-.8H12q.5 0 .6.6v.2c-.2.4-6.6 9.5-9.8 12.2h5.4V9.6q0-.6.4-.9l3.8-4.6q.3-.4.8-.3.5 0 .5.6z",
   glyphWidth: 17,
   glyphHeight: 20,
   yOffset: 0
-}
+};
+export const TIMESIG_5: GlyphDef = {
+  name: "TIMESIG_5",
+  path: "M2.2 7.5q0 .3.2.3h.2q1.9-1.2 5.3-1.2c3.7 0 6.6 3 6.6 6.6S12 20 7.1 20 0 18.3 0 15v-.7c.2-1.4 1-3 3.2-3 1.7 0 3.1 1.4 3.1 3.2q0 1.6-1.5 2.6-.4.2-.5.6.1.4.5.6h1c1 0 3.3-.5 3.3-4.9S6.4 8.1 5 8.1s-2.3 1-2.7 1.3c-.5.5-.5.8-.9.8q-.7.1-.8-.6l.4-9Q1 .3 2 0l5.4.4c1.3 0 4.4-.4 5-.4q.6 0 .5.9c0 .6-.2 3.8-5.8 3.8-1.6 0-3.5-.3-3.9-.3H3q-.5 0-.6.5z",
+  glyphWidth: 15,
+  glyphHeight: 20,
+  yOffset: 0
+};
+export const TIMESIG_6: GlyphDef = {
+  name: "TIMESIG_6",
+  path: "M9.6 6h-.2q-.6-.7-.6-1.7 0-.6.3-1.1c.3-.5 1-1 1-1.5q0-.6-1.3-.6c-.8 0-3.2.2-3.3 7.6q0 1 .3 1t.3-.2a5.5 5.5 0 0 1 7.2-.1c1.3 1 2.5 2.3 2.5 4.5q-.1 2.9-2.4 4.8A8 8 0 0 1 8.2 20q-1.6 0-3.2-.6a9 9 0 0 1-3.8-3.8A13 13 0 0 1 0 10.1v-.2q.1-3 1.6-5.7A8 8 0 0 1 8.9 0q1.6 0 3.1.5c1.2.5 2.4 1.4 2.6 2.7v.5a3 3 0 0 1-2.2 2.9l-1 .1q-1 0-1.8-.7m-1.5 4c-1.3 0-2.3 2-2.3 4.4S6.8 19 8 19s2.3-2 2.3-4.5c0-2.4-1-4.4-2.3-4.4",
+  glyphWidth: 16,
+  glyphHeight: 20,
+  yOffset: 0
+};
+export const TIMESIG_7: GlyphDef = {
+  name: "TIMESIG_7",
+  path: "M16 1.8V2c0 4-4.7 9.8-4.7 16.5q0 1.6-.7 1.5c-.4 0-2.2-.4-3.2-.4l-2.6.4q-1 0-.8-1.3c0-1.5 1.2-3.9 2.8-5.6 2.4-2.9 5.4-5.1 5.4-6.2q0-.4-.2-.4l-.4.2c-.3.2-.9.8-2 .8-2.3 0-4.2-3-5.8-3C2 4.5 1.4 6.8 1 7.8q0 .8-.6.8C0 8.6 0 8 0 8V1.4Q0 .9.4.9q.3 0 .5.3.4.8 1 1 .3 0 1.1-.8C3.6 1 4.2 0 6.5 0c3.3 0 5.2 3.4 6.2 3.4s1.5-2.3 1.8-2.8c.2-.2.8-.4.9-.4q.8 0 .6 1.6",
+  glyphWidth: 16,
+  glyphHeight: 20,
+  yOffset: 0
+};
+export const TIMESIG_8: GlyphDef = {
+  name: "TIMESIG_8",
+  path: "M12.6 9c1.8.9 3.2 2.2 3.2 4.6 0 5.4-4.2 7.1-8.2 7.1S0 19.1 0 15.7c0-2.6 1.6-3.9 3.7-4.9-2-1-3.5-2.6-3.5-5.3C.2 2 3.4 0 8 0c1 0 7 .6 7 4.7q-.2 3-2.4 4.2m-2.1-1q2-1.1 2.1-3.4c0-2.8-3.4-3.4-4.7-3.4-1.7 0-4 .8-4 2.5 0 2.5 3.4 3.2 6.6 4.3M7.4 19.4c2.7 0 4-1.4 4-3 0-2.6-3-3.4-6-4.7-1.7.7-3.1 2.1-3.1 3.7 0 2.6 2.4 4 5.1 4",
+  glyphWidth: 16,
+  glyphHeight: 20,
+  yOffset: 0
+};
+export const TIMESIG_9: GlyphDef = {
+  name: "TIMESIG_9",
+  path: "M6.2 14q.6.7.6 1.7 0 .6-.3 1.1c-.2.5-1 1-1 1.5q.1.6 1.4.6c.8 0 3.2-.2 3.3-7.6q0-1-.4-1l-.2.2a5.5 5.5 0 0 1-7.2.1A6 6 0 0 1 0 6.2q.2-2.8 2.3-4.8A8 8 0 0 1 7.6 0q1.6 0 3.2.6a9 9 0 0 1 3.7 3.8 13 13 0 0 1 1.3 5.5v.2q-.1 3-1.6 5.7A8 8 0 0 1 6.9 20q-1.6 0-3.2-.5-2-.7-2.5-2.7v-.5a3 3 0 0 1 2.2-2.9l1-.1q1 0 1.8.7m1.5-4C9 10 10 8 10 5.6S9 1 7.7 1 5.3 3 5.3 5.6C5.3 8 6.4 10 7.7 10",
+  glyphWidth: 16,
+  glyphHeight: 20,
+  yOffset: 0
+};

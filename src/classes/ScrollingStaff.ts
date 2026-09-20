@@ -3,7 +3,7 @@ import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDEN
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
-import type { StaffTypes } from "../types";
+import type { SystemTypes } from "../types";
 import NoteRenderer from "./NoteRenderer";
 import SVGRenderer from "./SVGRenderer";
 
@@ -11,7 +11,7 @@ export type ScrollingStaffOptions = {
   width?: number;
   scale?: number;
   noteStartX?: number;
-  staffType?: StaffTypes;
+  staffType?: SystemTypes;
   padding?: number;
   svgAutoFill?: boolean;
   onNotesOut?: () => void;

@@ -45,11 +45,17 @@ const domElements = {
 };
 
 const musicStaffGrand = new MusicStaff(rootGrand, {
+  width: 550,
+  scale: 1,
+  svgAutoFill: true,
+  // noteStartX: 0,
+  // padding: 80,
   staffType: "grand",
-  keySignature: "Eb",
-  width: 500,
-  scale: 1.4,
-  svgAutoFill: true
+  keySignature: "F#",
+  timeSignature: {
+    topNumber: 3,
+    bottomNumber: 4
+  },
 
   // spaceAbove: 0,
   // spaceBelow: 3,
@@ -60,6 +66,10 @@ const musicStaffTreble = new MusicStaff(rootTreble, {
   scale: 1.4,
   staffType: "treble",
   keySignature: "G",
+  timeSignature: {
+    topNumber: 4,
+    bottomNumber: 8
+  },
 
   // spaceBelow: 2,
   // spaceAbove: 4
@@ -70,6 +80,10 @@ const musicStaffBass = new MusicStaff(rootBass, {
   scale: 1.4,
   staffType: "bass",
   keySignature: "G",
+  timeSignature: {
+    topNumber: 4,
+    bottomNumber: 4
+  },
 
   // spaceAbove: 2,
   // spaceBelow: 0,
