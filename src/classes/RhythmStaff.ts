@@ -7,10 +7,10 @@ import SVGRenderer from "./SVGRenderer";
 export type RhythmStaffOptions = {
   width?: number;
   scale?: number;
-  topNumber?: number;
   barsCount?: number;
   padding?: number;
   svgAutoFill?: boolean;
+  topNumber?: number;
 
   /** @deprecated Use `padding` instead. */
   spaceAbove?: number;

@@ -103,8 +103,12 @@ const scrollingStaff = new ScrollingStaff(rootScrolling, {
   width: 350,
   scale: 1.4,
   noteStartX: 20,
+  onNotesOut: onScrollingStaffOut,
   staffType: "grand",
-  onNotesOut: onScrollingStaffOut
+  timeSignature: {
+    topNumber: 4,
+    bottomNumber: 4
+  },
 
   // spaceAbove: 1,
   // spaceBelow: 1,

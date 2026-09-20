@@ -5,16 +5,22 @@ import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
 import type { SystemTypes } from "../types";
 import NoteRenderer from "./NoteRenderer";
+import StaffRenderer, { CLEF_X_OFFSET } from "./StaffRenderer";
 import SVGRenderer from "./SVGRenderer";
 
 export type ScrollingStaffOptions = {
   width?: number;
   scale?: number;
   noteStartX?: number;
-  staffType?: SystemTypes;
   padding?: number;
+  staffType?: SystemTypes;
   svgAutoFill?: boolean;
   onNotesOut?: () => void;
+  keySignature?: string;
+  timeSignature?: {
+    topNumber: number;
+    bottomNumber: number;
+  };
 
   /** @deprecated Use `padding` instead. */
   spaceAbove?: number;
@@ -47,6 +53,7 @@ export default class ScrollingStaff {
   private svgRendererInstance: SVGRenderer;
   private strategyInstance: StaffStrategy;
   private noteRendererInstance: NoteRenderer;
+  private staffRenderer: StaffRenderer;
 
   private options: Required<ScrollingStaffOptions>;
 
@@ -56,7 +63,6 @@ export default class ScrollingStaff {
   private notesLayer: SVGGElement;
 
   private noteCursorX: number = 0;
-  private noteStartX: number;
 
   /**
    * Creates an instance of a ScrollingStaff, A single staff that takes in a queue of notes that can be advanced with in a 'endless' style of staff.
@@ -68,7 +74,7 @@ export default class ScrollingStaff {
     this.options = {
       width: 300,
       scale: 1,
-      noteStartX: 0,
+      noteStartX: NOTE_LAYER_START_X,
       staffType: "treble",
       padding: 20,
       svgAutoFill: true,
@@ -100,6 +106,7 @@ export default class ScrollingStaff {
     };
     // Create instance of NoteRenderer, with ref to svgRenderer and the strategy
     this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance, this.strategyInstance);
+    this.staffRenderer = new StaffRenderer(this.svgRendererInstance);
 
     // Create layers
     const staffLayer = this.svgRendererInstance.createLayer("staff");
@@ -117,15 +124,54 @@ export default class ScrollingStaff {
       this.options.padding += this.options.spaceBelow * STAFF_LINE_SPACING;
     };
 
-    const baseStaffHeight = this.strategyInstance.drawStaff(this.options.width, staffLayer);
-    this.noteStartX = NOTE_LAYER_START_X + this.options.noteStartX;
+    // Draw staff methods
+    const staffGroup = this.svgRendererInstance.createGroup("staff");
 
-    // Apply note x offset
-    const totalHeight = baseStaffHeight + (this.options.padding * 2);
-    staffLayer.setAttribute("transform", `translate(0, ${this.options.padding})`);
-    notesLayer.setAttribute("transform", `translate(${this.noteStartX}, ${this.options.padding})`);
+    const { totalStaffHeight, glyphWidth } = this.staffRenderer.drawStaff({
+      width: this.options.width,
+      staffType: this.options.staffType,
+      startYPos: 0,
+      staffGroup
+    });
 
-    // Commit to DOM for one batch operation
+    let currentStaffX = glyphWidth + CLEF_X_OFFSET;
+
+    if (this.options.keySignature) {
+      const keySigWidth = this.staffRenderer.drawKeySignature({
+        keySignature: this.options.keySignature,
+        staffGroup: staffGroup,
+        staffType: this.options.staffType,
+        startX: currentStaffX
+      });
+      currentStaffX += keySigWidth;
+    };
+
+    if (this.options.timeSignature) {
+      const timeSigWidth = this.staffRenderer.drawTimeSignature({
+        topNumber: this.options.timeSignature.topNumber,
+        bottomNumber: this.options.timeSignature.bottomNumber,
+        staffGroup: staffGroup,
+        staffType: this.options.staffType,
+        startX: currentStaffX
+      });
+      currentStaffX += timeSigWidth;
+    }
+
+    this.staffRenderer.drawStaffBarLine(0.5, this.options.staffType, staffGroup);
+    this.staffRenderer.drawStaffBarLine(this.options.width - 0.5, this.options.staffType, staffGroup);
+
+    staffLayer.appendChild(staffGroup);
+
+    // Start the notes at the end of the drawn glyphs on staff + padding from the note start X
+    let noteStartX = this.options.noteStartX + currentStaffX;
+
+    // Applying sizing to root SVG
+    const totalHeight = totalStaffHeight + (this.options.padding * 2);
+    const totalYOffset = this.options.padding;
+
+    staffLayer.setAttribute("transform", `translate(0, ${totalYOffset})`);
+    notesLayer.setAttribute("transform", `translate(${noteStartX}, ${this.options.padding})`);
+
     this.svgRendererInstance.setRootSVGSizing(this.options.width, totalHeight, this.options.scale);
     this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
 

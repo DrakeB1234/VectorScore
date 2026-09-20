@@ -8,8 +8,6 @@ type DrawStaffArgs = {
   staffType: SystemTypes;
   startYPos: number;
   staffGroup: SVGGElement;
-  /** @description overrides the global constant for grand staff spacing */
-  grandStaffSpacing?: number;
 };
 
 type DrawKeySignatureArgs = {
@@ -18,8 +16,6 @@ type DrawKeySignatureArgs = {
   startX: number,
   staffType: SystemTypes,
   staffGroup: SVGGElement,
-  /** @description overrides the global constant for start x of key sig */
-  grandStaffSpacing?: number;
 }
 
 type DrawTimeSignatureArgs = {
@@ -28,8 +24,6 @@ type DrawTimeSignatureArgs = {
   startX: number,
   staffType: SystemTypes,
   staffGroup: SVGGElement,
-  /** @description overrides the global constant for start x of key sig */
-  grandStaffSpacing?: number;
 }
 
 const STAFF_LINE_COUNT = 5;
@@ -85,8 +79,12 @@ export const KEY_SIG_OCTAVES: Record<StaffTypes, Record<string, number[]>> = {
 export default class StaffRenderer {
   private svgRendererInstance: SVGRenderer;
 
-  constructor(svgRenderer: SVGRenderer) {
+  private grandStaffSpacing: number = GRAND_STAFF_SPACING;
+
+  constructor(svgRenderer: SVGRenderer, overrideGrandStaffSpacing?: number) {
     this.svgRendererInstance = svgRenderer;
+
+    if (overrideGrandStaffSpacing) this.grandStaffSpacing = overrideGrandStaffSpacing;
   };
 
   // Returns the width of the clef glyph
@@ -146,16 +144,16 @@ export default class StaffRenderer {
    * @returns {number} totalStaffHeight: The total space taken by either single staff or grand staff (which grand staff includes the spacing inbetween the two staffs)
    * @returns {number} glyphWidth: The width of the clef glyph
   */
-  public drawStaff({ width, staffType, startYPos, staffGroup, grandStaffSpacing = GRAND_STAFF_SPACING }: DrawStaffArgs) {
+  public drawStaff({ width, staffType, startYPos, staffGroup }: DrawStaffArgs) {
     if (staffType === "grand") {
       const treble = this.drawSingleStaff(width, "treble", startYPos, staffGroup);
-      const bass = this.drawSingleStaff(width, "bass", startYPos + treble.totalStaffHeight + grandStaffSpacing, staffGroup);
+      const bass = this.drawSingleStaff(width, "bass", startYPos + treble.totalStaffHeight + this.grandStaffSpacing, staffGroup);
 
       // Choose the largest glyph from drawn glyphs
       const widestGlyph = Math.max(treble.glyphWidth, bass.glyphWidth);
 
       return {
-        totalStaffHeight: treble.totalStaffHeight + bass.totalStaffHeight + grandStaffSpacing,
+        totalStaffHeight: treble.totalStaffHeight + bass.totalStaffHeight + this.grandStaffSpacing,
         glyphWidth: widestGlyph
       };
     }
@@ -167,14 +165,14 @@ export default class StaffRenderer {
     let topY = BASE_STAFF_HEIGHT;
 
     if (staffType === "grand") {
-      topY = topY * 2 + GRAND_STAFF_SPACING;
+      topY = topY * 2 + this.grandStaffSpacing;
     }
 
     this.svgRendererInstance.drawLine(xPos, 0, xPos, topY, staffGroup);
   };
 
   /** @returns Total X space taken by the key signature */
-  public drawKeySignature({ keySignature, staffType, startX: clefEndX, grandStaffSpacing = GRAND_STAFF_SPACING, staffGroup }: DrawKeySignatureArgs): number {
+  public drawKeySignature({ keySignature, staffType, startX: clefEndX, staffGroup }: DrawKeySignatureArgs): number {
     const def = KEY_SIGNATURES[keySignature];
     if (!def) throw new Error(`Unknown key signature "${keySignature}". Valid keys: ${Object.keys(KEY_SIGNATURES).join(", ")}`);
     if (def.count === 0) return 0;
@@ -199,7 +197,7 @@ export default class StaffRenderer {
         this.svgRendererInstance.drawGlyph(glyphDef.name, staffGroup, { x: xOffset, y: trebleY });
 
         const bassSteps = getPitchStepClefDifference(name, bassOctaves[i], "bass");
-        const bassY = (bassSteps * STAFF_LINE_SPACING_HALVED) + trebleStaffHeight + grandStaffSpacing;
+        const bassY = (bassSteps * STAFF_LINE_SPACING_HALVED) + trebleStaffHeight + this.grandStaffSpacing;
         this.svgRendererInstance.drawGlyph(glyphDef.name, staffGroup, { x: xOffset, y: bassY });
       });
 
@@ -221,7 +219,7 @@ export default class StaffRenderer {
   }
 
   /** @returns Total X space taken by the time signature */
-  public drawTimeSignature({ topNumber, bottomNumber, staffType, startX, staffGroup, grandStaffSpacing = GRAND_STAFF_SPACING }: DrawTimeSignatureArgs) {
+  public drawTimeSignature({ topNumber, bottomNumber, staffType, startX, staffGroup }: DrawTimeSignatureArgs) {
     const paddedStartX = startX + TIME_SIG_PADDING;
 
     // Calculate widths to determine the bounding box
@@ -241,7 +239,7 @@ export default class StaffRenderer {
     this.drawTimeSigNumber(bottomNumber, bottomStartX, numberHeight, staffGroup);
 
     if (staffType === "grand") {
-      const newBaseY = BASE_STAFF_HEIGHT + grandStaffSpacing;
+      const newBaseY = BASE_STAFF_HEIGHT + this.grandStaffSpacing;
 
       this.drawTimeSigNumber(topNumber, topStartX, newBaseY, staffGroup);
       this.drawTimeSigNumber(bottomNumber, bottomStartX, newBaseY + numberHeight, staffGroup);

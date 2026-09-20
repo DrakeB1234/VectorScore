@@ -13,15 +13,15 @@ export type MusicStaffOptions = {
   width?: number;
   scale?: number;
   noteStartX?: number;
+  padding?: number;
   staffType?: SystemTypes;
+  svgAutoFill?: boolean;
   keySignature?: string;
   timeSignature?: {
     topNumber: number;
     bottomNumber: number;
   };
 
-  padding?: number;
-  svgAutoFill?: boolean;
 
   /** @deprecated Use `padding` instead. */
   spaceAbove?: number;
@@ -117,7 +117,7 @@ export default class MusicStaff {
       width: this.options.width,
       staffType: this.options.staffType,
       startYPos: 0,
-      staffGroup
+      staffGroup,
     });
 
     let currentStaffX = glyphWidth + CLEF_X_OFFSET;
