@@ -55,7 +55,7 @@ const musicStaffGrand = new MusicStaff(rootGrand, {
   scale: 1.2,
   svgAutoFill: true,
   // noteStartX: 0,
-  // padding: 80,
+  padding: 50,
   staffType: "grand",
   keySignature: "G",
   timeSignature: {

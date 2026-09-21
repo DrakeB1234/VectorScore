@@ -1,6 +1,6 @@
 import { NOTE_LAYER_START_X, NOTE_SPACING, STAFF_LINE_SPACING } from "../constants";
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { _parseNoteString, getPitchStepClefDifference } from "../helpers/_noteHelpers";
+import { _parseNoteString, getPitchStepClefDifference, parseChordNoteString } from "../helpers/_noteHelpers";
 import { parseNoteString } from "../helpers/notehelpers";
 import { validateKeySignature, validateTimeSignature } from "../helpers/staffHelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
@@ -117,8 +117,8 @@ export default class MusicStaff {
     this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance, _oldStrategyInstance);
 
     // Create layers
-    const notesLayer = this.svgRendererInstance.createLayer("notes");
     const staffLayer = this.svgRendererInstance.createLayer("staff");
+    const notesLayer = this.svgRendererInstance.createLayer("notes");
     this.notesLayer = notesLayer;
 
     // Determine staff spacing positioning
@@ -182,6 +182,28 @@ export default class MusicStaff {
     this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
 
     this.svgRendererInstance.commitElementsToDOM(this.svgRendererInstance.svgElementRef);
+
+    // TEST
+
+    const noteObjs = [
+      parseChordNoteString("A3"),
+      parseChordNoteString("B3"),
+      parseChordNoteString("C4"),
+      // parseChordNoteString("D4"),
+      parseChordNoteString("E4"),
+      // parseChordNoteString("F4"),
+      parseChordNoteString("G4"),
+      // parseChordNoteString("A4"),
+
+      // parseChordNoteString("A5"),
+      // parseChordNoteString("G5"),
+      // parseChordNoteString("F5"),
+      // parseChordNoteString("E5"),
+    ];
+
+    const chordGroup = this.svgRendererInstance.createGroup("chord");
+    const { totalWidth: _, accidentalWidth } = this._noteRendererInstance.drawChord(noteObjs, "e", "treble", chordGroup);
+    this.notesLayer.appendChild(chordGroup);
   };
 
   public devDrawNote(noteString: string) {

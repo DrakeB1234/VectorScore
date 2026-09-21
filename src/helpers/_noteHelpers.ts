@@ -6,7 +6,16 @@ export interface VSNoteObj {
   accidental: NoteAccidentals | undefined;
   octave: number;
   duration: NoteDurations;
-}
+};
+
+export type VSChordNoteObj = Omit<VSNoteObj, "duration">;
+
+export type PositionedChordNote = {
+  noteObj: VSChordNoteObj;
+  pitchStep: number;
+  yPos: number;
+  xOffset: number;
+};
 
 export type NoteLetters = "A" | "B" | "C" | "D" | "E" | "F" | "G";
 export type NoteDurations = "w" | "h" | "q" | "e" | "s";
@@ -24,7 +33,11 @@ const CLEF_TOP_LINE_STEPS: Record<ClefTypes, number> = {
   "alto": 32
 };
 
+export const MIDDLE_LINE_STEP = 4;
+const SECOND_INTERVAL_X_OFFSET = 1;
+
 const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqesWHQES])$/;
+const REGEX_CHORD_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)$/;
 
 export function _parseNoteString(noteString: string): VSNoteObj {
   const match = noteString.match(REGEX_NOTE_STRING);
@@ -42,6 +55,26 @@ export function _parseNoteString(noteString: string): VSNoteObj {
     letter: letter as NoteLetters,
     octave: parseInt(octave),
     duration: duration as NoteDurations,
+    accidental: accidental ? accidental as NoteAccidentals : undefined
+  }
+
+  return noteObj;
+};
+
+export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
+  const match = chordNoteString.match(REGEX_CHORD_NOTE_STRING);
+
+  if (!match || !match.groups) {
+    throw new Error(`Invalid note string format: ${chordNoteString}. Expected format: [A-Ga-g][#|b]?[0-9].`);
+  };
+
+  let { letter, accidental, octave } = match.groups;
+
+  letter = letter.toUpperCase();
+
+  const noteObj: VSChordNoteObj = {
+    letter: letter as NoteLetters,
+    octave: parseInt(octave),
     accidental: accidental ? accidental as NoteAccidentals : undefined
   }
 
@@ -74,4 +107,52 @@ export function getLedgerLineYCoords(rawPitchStep: number): number[] {
   }
 
   return ledgerYCoords;
+};
+
+export function isSecondInterval(lowNotePitchStep: number, highNotePitchStep: number) {
+  return Math.abs(highNotePitchStep - lowNotePitchStep) === 1;
+};
+
+export function getChordStemDirection(notes: PositionedChordNote[]): boolean {
+  if (notes.length === 0) return false;
+
+  const steps = notes.map(n => n.pitchStep);
+  const lowestPitchStep = Math.max(...steps);
+  const highestPitchStep = Math.min(...steps);
+
+  const distLow = Math.abs(lowestPitchStep - MIDDLE_LINE_STEP);
+  const distHigh = Math.abs(highestPitchStep - MIDDLE_LINE_STEP);
+
+  // Rule: The note furthest from the middle line dictates the stem. 
+  // If equal distance, standard notation defaults to stem DOWN.
+  return distHigh >= distLow;
+}
+
+/** @returns X offset IF has second interval, will be 0 unless is offsetted negatively */
+export function applySecondIntervalOffsets(notes: PositionedChordNote[], isStemDown: boolean, baseWidth: number) {
+
+  // Sort pitches lowest to highest pitch
+  const sorted = notes.sort((a, b) => b.pitchStep - a.pitchStep);
+
+  if (!isStemDown) {
+    // STEM UP: Base notes sit on the LEFT. Displaced notes shift RIGHT.
+    // Iterate bottom-to-top, shifting the higher note of the collision to the right.
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const lowerNote = sorted[i];
+      const higherNote = sorted[i + 1];
+
+      if (isSecondInterval(lowerNote.pitchStep, higherNote.pitchStep) && lowerNote.xOffset === 0) {
+        higherNote.xOffset = baseWidth - SECOND_INTERVAL_X_OFFSET;
+      }
+    }
+  } else {
+    for (let i = sorted.length - 1; i > 0; i--) {
+      const higherNote = sorted[i];
+      const lowerNote = sorted[i - 1];
+
+      if (isSecondInterval(lowerNote.pitchStep, higherNote.pitchStep) && higherNote.xOffset === 0) {
+        lowerNote.xOffset = -baseWidth + SECOND_INTERVAL_X_OFFSET;
+      }
+    }
+  }
 }
