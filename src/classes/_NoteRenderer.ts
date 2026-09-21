@@ -1,11 +1,11 @@
-import { STAFF_LINE_COUNT, STAFF_LINE_SPACING } from "../constants";
 import { getAccidentalGlyph, getFlagGlyph, getNoteheadGlyphByDuration } from "../glyphs";
 import { convertPitchStepToYPos, getLedgerLineYCoords, getPitchStepClefDifference, type VSNoteObj } from "../helpers/_noteHelpers";
 import type { ClefTypes } from "../types";
 import type SVGRenderer from "./SVGRenderer";
 
 const ACCIDENTAL_X_OFFSET = 3;
-const NOTE_STEM_LENGTH = (STAFF_LINE_SPACING * (STAFF_LINE_COUNT - 1)) - 5;
+const STANDARD_STEM_STEPS = 7;
+const MIDDLE_LINE_STEP = 4;
 const STEM_X_OFFSET = 0.5;
 const LEDGER_LINE_PADDING = 3;
 const FLAG_Y_OFFSET = 3;
@@ -45,19 +45,25 @@ export default class NoteRenderer {
     };
 
     const isStemDown = notePitchStep <= 4;
+    let stemX = 0;
+    let stemEndY = 0;
 
-    // Render stem
+    // Render stem, will draw to middle line if note is greater than +-1 ledger line below staff
     if (noteObj.duration !== "w") {
-      let stemX: number, stemStartY: number, stemEndY: number;
+      let stemStartY: number;
 
       if (isStemDown) {
         stemX = STEM_X_OFFSET;
         stemStartY = noteYPos;
-        stemEndY = noteYPos + NOTE_STEM_LENGTH;
+
+        const targetTipStep = Math.max(notePitchStep + STANDARD_STEM_STEPS, MIDDLE_LINE_STEP);
+        stemEndY = convertPitchStepToYPos(targetTipStep);
       } else {
         stemX = noteHeadDef.glyphWidth - STEM_X_OFFSET;
         stemStartY = noteYPos;
-        stemEndY = noteYPos - NOTE_STEM_LENGTH;
+
+        const targetTipStep = Math.min(notePitchStep - STANDARD_STEM_STEPS, MIDDLE_LINE_STEP);
+        stemEndY = convertPitchStepToYPos(targetTipStep);
       };
 
       this.svgRendererInstance.drawLine(stemX, stemStartY, stemX, stemEndY, noteGroup);
@@ -70,12 +76,12 @@ export default class NoteRenderer {
       if (isStemDown) {
         this.svgRendererInstance.drawGlyph(def.name, noteGroup, {
           x: 0,
-          y: noteYPos + FLAG_Y_OFFSET
+          y: stemEndY + FLAG_Y_OFFSET
         });
       } else {
         this.svgRendererInstance.drawGlyph(def.name, noteGroup, {
           x: noteHeadDef.glyphWidth - FLAG_X_OFFSET,
-          y: noteYPos - def.glyphHeight - FLAG_Y_OFFSET
+          y: stemEndY - FLAG_Y_OFFSET
         });
       };
     };

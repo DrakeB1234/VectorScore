@@ -2,13 +2,13 @@ import { STAFF_LINE_SPACING } from "../constants";
 import type { ClefTypes } from "../types";
 
 export interface VSNoteObj {
-  letter: NoteNames;
+  letter: NoteLetters;
   accidental: NoteAccidentals | undefined;
   octave: number;
   duration: NoteDurations;
 }
 
-export type NoteNames = "A" | "B" | "C" | "D" | "E" | "F" | "G";
+export type NoteLetters = "A" | "B" | "C" | "D" | "E" | "F" | "G";
 export type NoteDurations = "w" | "h" | "q" | "e" | "s";
 export type NoteAccidentals = "#" | "b" | "n" | "##" | "bb";
 
@@ -23,6 +23,30 @@ const CLEF_TOP_LINE_STEPS: Record<ClefTypes, number> = {
   "bass": 26,
   "alto": 32
 };
+
+const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqesWHQES])$/;
+
+export function _parseNoteString(noteString: string): VSNoteObj {
+  const match = noteString.match(REGEX_NOTE_STRING);
+
+  if (!match || !match.groups) {
+    throw new Error(`Invalid note string format: ${noteString}. Expected format: [A-Ga-g][#|b]?[0-9][w|h|q|e].`);
+  };
+
+  let { letter, accidental, octave, duration } = match.groups;
+
+  letter = letter.toUpperCase();
+  duration = duration.toLowerCase();
+
+  const noteObj: VSNoteObj = {
+    letter: letter as NoteLetters,
+    octave: parseInt(octave),
+    duration: duration as NoteDurations,
+    accidental: accidental ? accidental as NoteAccidentals : undefined
+  }
+
+  return noteObj;
+}
 
 function getPitchStep(letter: string, octave: number) {
   return (octave * 7) + DIATONIC_STEPS[letter];

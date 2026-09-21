@@ -138,7 +138,6 @@ let selectedStaff: SelectedStaff = {
 };
 
 changeStaff("grand");
-domElements.inputNotes.value = "D4/F4/A4";
 
 function onScrollingStaffOut() {
   console.log("OUT HANDLED")
@@ -215,10 +214,10 @@ domElements.buttonDrawTime?.addEventListener("click", () => {
 });
 
 domElements.buttonTest?.addEventListener("click", () => {
-  if (selectedStaff.staff instanceof RhythmStaff || selectedStaff.staff instanceof ScrollingStaff) return;
+  if (!(selectedStaff.staff instanceof MusicStaff)) return;
+  const note = domElements.inputNotes.value;
 
-  // selectedStaff.staff.changeTimeSignature(4, 4);
-  // selectedStaff.staff.changeKeySignature("E");
+  selectedStaff.staff.devDrawNote(note);
 })
 
 domElements.buttonFill?.addEventListener("click", () => {
