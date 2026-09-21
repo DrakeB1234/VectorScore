@@ -72,6 +72,22 @@ export function getTimeSigGlyph(number: number) {
       throw new Error("Unable to retrieve time signature glpyh for given value " + number);
     };
   }
+};
+
+export function getFlagGlyph(duration: Extract<NoteDurations, "s" | "e">, isDown: boolean) {
+  switch (duration) {
+    case "e": {
+      if (isDown) return FLAG_EIGHTH_DOWN
+      return FLAG_EIGHTH_UP
+    }
+    case "s": {
+      if (isDown) return FLAG_SIXTEENTH_DOWN
+      return FLAG_SIXTEENTH_UP
+    }
+    default: {
+      throw new Error("Unable to retrieve flag glpyh for given value " + duration);
+    };
+  }
 }
 
 export const NOTEHEAD_WHOLE: GlyphDef = {
@@ -181,7 +197,7 @@ export const FLAG_EIGHTH_DOWN: GlyphDef = {
   path: "m9.6 2-.1-.8q.1-1.1 1-1.2.4 0 .6.6c.3 1.3 1.1 4.1 1.1 7.2 0 5-2.4 9.8-5 13.8-2 3.1-5 6.6-5.6 10.4q-.2.9-1 .9-.5 0-.6-.6v-9.4c5.4-1.8 7.4-5 8.8-8.4a22 22 0 0 0 1.6-7.1 18 18 0 0 0-.8-5.5",
   glyphWidth: 12,
   glyphHeight: 33,
-  yOffset: -33
+  yOffset: 0
 };
 export const FLAG_SIXTEENTH_UP: GlyphDef = {
   name: "FLAG_SIXTEENTH_UP",
@@ -195,7 +211,7 @@ export const FLAG_SIXTEENTH_DOWN: GlyphDef = {
   path: "M9.6 1q-.1-1 .7-1c.5 0 .7 0 1 .9q.3 1.9.3 4 0 3.3-1.2 6.1v.6c.1.3 1 2.7 1 5.1l-.1 1.5c-1 6.2-8.9 8-9.8 14.1q-.3.6-.8.5t-.7-.4V17h.2c2.5-.1 5.7-.2 8.5-5.8Q10 8.2 10 5q0-2-.4-4M9 14.2l-.2.2-2.2 2.8c-1.9 2.2-4.1 3-5 6.4q0 .5.6.5h.3c2.4 0 5-2.3 6.3-4.2q1-1.6 1-3.6v-.8l-.2-1z",
   glyphWidth: 12,
   glyphHeight: 33,
-  yOffset: -33
+  yOffset: 0
 };
 
 export const CLEF_TREBLE: GlyphDef = {

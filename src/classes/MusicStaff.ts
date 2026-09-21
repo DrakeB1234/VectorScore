@@ -1,5 +1,5 @@
 import { NOTE_LAYER_START_X, NOTE_SPACING, STAFF_LINE_SPACING } from "../constants";
-import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
 import { parseNoteString } from "../helpers/notehelpers";
 import { validateKeySignature, validateTimeSignature } from "../helpers/staffHelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
@@ -35,7 +35,8 @@ const USE_GLPYHS: GlyphDef[] = [
   CLEF_TREBLE, CLEF_BASS, CLEF_ALTO,
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
   ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT,
-  TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9
+  TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9,
+  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP
 ];
 
 type NoteEntry = {
@@ -183,15 +184,30 @@ export default class MusicStaff {
 
     // ==== TEST ====
 
-    const noteGroup = this.svgRendererInstance.createGroup("note");
-    const { noteHeadWidth: _, accidentalWidth } = this._noteRendererInstance.drawNote({ letter: "C", accidental: "#", duration: "q", octave: 4 }, "treble", noteGroup);
-    noteGroup.setAttribute("transform", `translate(${accidentalWidth}, 0)`);
-    this.notesLayer.appendChild(noteGroup);
-
-    const noteGroup2 = this.svgRendererInstance.createGroup("note");
-    const { noteHeadWidth: __, accidentalWidth: accidentalWidth2 } = this._noteRendererInstance.drawNote({ letter: "C", accidental: "#", duration: "q", octave: 4 }, "bass", noteGroup2);
-    noteGroup2.setAttribute("transform", `translate(${accidentalWidth2}, ${GRAND_STAFF_SPACING + BASE_STAFF_HEIGHT})`);
-    this.notesLayer.appendChild(noteGroup2);
+    if (true) {
+      const noteGroup = this.svgRendererInstance.createGroup("note");
+      const { noteHeadWidth: _, accidentalWidth } = this._noteRendererInstance.drawNote({ letter: "F", accidental: "#", duration: "e", octave: 5 }, "treble", noteGroup);
+      noteGroup.setAttribute("transform", `translate(${accidentalWidth}, 0)`);
+      this.notesLayer.appendChild(noteGroup);
+    }
+    if (true) {
+      const noteGroup = this.svgRendererInstance.createGroup("note");
+      const { noteHeadWidth: _, accidentalWidth } = this._noteRendererInstance.drawNote({ letter: "B", accidental: "#", duration: "s", octave: 4 }, "treble", noteGroup);
+      noteGroup.setAttribute("transform", `translate(${accidentalWidth + 30}, 0)`);
+      this.notesLayer.appendChild(noteGroup);
+    }
+    if (true) {
+      const noteGroup = this.svgRendererInstance.createGroup("note");
+      const { noteHeadWidth: _, accidentalWidth } = this._noteRendererInstance.drawNote({ letter: "C", accidental: "#", duration: "h", octave: 4 }, "bass", noteGroup);
+      noteGroup.setAttribute("transform", `translate(${accidentalWidth + 60}, ${GRAND_STAFF_SPACING + BASE_STAFF_HEIGHT})`);
+      this.notesLayer.appendChild(noteGroup);
+    }
+    if (true) {
+      const noteGroup = this.svgRendererInstance.createGroup("note");
+      const { noteHeadWidth: _, accidentalWidth } = this._noteRendererInstance.drawNote({ letter: "G", accidental: "#", duration: "q", octave: 2 }, "bass", noteGroup);
+      noteGroup.setAttribute("transform", `translate(${accidentalWidth + 90}, ${GRAND_STAFF_SPACING + BASE_STAFF_HEIGHT})`);
+      this.notesLayer.appendChild(noteGroup);
+    }
   };
 
   private updateStaffLayout() {
