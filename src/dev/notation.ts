@@ -20,6 +20,7 @@ if (!rootGrand || !rootTreble || !rootBass || !rootAlto || !rootScrolling || !ro
 };
 
 const domElements = {
+  buttonTest: document.getElementById("notation-button-test") as HTMLButtonElement,
   buttonAddNotes: document.getElementById("notation-button-addnotes") as HTMLButtonElement,
   buttonAddChord: document.getElementById("notation-button-addchord") as HTMLButtonElement,
 
@@ -28,6 +29,11 @@ const domElements = {
   buttonJustifyNotes: document.getElementById("notation-button-justify") as HTMLButtonElement,
   buttonClearNotes: document.getElementById("notation-button-clearnotes") as HTMLButtonElement,
 
+  inputKey: document.getElementById("notation-input-key") as HTMLInputElement,
+  inputTime: document.getElementById("notation-input-time") as HTMLInputElement,
+  buttonDrawKey: document.getElementById("notation-button-key") as HTMLButtonElement,
+  buttonDrawTime: document.getElementById("notation-button-time") as HTMLButtonElement,
+
   buttonDrawBeamNotes: document.getElementById("notation-button-drawbeam") as HTMLButtonElement,
   buttonDrawRests: document.getElementById("notation-button-drawrest") as HTMLButtonElement,
   buttonIncrementBeat: document.getElementById("notation-button-incrementbeat") as HTMLButtonElement,
@@ -35,7 +41,7 @@ const domElements = {
   buttonCompare: document.getElementById("notation-button-compare") as HTMLButtonElement,
   buttonResetCompare: document.getElementById("notation-button-resetcompare") as HTMLButtonElement,
 
-  buttonTest: document.getElementById("notation-button-test") as HTMLButtonElement,
+  buttonFill: document.getElementById("notation-button-fill") as HTMLButtonElement,
   buttonAdvance: document.getElementById("notation-button-advance") as HTMLButtonElement,
 
   inputStaff: document.getElementById("notation-select-staff") as HTMLSelectElement,
@@ -45,13 +51,13 @@ const domElements = {
 };
 
 const musicStaffGrand = new MusicStaff(rootGrand, {
-  width: 550,
-  scale: 1,
+  width: 450,
+  scale: 1.2,
   svgAutoFill: true,
   // noteStartX: 0,
   // padding: 80,
   staffType: "grand",
-  keySignature: "F#",
+  keySignature: "G",
   timeSignature: {
     topNumber: 3,
     bottomNumber: 4
@@ -105,6 +111,7 @@ const scrollingStaff = new ScrollingStaff(rootScrolling, {
   noteStartX: 20,
   onNotesOut: onScrollingStaffOut,
   staffType: "grand",
+  // keySignature: "D",
   timeSignature: {
     topNumber: 4,
     bottomNumber: 4
@@ -189,7 +196,32 @@ function changeStaff(name: string) {
   domElements.inputStaff.value = selectedStaff.name;
 };
 
+domElements.buttonDrawKey?.addEventListener("click", () => {
+  if (selectedStaff.staff instanceof RhythmStaff || selectedStaff.staff instanceof ScrollingStaff) return;
+  const key = domElements.inputKey.value;
+
+  selectedStaff.staff.changeKeySignature(key);
+});
+
+domElements.buttonDrawTime?.addEventListener("click", () => {
+  if (selectedStaff.staff instanceof RhythmStaff || selectedStaff.staff instanceof ScrollingStaff) return;
+  const time = domElements.inputTime.value;
+  const timeParts = time.split(",");
+
+  const topTime = Number(timeParts[0]);
+  const bottomTime = Number(timeParts[1]);
+
+  selectedStaff.staff.changeTimeSignature(topTime, bottomTime);
+});
+
 domElements.buttonTest?.addEventListener("click", () => {
+  if (selectedStaff.staff instanceof RhythmStaff || selectedStaff.staff instanceof ScrollingStaff) return;
+
+  // selectedStaff.staff.changeTimeSignature(4, 4);
+  // selectedStaff.staff.changeKeySignature("E");
+})
+
+domElements.buttonFill?.addEventListener("click", () => {
   scrollingStaff.queueNotes(["C4", "D4", ["C4", "E#4", "F4"], "A3", "B3", "C4", "C4", ["C4", "E#4", "G#4"], "A4", "B4", "C4", "C4", ["C4", "E#4", "G#4"], "A4", "A4", "A4", "A4", "A4", "A4", "A4"]);
 })
 domElements.buttonAdvance?.addEventListener("click", () => {

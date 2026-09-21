@@ -1,5 +1,6 @@
 import { getAccidentalGlyph, getClefGlyph, getTimeSigGlyph } from "../glyphs";
 import { getPitchStepClefDifference } from "../helpers/_noteHelpers";
+import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, validateKeySignature, validateTimeSignature } from "../helpers/staffHelpers";
 import type { StaffTypes, SystemTypes } from "../types";
 import type SVGRenderer from "./SVGRenderer";
 
@@ -12,8 +13,6 @@ type DrawStaffArgs = {
 
 type DrawKeySignatureArgs = {
   keySignature: string,
-  /** @description Start of key sig, should be the total width taken by the clef */
-  startX: number,
   staffType: SystemTypes,
   staffGroup: SVGGElement,
 }
@@ -21,7 +20,6 @@ type DrawKeySignatureArgs = {
 type DrawTimeSignatureArgs = {
   topNumber: number,
   bottomNumber: number,
-  startX: number,
   staffType: SystemTypes,
   staffGroup: SVGGElement,
 }
@@ -31,50 +29,10 @@ const STAFF_LINE_SPACING = 10;
 const STAFF_LINE_SPACING_HALVED = STAFF_LINE_SPACING / 2;
 const BASE_STAFF_HEIGHT = ((STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING);
 export const GRAND_STAFF_SPACING = 40;
+export const COMPONENT_GAP = 12;
 
 export const CLEF_X_OFFSET = 4;
 const KEY_SIG_ACCIDENTAL_SPACING = 10;
-const KEY_SIG_PADDING = 8;
-const TIME_SIG_PADDING = 8;
-
-type KeySignatureDef = { type: string; count: number };
-
-const KEY_SIGNATURE_ORDER: Record<string, string[]> = {
-  sharp: ["F", "C", "G", "D", "A", "E", "B"],
-  flat: ["B", "E", "A", "D", "G", "C", "F"],
-};
-
-const KEY_SIGNATURES: Record<string, KeySignatureDef> = {
-  C: { type: "sharp", count: 0 },
-  G: { type: "sharp", count: 1 },
-  D: { type: "sharp", count: 2 },
-  A: { type: "sharp", count: 3 },
-  E: { type: "sharp", count: 4 },
-  B: { type: "sharp", count: 5 },
-  "F#": { type: "sharp", count: 6 },
-  F: { type: "flat", count: 1 },
-  Bb: { type: "flat", count: 2 },
-  Eb: { type: "flat", count: 3 },
-  Ab: { type: "flat", count: 4 },
-  Db: { type: "flat", count: 5 },
-  Gb: { type: "flat", count: 6 },
-};
-
-// per-clef, in the order F C G D A E B / B E A D G C F
-export const KEY_SIG_OCTAVES: Record<StaffTypes, Record<string, number[]>> = {
-  treble: {
-    sharp: [5, 5, 5, 5, 4, 5, 4],
-    flat: [4, 5, 4, 5, 4, 5, 4],
-  },
-  bass: {
-    sharp: [3, 3, 3, 3, 2, 3, 2],
-    flat: [2, 3, 2, 3, 2, 3, 3],
-  },
-  alto: {
-    sharp: [4, 4, 4, 4, 3, 4, 4],
-    flat: [3, 4, 3, 4, 3, 4, 3],
-  },
-};
 
 export default class StaffRenderer {
   private svgRendererInstance: SVGRenderer;
@@ -172,9 +130,10 @@ export default class StaffRenderer {
   };
 
   /** @returns Total X space taken by the key signature */
-  public drawKeySignature({ keySignature, staffType, startX: clefEndX, staffGroup }: DrawKeySignatureArgs): number {
+  public drawKeySignature({ keySignature, staffType, staffGroup }: DrawKeySignatureArgs): number {
+    validateKeySignature(keySignature);
+
     const def = KEY_SIGNATURES[keySignature];
-    if (!def) throw new Error(`Unknown key signature "${keySignature}". Valid keys: ${Object.keys(KEY_SIGNATURES).join(", ")}`);
     if (def.count === 0) return 0;
 
     const keySigType = def.type;
@@ -182,15 +141,13 @@ export default class StaffRenderer {
     const glyphDef = getAccidentalGlyph(keySigType);
     const letters = KEY_SIGNATURE_ORDER[keySigType].slice(0, keySigCount);
 
-    const keySigStartX = clefEndX + KEY_SIG_PADDING;
-
     if (staffType === "grand") {
       const trebleOctaves = KEY_SIG_OCTAVES.treble[keySigType];
       const bassOctaves = KEY_SIG_OCTAVES.bass[keySigType];
       const trebleStaffHeight = BASE_STAFF_HEIGHT;
 
       letters.forEach((name, i) => {
-        const xOffset = keySigStartX + i * KEY_SIG_ACCIDENTAL_SPACING;
+        const xOffset = i * KEY_SIG_ACCIDENTAL_SPACING;
 
         const trebleSteps = getPitchStepClefDifference(name, trebleOctaves[i], "treble");
         const trebleY = trebleSteps * STAFF_LINE_SPACING_HALVED;
@@ -209,32 +166,30 @@ export default class StaffRenderer {
         const yPos = steps * STAFF_LINE_SPACING_HALVED;
 
         this.svgRendererInstance.drawGlyph(glyphDef.name, staffGroup, {
-          x: keySigStartX + i * KEY_SIG_ACCIDENTAL_SPACING,
+          x: i * KEY_SIG_ACCIDENTAL_SPACING,
           y: yPos
         });
       });
     }
 
-    return (keySigCount * KEY_SIG_ACCIDENTAL_SPACING) + KEY_SIG_PADDING;
+    return keySigCount * KEY_SIG_ACCIDENTAL_SPACING;
   }
 
   /** @returns Total X space taken by the time signature */
-  public drawTimeSignature({ topNumber, bottomNumber, staffType, startX, staffGroup }: DrawTimeSignatureArgs) {
-    const paddedStartX = startX + TIME_SIG_PADDING;
+  public drawTimeSignature({ topNumber, bottomNumber, staffType, staffGroup }: DrawTimeSignatureArgs) {
+    validateTimeSignature(topNumber, bottomNumber);
 
     // Calculate widths to determine the bounding box
     const topWidth = this.getTimeSigNumberWidth(topNumber);
     const bottomWidth = this.getTimeSigNumberWidth(bottomNumber);
     const maxWidth = Math.max(topWidth, bottomWidth);
 
-    // 2Calculate the starting X for each number so they are centered over each other
-    const topStartX = paddedStartX + (maxWidth - topWidth) / 2;
-    const bottomStartX = paddedStartX + (maxWidth - bottomWidth) / 2;
-
-    // Height for numbers, which are all close enough to just grab the height from the "4"
+    // Calculate the starting X for each number so they are centered over each other
+    const topStartX = (maxWidth - topWidth) / 2;
+    const bottomStartX = (maxWidth - bottomWidth) / 2;
     const numberHeight = getTimeSigGlyph(4).glyphHeight;
 
-    // 4. Render Top and Bottom numbers
+    // Render Top and Bottom numbers
     this.drawTimeSigNumber(topNumber, topStartX, 0, staffGroup);
     this.drawTimeSigNumber(bottomNumber, bottomStartX, numberHeight, staffGroup);
 
@@ -245,6 +200,6 @@ export default class StaffRenderer {
       this.drawTimeSigNumber(bottomNumber, bottomStartX, newBaseY + numberHeight, staffGroup);
     }
 
-    return maxWidth + TIME_SIG_PADDING;
-  }
+    return maxWidth;
+  };
 }

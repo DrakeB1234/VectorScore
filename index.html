@@ -58,8 +58,24 @@
           <input type="text" id="notation-input-notes" placeholder="e.g. C#4w/B3q..." autocomplete="off">
         </div>
         <div class="card__buttons">
+          <button id="notation-button-test">TEST</button>
           <button id="notation-button-addchord" class="outlined">Add Chord</button>
           <button id="notation-button-addnotes" class="outlined">Add Notes</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__controls">
+        <div class="card__input">
+          <label for="notation-input-key">Key Signature</label>
+          <input id="notation-input-key" placeholder="Gb">
+          <button id="notation-button-key">Draw Key</button>
+        </div>
+        <div class="card__input">
+          <label for="notation-input-time">Time Signature</label>
+          <input id="notation-input-time" placeholder="4,4">
+          <button id="notation-button-time">Draw Time Signature</button>
         </div>
       </div>
     </div>
@@ -105,7 +121,7 @@
         <div class="card__controls">
           <p class="card__control-label">Scrolling Staff Actions</p>
           <div class="card__buttons">
-            <button id="notation-button-test" class="outlined">Fill Notes</button>
+            <button id="notation-button-fill" class="outlined">Fill Notes</button>
             <button id="notation-button-advance">Advance</button>
           </div>
         </div>

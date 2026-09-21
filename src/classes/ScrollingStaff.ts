@@ -5,7 +5,7 @@ import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
 import type { SystemTypes } from "../types";
 import NoteRenderer from "./NoteRenderer";
-import StaffRenderer, { CLEF_X_OFFSET } from "./StaffRenderer";
+import StaffRenderer, { CLEF_X_OFFSET, COMPONENT_GAP } from "./StaffRenderer";
 import SVGRenderer from "./SVGRenderer";
 
 export type ScrollingStaffOptions = {
@@ -50,17 +50,26 @@ const SCROLLING_NOTE_SPACING = 60;
 const SPAWN_X_OFFSET = SCROLLING_NOTE_SPACING;
 
 export default class ScrollingStaff {
+  private options: Required<ScrollingStaffOptions>;
+
   private svgRendererInstance: SVGRenderer;
   private strategyInstance: StaffStrategy;
   private noteRendererInstance: NoteRenderer;
   private staffRenderer: StaffRenderer;
 
-  private options: Required<ScrollingStaffOptions>;
+  private staffGroup: SVGGElement;
+  private keySigGroup: SVGGElement;
+  private timeSigGroup: SVGGElement;
+  private notesLayer: SVGGElement;
+
+  private clefWidth: number = 0;
+  private keySigWidth: number = 0;
+  private timeSigWidth: number = 0;
+  private noteStartX: number = 0;
+
 
   private activeEntries: ActiveEntry[] = [];
   private noteBuffer: BufferedEntry[] = [];
-
-  private notesLayer: SVGGElement;
 
   private noteCursorX: number = 0;
 
@@ -85,7 +94,6 @@ export default class ScrollingStaff {
 
     // Create the SVGRenderer instance with its options passed into this class
     this.svgRendererInstance = new SVGRenderer(rootElementCtx, USE_GLPYHS);
-    const rootSvgElement = this.svgRendererInstance.svgElementRef;
 
     // Create the strategy instance based on the staffType
     switch (this.options.staffType) {
@@ -111,6 +119,7 @@ export default class ScrollingStaff {
     // Create layers
     const staffLayer = this.svgRendererInstance.createLayer("staff");
     const notesLayer = this.svgRendererInstance.createLayer("notes");
+    this.notesLayer = notesLayer;
 
     // Add class for transition css animation IF provided
     this.notesLayer = notesLayer;
@@ -126,57 +135,82 @@ export default class ScrollingStaff {
 
     // Draw staff methods
     const staffGroup = this.svgRendererInstance.createGroup("staff");
+    this.staffGroup = staffGroup;
+    staffLayer.appendChild(staffGroup);
 
     const { totalStaffHeight, glyphWidth } = this.staffRenderer.drawStaff({
       width: this.options.width,
       staffType: this.options.staffType,
       startYPos: 0,
-      staffGroup
+      staffGroup,
     });
+    this.clefWidth = glyphWidth + CLEF_X_OFFSET;
 
-    let currentStaffX = glyphWidth + CLEF_X_OFFSET;
+    const staffKeySigGroup = this.svgRendererInstance.createGroup("key-sig");
+    this.keySigGroup = staffKeySigGroup;
+    staffLayer.appendChild(staffKeySigGroup);
 
     if (this.options.keySignature) {
-      const keySigWidth = this.staffRenderer.drawKeySignature({
+      this.keySigWidth = this.staffRenderer.drawKeySignature({
         keySignature: this.options.keySignature,
-        staffGroup: staffGroup,
+        staffGroup: staffKeySigGroup,
         staffType: this.options.staffType,
-        startX: currentStaffX
       });
-      currentStaffX += keySigWidth;
     };
 
+    const staffTimeSigGroup = this.svgRendererInstance.createGroup("time-sig");
+    this.timeSigGroup = staffTimeSigGroup;
+    staffLayer.appendChild(staffTimeSigGroup);
+
     if (this.options.timeSignature) {
-      const timeSigWidth = this.staffRenderer.drawTimeSignature({
+      this.timeSigWidth = this.staffRenderer.drawTimeSignature({
         topNumber: this.options.timeSignature.topNumber,
         bottomNumber: this.options.timeSignature.bottomNumber,
-        staffGroup: staffGroup,
+        staffGroup: staffTimeSigGroup,
         staffType: this.options.staffType,
-        startX: currentStaffX
       });
-      currentStaffX += timeSigWidth;
-    }
+    };
 
     this.staffRenderer.drawStaffBarLine(0.5, this.options.staffType, staffGroup);
     this.staffRenderer.drawStaffBarLine(this.options.width - 0.5, this.options.staffType, staffGroup);
-
+    this.updateStaffLayout();
     staffLayer.appendChild(staffGroup);
-
-    // Start the notes at the end of the drawn glyphs on staff + padding from the note start X
-    let noteStartX = this.options.noteStartX + currentStaffX;
 
     // Applying sizing to root SVG
     const totalHeight = totalStaffHeight + (this.options.padding * 2);
     const totalYOffset = this.options.padding;
 
     staffLayer.setAttribute("transform", `translate(0, ${totalYOffset})`);
-    notesLayer.setAttribute("transform", `translate(${noteStartX}, ${this.options.padding})`);
 
     this.svgRendererInstance.setRootSVGSizing(this.options.width, totalHeight, this.options.scale);
     this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
 
-    this.svgRendererInstance.commitElementsToDOM(rootSvgElement);
+    this.svgRendererInstance.commitElementsToDOM(this.svgRendererInstance.svgElementRef);
   }
+
+  private updateStaffLayout() {
+    let currentX = this.clefWidth;
+
+    if (this.options.keySignature && this.keySigWidth > 0) {
+      currentX += COMPONENT_GAP;
+      this.keySigGroup.setAttribute("transform", `translate(${currentX}, 0)`);
+      currentX += this.keySigWidth;
+    } else {
+      this.keySigGroup.setAttribute("transform", `translate(0, 0)`);
+    }
+
+    if (this.options.timeSignature && this.timeSigWidth > 0) {
+      currentX += COMPONENT_GAP;
+      this.timeSigGroup.setAttribute("transform", `translate(${currentX}, 0)`);
+      currentX += this.timeSigWidth;
+    } else {
+      this.timeSigGroup.setAttribute("transform", `translate(0, 0)`);
+    }
+
+    // Shift the entire notes layer
+    this.noteStartX = currentX + this.options.noteStartX;
+    this.notesLayer.setAttribute("transform", `translate(${this.noteStartX}, ${this.options.padding})`);
+  };
 
   private renderFirstNoteGroups() {
     // Calculate the cutoff point for visible notes, keep rendering notes until the cursor overreaches bounds + offset

@@ -1,6 +1,6 @@
 import type SVGRenderer from "../classes/SVGRenderer";
 import { HALF_NOTE_LEDGER_LINE_WIDTH, STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams, START_LEDGER_LINE_X, WHOLE_NOTE_LEDGER_LINE_WIDTH } from "../constants";
-import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER } from "../helpers/keySignatures";
+import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER } from "../helpers/staffHelpers";
 import { getGlyphNameByClef, getNoteSpacingFromReference } from "../helpers/notehelpers";
 import type { AccidentalType, NoteObj, StaffTypes } from "../types";
 import type { LedgerLineEntry, StaffParams, StaffStrategy } from "./StrategyInterface";

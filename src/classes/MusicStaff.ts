@@ -1,12 +1,13 @@
 import { NOTE_LAYER_START_X, NOTE_SPACING, STAFF_LINE_SPACING } from "../constants";
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
 import { parseNoteString } from "../helpers/notehelpers";
+import { validateKeySignature, validateTimeSignature } from "../helpers/staffHelpers";
 import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
 import type { NoteObj, SystemTypes } from "../types";
 import NoteRenderer, { type RenderNoteReturn } from "./NoteRenderer";
-import StaffRenderer, { CLEF_X_OFFSET } from "./StaffRenderer";
+import StaffRenderer, { CLEF_X_OFFSET, COMPONENT_GAP } from "./StaffRenderer";
 import SVGRenderer from "./SVGRenderer";
 
 export type MusicStaffOptions = {
@@ -45,11 +46,21 @@ type NoteEntry = {
 };
 
 export default class MusicStaff {
+  private options: Required<MusicStaffOptions>;
+
   private svgRendererInstance: SVGRenderer;
   private noteRendererInstance: NoteRenderer;
   private staffRenderer: StaffRenderer;
 
-  private options: Required<MusicStaffOptions>;
+  private staffGroup: SVGGElement;
+  private keySigGroup: SVGGElement;
+  private timeSigGroup: SVGGElement;
+  private notesLayer: SVGGElement;
+
+  private clefWidth: number = 0;
+  private keySigWidth: number = 0;
+  private timeSigWidth: number = 0;
+  private noteStartX: number = 0;
 
   private noteEntries: NoteEntry[] = [];
   private noteCursorX: number = 0;
@@ -73,6 +84,8 @@ export default class MusicStaff {
       spaceBelow: 0,
       ...options
     } as Required<MusicStaffOptions>;
+
+    this.noteStartX = this.options.noteStartX;
 
     // Create the SVGRenderer instance with its options passed into this class
     this.svgRendererInstance = new SVGRenderer(rootElementCtx, USE_GLPYHS);
@@ -101,6 +114,7 @@ export default class MusicStaff {
     // Create layers
     const notesLayer = this.svgRendererInstance.createLayer("notes");
     const staffLayer = this.svgRendererInstance.createLayer("staff");
+    this.notesLayer = notesLayer;
 
     // Determine staff spacing positioning
     if (this.options.spaceAbove) {
@@ -112,6 +126,8 @@ export default class MusicStaff {
 
     // Draw staff methods
     const staffGroup = this.svgRendererInstance.createGroup("staff");
+    this.staffGroup = staffGroup;
+    staffLayer.appendChild(staffGroup);
 
     const { totalStaffHeight, glyphWidth } = this.staffRenderer.drawStaff({
       width: this.options.width,
@@ -119,50 +135,106 @@ export default class MusicStaff {
       startYPos: 0,
       staffGroup,
     });
+    this.clefWidth = glyphWidth + CLEF_X_OFFSET;
 
-    let currentStaffX = glyphWidth + CLEF_X_OFFSET;
+    const staffKeySigGroup = this.svgRendererInstance.createGroup("key-sig");
+    this.keySigGroup = staffKeySigGroup;
+    staffLayer.appendChild(staffKeySigGroup);
 
     if (this.options.keySignature) {
-      const keySigWidth = this.staffRenderer.drawKeySignature({
+      this.keySigWidth = this.staffRenderer.drawKeySignature({
         keySignature: this.options.keySignature,
-        staffGroup: staffGroup,
+        staffGroup: staffKeySigGroup,
         staffType: this.options.staffType,
-        startX: currentStaffX
       });
-      currentStaffX += keySigWidth;
     };
 
+    const staffTimeSigGroup = this.svgRendererInstance.createGroup("time-sig");
+    this.timeSigGroup = staffTimeSigGroup;
+    staffLayer.appendChild(staffTimeSigGroup);
+
     if (this.options.timeSignature) {
-      const timeSigWidth = this.staffRenderer.drawTimeSignature({
+      this.timeSigWidth = this.staffRenderer.drawTimeSignature({
         topNumber: this.options.timeSignature.topNumber,
         bottomNumber: this.options.timeSignature.bottomNumber,
-        staffGroup: staffGroup,
+        staffGroup: staffTimeSigGroup,
         staffType: this.options.staffType,
-        startX: currentStaffX
       });
-      currentStaffX += timeSigWidth;
-    }
+    };
 
     this.staffRenderer.drawStaffBarLine(0.5, this.options.staffType, staffGroup);
     this.staffRenderer.drawStaffBarLine(this.options.width - 0.5, this.options.staffType, staffGroup);
-
+    this.updateStaffLayout();
     staffLayer.appendChild(staffGroup);
-
-    // Start the notes at the end of the drawn glyphs on staff + padding from the note start X
-    let noteStartX = this.options.noteStartX + currentStaffX;
 
     // Applying sizing to root SVG
     const totalHeight = totalStaffHeight + (this.options.padding * 2);
     const totalYOffset = this.options.padding;
 
     staffLayer.setAttribute("transform", `translate(0, ${totalYOffset})`);
-    notesLayer.setAttribute("transform", `translate(${noteStartX}, ${this.options.padding})`);
 
     this.svgRendererInstance.setRootSVGSizing(this.options.width, totalHeight, this.options.scale);
     this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
 
     this.svgRendererInstance.commitElementsToDOM(this.svgRendererInstance.svgElementRef);
-  }
+  };
+
+  private updateStaffLayout() {
+    let currentX = this.clefWidth;
+
+    if (this.options.keySignature && this.keySigWidth > 0) {
+      currentX += COMPONENT_GAP;
+      this.keySigGroup.setAttribute("transform", `translate(${currentX}, 0)`);
+      currentX += this.keySigWidth;
+    } else {
+      this.keySigGroup.setAttribute("transform", `translate(0, 0)`);
+    }
+
+    if (this.options.timeSignature && this.timeSigWidth > 0) {
+      currentX += COMPONENT_GAP;
+      this.timeSigGroup.setAttribute("transform", `translate(${currentX}, 0)`);
+      currentX += this.timeSigWidth;
+    } else {
+      this.timeSigGroup.setAttribute("transform", `translate(0, 0)`);
+    }
+
+    // Shift the entire notes layer
+    this.noteStartX = currentX + this.options.noteStartX;
+    this.notesLayer.setAttribute("transform", `translate(${this.noteStartX}, ${this.options.padding})`);
+  };
+
+  public changeTimeSignature(top: number, bottom: number) {
+    validateTimeSignature(top, bottom);
+    if (this.options.timeSignature.topNumber === top && this.options.timeSignature.bottomNumber === bottom) return;
+
+    this.options.timeSignature = { topNumber: top, bottomNumber: bottom };
+    this.timeSigGroup.replaceChildren();
+
+    this.timeSigWidth = this.staffRenderer.drawTimeSignature({
+      topNumber: top,
+      bottomNumber: bottom,
+      staffGroup: this.timeSigGroup,
+      staffType: this.options.staffType
+    });
+
+    this.updateStaffLayout();
+  };
+
+  public changeKeySignature(key: string) {
+    validateKeySignature(key);
+    if (this.options.keySignature === key) return;
+
+    this.options.keySignature = key;
+    this.keySigGroup.replaceChildren();
+
+    this.keySigWidth = this.staffRenderer.drawKeySignature({
+      keySignature: key,
+      staffGroup: this.keySigGroup,
+      staffType: this.options.staffType
+    });
+
+    this.updateStaffLayout();
+  };
 
   /**
    * Draws a note on the staff.
@@ -427,7 +499,7 @@ export default class MusicStaff {
     const noteEntry = this.noteEntries[noteIndex];
 
     noteEntry.gElement.classList.remove(className);
-  }
+  };
 
   /**
    * Removes the root svg element and cleans up arrays.
