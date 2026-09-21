@@ -1,5 +1,5 @@
-export type SystemTypes = StaffTypes | 'grand';
-export type StaffTypes = 'treble' | 'bass' | 'alto';
+export type SystemTypes = ClefTypes | 'grand';
+export type ClefTypes = 'treble' | 'bass' | 'alto';
 
 export type NoteObj = {
   name: NoteNames;

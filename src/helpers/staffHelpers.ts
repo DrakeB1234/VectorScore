@@ -1,6 +1,6 @@
-import type { StaffTypes } from "../types";
+import type { ClefTypes } from "../types";
 
-type KeySignatureDef = { type: string; count: number };
+type KeySignatureDef = { type: "sharp" | "flat"; count: number };
 
 export const KEY_SIGNATURE_ORDER: Record<string, string[]> = {
   sharp: ["F", "C", "G", "D", "A", "E", "B"],
@@ -26,7 +26,7 @@ export const KEY_SIGNATURES: Record<string, KeySignatureDef> = {
 };
 
 // per-clef, in the order F C G D A E B / B E A D G C F
-export const KEY_SIG_OCTAVES: Record<StaffTypes, Record<string, number[]>> = {
+export const KEY_SIG_OCTAVES: Record<ClefTypes, Record<string, number[]>> = {
   treble: {
     sharp: [5, 5, 5, 5, 4, 5, 4], // F5 C5 G5 D5 A4 E5 B4
     flat: [4, 5, 4, 5, 4, 5, 4],  // B4 E5 A4 D5 G4 C5 F4

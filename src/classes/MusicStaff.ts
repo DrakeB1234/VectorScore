@@ -6,8 +6,9 @@ import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
 import type { NoteObj, SystemTypes } from "../types";
+import _NoteRenderer from "./_NoteRenderer";
 import NoteRenderer, { type RenderNoteReturn } from "./NoteRenderer";
-import StaffRenderer, { CLEF_X_OFFSET, COMPONENT_GAP } from "./StaffRenderer";
+import StaffRenderer, { BASE_STAFF_HEIGHT, CLEF_X_OFFSET, COMPONENT_GAP, GRAND_STAFF_SPACING } from "./StaffRenderer";
 import SVGRenderer from "./SVGRenderer";
 
 export type MusicStaffOptions = {
@@ -50,6 +51,7 @@ export default class MusicStaff {
 
   private svgRendererInstance: SVGRenderer;
   private noteRendererInstance: NoteRenderer;
+  private _noteRendererInstance: _NoteRenderer;
   private staffRenderer: StaffRenderer;
 
   private staffGroup: SVGGElement;
@@ -90,6 +92,7 @@ export default class MusicStaff {
     // Create the SVGRenderer instance with its options passed into this class
     this.svgRendererInstance = new SVGRenderer(rootElementCtx, USE_GLPYHS);
     this.staffRenderer = new StaffRenderer(this.svgRendererInstance);
+    this._noteRendererInstance = new _NoteRenderer(this.svgRendererInstance);
 
     // Create the strategy instance based on the staffType
     let _oldStrategyInstance: StaffStrategy;
@@ -177,6 +180,18 @@ export default class MusicStaff {
     this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
 
     this.svgRendererInstance.commitElementsToDOM(this.svgRendererInstance.svgElementRef);
+
+    // ==== TEST ====
+
+    const noteGroup = this.svgRendererInstance.createGroup("note");
+    const { noteHeadWidth: _, accidentalWidth } = this._noteRendererInstance.drawNote({ letter: "C", accidental: "#", duration: "q", octave: 4 }, "treble", noteGroup);
+    noteGroup.setAttribute("transform", `translate(${accidentalWidth}, 0)`);
+    this.notesLayer.appendChild(noteGroup);
+
+    const noteGroup2 = this.svgRendererInstance.createGroup("note");
+    const { noteHeadWidth: __, accidentalWidth: accidentalWidth2 } = this._noteRendererInstance.drawNote({ letter: "C", accidental: "#", duration: "q", octave: 4 }, "bass", noteGroup2);
+    noteGroup2.setAttribute("transform", `translate(${accidentalWidth2}, ${GRAND_STAFF_SPACING + BASE_STAFF_HEIGHT})`);
+    this.notesLayer.appendChild(noteGroup2);
   };
 
   private updateStaffLayout() {

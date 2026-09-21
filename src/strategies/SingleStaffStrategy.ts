@@ -2,7 +2,7 @@ import type SVGRenderer from "../classes/SVGRenderer";
 import { HALF_NOTE_LEDGER_LINE_WIDTH, STAFF_LINE_COUNT, STAFF_LINE_SPACING, staffParams, START_LEDGER_LINE_X, WHOLE_NOTE_LEDGER_LINE_WIDTH } from "../constants";
 import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER } from "../helpers/staffHelpers";
 import { getGlyphNameByClef, getNoteSpacingFromReference } from "../helpers/notehelpers";
-import type { AccidentalType, NoteObj, StaffTypes } from "../types";
+import type { AccidentalType, NoteObj, ClefTypes } from "../types";
 import type { LedgerLineEntry, StaffParams, StaffStrategy } from "./StrategyInterface";
 
 const MIDDLE_LINE_Y_POS = 20;
@@ -11,7 +11,7 @@ export default class SingleStaffStrategy implements StaffStrategy {
   private params: StaffParams;
   private rendererRef: SVGRenderer;
 
-  constructor(rendererRef: SVGRenderer, staffType: StaffTypes) {
+  constructor(rendererRef: SVGRenderer, staffType: ClefTypes) {
     this.rendererRef = rendererRef;
 
     const params = staffParams[staffType];

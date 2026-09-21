@@ -1,7 +1,7 @@
 import { getAccidentalGlyph, getClefGlyph, getTimeSigGlyph } from "../glyphs";
 import { getPitchStepClefDifference } from "../helpers/_noteHelpers";
 import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, validateKeySignature, validateTimeSignature } from "../helpers/staffHelpers";
-import type { StaffTypes, SystemTypes } from "../types";
+import type { ClefTypes, SystemTypes } from "../types";
 import type SVGRenderer from "./SVGRenderer";
 
 type DrawStaffArgs = {
@@ -27,9 +27,9 @@ type DrawTimeSignatureArgs = {
 const STAFF_LINE_COUNT = 5;
 const STAFF_LINE_SPACING = 10;
 const STAFF_LINE_SPACING_HALVED = STAFF_LINE_SPACING / 2;
-const BASE_STAFF_HEIGHT = ((STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING);
-export const GRAND_STAFF_SPACING = 40;
-export const COMPONENT_GAP = 12;
+export const BASE_STAFF_HEIGHT = ((STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING);
+export const GRAND_STAFF_SPACING = 60;
+export const COMPONENT_GAP = 10;
 
 export const CLEF_X_OFFSET = 4;
 const KEY_SIG_ACCIDENTAL_SPACING = 10;
@@ -46,8 +46,8 @@ export default class StaffRenderer {
   };
 
   // Returns the width of the clef glyph
-  private drawClefOnStaff(staffType: StaffTypes, yPos: number, staffGroup: SVGGElement) {
-    const glyphEntry = getClefGlyph(staffType);
+  private drawClefOnStaff(clefType: ClefTypes, yPos: number, staffGroup: SVGGElement) {
+    const glyphEntry = getClefGlyph(clefType);
 
     this.svgRendererInstance.drawGlyph(glyphEntry.name, staffGroup, {
       y: yPos,
@@ -81,7 +81,7 @@ export default class StaffRenderer {
     }
   };
 
-  private drawSingleStaff(width: number, staffType: StaffTypes, startYPos: number, staffGroup: SVGGElement) {
+  private drawSingleStaff(width: number, clefType: ClefTypes, startYPos: number, staffGroup: SVGGElement) {
     let yCurrent = startYPos;
 
     for (let i = 0; i < STAFF_LINE_COUNT; i++) {
@@ -89,7 +89,7 @@ export default class StaffRenderer {
       yCurrent += STAFF_LINE_SPACING;
     };
 
-    const glyphWidth = this.drawClefOnStaff(staffType, startYPos, staffGroup);
+    const glyphWidth = this.drawClefOnStaff(clefType, startYPos, staffGroup);
 
     return {
       totalStaffHeight: BASE_STAFF_HEIGHT,
@@ -159,10 +159,10 @@ export default class StaffRenderer {
       });
 
     } else {
-      const octaves = KEY_SIG_OCTAVES[staffType as StaffTypes][keySigType];
+      const octaves = KEY_SIG_OCTAVES[staffType as ClefTypes][keySigType];
 
       letters.forEach((name, i) => {
-        const steps = getPitchStepClefDifference(name, octaves[i], staffType as StaffTypes);
+        const steps = getPitchStepClefDifference(name, octaves[i], staffType as ClefTypes);
         const yPos = steps * STAFF_LINE_SPACING_HALVED;
 
         this.svgRendererInstance.drawGlyph(glyphDef.name, staffGroup, {

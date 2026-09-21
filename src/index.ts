@@ -8,5 +8,5 @@ export type { RhythmStaffOptions } from './classes/RhythmStaff';
 export type { ScrollingStaffOptions } from './classes/ScrollingStaff';
 export type { GuitarChordOptions } from './classes/GuitarChord';
 
-export type { StaffTypes } from './types';
+export type { ClefTypes as StaffTypes } from './types';
 export type { GuitarChordDrawOptions, GuitarBarreDef } from './types';

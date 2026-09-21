@@ -59,7 +59,7 @@ const musicStaffGrand = new MusicStaff(rootGrand, {
   staffType: "grand",
   keySignature: "G",
   timeSignature: {
-    topNumber: 3,
+    topNumber: 4,
     bottomNumber: 4
   },
 

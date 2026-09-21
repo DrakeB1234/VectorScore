@@ -1,4 +1,4 @@
-import type { AccidentalType, NoteObj, StaffTypes } from "../types";
+import type { AccidentalType, NoteObj, ClefTypes } from "../types";
 
 export interface StaffStrategy {
   drawStaff(width: number, staffLayer: SVGGElement): number;
@@ -9,7 +9,7 @@ export interface StaffStrategy {
 }
 
 export type StaffParams = {
-  staffType: StaffTypes;
+  staffType: ClefTypes;
   paddingTop: number;
   paddingBottom: number;
   topLineNote: NoteObj;

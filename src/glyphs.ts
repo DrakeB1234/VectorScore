@@ -1,3 +1,4 @@
+import type { NoteAccidentals } from "./helpers/_noteHelpers";
 import type { NoteDurations } from "./types";
 
 export type GlyphDef = {
@@ -30,7 +31,7 @@ export function getRestGlyphByDuration(duration: NoteDurations) {
   };
 };
 
-export function getAccidentalGlyph(accidental: string) {
+export function getAccidentalGlyph(accidental: NoteAccidentals | "sharp" | "flat") {
   switch (accidental) {
     case "#": return ACCIDENTAL_SHARP;
     case "sharp": return ACCIDENTAL_SHARP;

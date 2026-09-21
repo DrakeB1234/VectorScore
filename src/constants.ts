@@ -1,5 +1,5 @@
 import type { StaffParams } from "./strategies/StrategyInterface";
-import type { NoteDurations, StaffTypes } from "./types";
+import type { NoteDurations, ClefTypes } from "./types";
 
 export const NAMESPACE = "vs";
 
@@ -28,7 +28,7 @@ export const HALF_NOTE_LEDGER_LINE_WIDTH = 12.5;
 export const CHORD_MAX_CONSECUTIVE_ACCIDENTALS = 3;
 
 
-export const staffParams: Record<StaffTypes, StaffParams> = {
+export const staffParams: Record<ClefTypes, StaffParams> = {
   treble: {
     staffType: "treble",
     paddingTop: 13,
