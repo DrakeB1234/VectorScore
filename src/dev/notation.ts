@@ -57,7 +57,7 @@ const musicStaffGrand = new MusicStaff(rootGrand, {
   // noteStartX: 0,
   padding: 50,
   staffType: "grand",
-  keySignature: "G",
+  // keySignature: "G",
   timeSignature: {
     topNumber: 4,
     bottomNumber: 4
@@ -215,9 +215,7 @@ domElements.buttonDrawTime?.addEventListener("click", () => {
 
 domElements.buttonTest?.addEventListener("click", () => {
   if (!(selectedStaff.staff instanceof MusicStaff)) return;
-  const note = domElements.inputNotes.value;
 
-  selectedStaff.staff.devDrawNote(note);
 })
 
 domElements.buttonFill?.addEventListener("click", () => {
@@ -254,23 +252,23 @@ domElements.buttonChangeChord.addEventListener("click", () => {
 })
 
 domElements.buttonAddNotes?.addEventListener("click", () => {
-  if (selectedStaff.staff instanceof ScrollingStaff) return;
+  if (!(selectedStaff.staff instanceof MusicStaff)) return;
 
   const notesRawString = domElements.inputNotes.value;
   if (!notesRawString) return;
   const noteParts = notesRawString.split("/");
 
-  selectedStaff.staff.drawNote(noteParts);
+  selectedStaff.staff.devDrawNote(noteParts[0]);
 });
 
 domElements.buttonAddChord?.addEventListener("click", () => {
-  if (selectedStaff.staff instanceof RhythmStaff || selectedStaff.staff instanceof ScrollingStaff) return;
+  if (!(selectedStaff.staff instanceof MusicStaff)) return;
 
   const notesRawString = domElements.inputNotes.value;
   if (!notesRawString) return;
   const noteParts = notesRawString.split("/");
 
-  selectedStaff.staff.drawChord(noteParts);
+  selectedStaff.staff.devDrawChord(noteParts, "q");
 });
 
 domElements.buttonDrawBeamNotes.addEventListener("click", () => {

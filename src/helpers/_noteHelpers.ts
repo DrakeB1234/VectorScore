@@ -3,7 +3,7 @@ import type { ClefTypes } from "../types";
 
 export interface VSNoteObj {
   letter: NoteLetters;
-  accidental: NoteAccidentals | undefined;
+  accidental: NoteAccidentals | null;
   octave: number;
   duration: NoteDurations;
 };
@@ -27,6 +27,13 @@ export type LedgerLineSpan = {
   maxX: number;
 };
 
+export type AccidentalPlacement = {
+  accidental: NoteAccidentals;
+  yPos: number;
+  /** 0 = closest to the noteheads, higher numbers sit further left */
+  column: number;
+};
+
 const DIATONIC_STEPS: Record<string, number> = {
   "C": 0, "D": 1, "E": 2, "F": 3, "G": 4, "A": 5, "B": 6
 };
@@ -44,8 +51,10 @@ const TOP_LINE_STEP = 0;
 const BOTTOM_LINE_STEP = 8;
 
 export const STANDARD_STEM_STEPS = 7;
-const SECOND_INTERVAL_X_OFFSET = 1;
+export const SECOND_INTERVAL_X_OFFSET = 1;
 
+// Accidentals whose notes are a seventh (6 steps) or more apart don't overlap vertically, so they can share a column.
+const ACCIDENTAL_MIN_STEP_GAP = 6;
 
 const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqesWHQES])$/;
 const REGEX_CHORD_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)$/;
@@ -66,7 +75,7 @@ export function _parseNoteString(noteString: string): VSNoteObj {
     letter: letter as NoteLetters,
     octave: parseInt(octave),
     duration: duration as NoteDurations,
-    accidental: accidental ? accidental as NoteAccidentals : undefined
+    accidental: accidental ? accidental as NoteAccidentals : null
   }
 
   return noteObj;
@@ -76,7 +85,7 @@ export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
   const match = chordNoteString.match(REGEX_CHORD_NOTE_STRING);
 
   if (!match || !match.groups) {
-    throw new Error(`Invalid note string format: ${chordNoteString}. Expected format: [A-Ga-g][#|b]?[0-9].`);
+    throw new Error(`Invalid chord note string format: ${chordNoteString}. Expected format: [A-Ga-g][#|b]?[0-9].`);
   };
 
   let { letter, accidental, octave } = match.groups;
@@ -86,7 +95,7 @@ export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
   const noteObj: VSChordNoteObj = {
     letter: letter as NoteLetters,
     octave: parseInt(octave),
-    accidental: accidental ? accidental as NoteAccidentals : undefined
+    accidental: accidental ? accidental as NoteAccidentals : null
   }
 
   return noteObj;
@@ -249,4 +258,33 @@ function createSideLedgerSpans(
   }
 
   return spans;
+};
+
+export function assignAccidentalColumns(notes: PositionedChordNote[]): AccidentalPlacement[] {
+  // filter() copies, so sorting here doesn't reorder the caller's array
+  const highToLow = notes
+    .filter(n => n.noteObj.accidental !== null)
+    .sort((a, b) => a.pitchStep - b.pitchStep);
+
+  const columnSteps: number[][] = []; // Pitch steps of the accidentals already placed in each column
+  const placements: AccidentalPlacement[] = [];
+
+  for (const note of highToLow) {
+    const accidental = note.noteObj.accidental;
+    if (!accidental) continue;
+
+    let column = columnSteps.findIndex(steps =>
+      steps.every(step => Math.abs(step - note.pitchStep) >= ACCIDENTAL_MIN_STEP_GAP)
+    );
+
+    if (column === -1) {
+      column = columnSteps.length;
+      columnSteps.push([]);
+    }
+
+    columnSteps[column].push(note.pitchStep);
+    placements.push({ accidental, yPos: note.yPos, column });
+  }
+
+  return placements;
 };
