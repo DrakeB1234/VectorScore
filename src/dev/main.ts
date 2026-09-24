@@ -1,34 +1,34 @@
 import 'render-scan';
 import "./guitar";
-import "./notation";
+import "./musicstaff";
 
 // Navbar Functionality
-type Section = "notation" | "guitar";
+type Section = "musicstaff" | "guitar";
 
-const notationSection = document.getElementById("section-notation");
+const musicStaffSection = document.getElementById("section-musicstaff");
 const guitarSection = document.getElementById("section-guitar");
 
-if (!notationSection || !guitarSection) {
+if (!musicStaffSection || !guitarSection) {
   throw new Error("main.ts: Required DOM elements not found.");
 };
 
 const domElements = {
-  navButtonNotation: document.getElementById("nav-button-notation") as HTMLButtonElement,
+  navButtonNotation: document.getElementById("nav-button-musicstaff") as HTMLButtonElement,
   navButtonGuitar: document.getElementById("nav-button-guitar") as HTMLButtonElement,
   buttonThemeToggle: document.getElementById("button-theme-toggle") as HTMLButtonElement,
 }
 
-changeSection("notation");
+changeSection("musicstaff");
 
 function changeSection(section: Section) {
-  if (!guitarSection || !notationSection) return;
+  if (!guitarSection || !musicStaffSection) return;
   guitarSection.classList = "hide";
-  notationSection.classList = "hide";
+  musicStaffSection.classList = "hide";
   domElements.navButtonNotation.classList.remove("active");
   domElements.navButtonGuitar.classList.remove("active");
 
-  if (section === "notation") {
-    notationSection.classList = "";
+  if (section === "musicstaff") {
+    musicStaffSection.classList = "";
     domElements.navButtonNotation.classList.add("active");
   }
   if (section === "guitar") {
@@ -40,7 +40,7 @@ function changeSection(section: Section) {
 }
 
 domElements.navButtonNotation?.addEventListener("click", () => {
-  changeSection("notation");
+  changeSection("musicstaff");
 });
 domElements.navButtonGuitar?.addEventListener("click", () => {
   changeSection("guitar");

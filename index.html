@@ -15,7 +15,7 @@
     <img width="32px" height="32px" src="public/vector-score-icon.svg" />
 
     <div class="navbar__buttons">
-      <button id="nav-button-notation" class="active text">Music Staffs</button>
+      <button id="nav-button-musicstaff" class="active text">Music Staff</button>
       <button id="nav-button-guitar" class="text">Guitar Chords</button>
     </div>
 
@@ -27,106 +27,90 @@
     </button>
   </section>
 
-  <section id="section-notation">
+  <section id="section-musicstaff">
     <div class="staffs-container">
       <div id="staff-root-grand"></div>
       <div id="staff-root-treble"></div>
       <div id="staff-root-bass"></div>
       <div id="staff-root-alto"></div>
-      <div id="staff-root-scrolling"></div>
-      <div id="staff-root-rhythm"></div>
     </div>
 
     <div class="card">
-      <div class="card__controls">
-        <div class="card__input">
-          <label for="notation-select-staff">Choose Staff</label>
-          <select id="notation-select-staff">
-            <option value="grand">Grand</option>
-            <option value="treble">Treble</option>
-            <option value="bass">Bass</option>
-            <option value="alto">Alto</option>
-            <option value="scrolling">Scrolling</option>
-            <option value="rhythm">Rhythm</option>
-          </select>
-        </div>
-      </div>
-      <div class="card__controls">
-        <p class="card__control-label">Add Notes</p>
-        <div class="card__input">
-          <label for="notation-input-notes">Note Input</label>
-          <input type="text" id="notation-input-notes" placeholder="e.g. C#4w/B3q..." autocomplete="off">
-        </div>
-        <div class="card__buttons">
-          <button id="notation-button-test">TEST</button>
-          <button id="notation-button-addchord" class="outlined">Add Chord</button>
-          <button id="notation-button-addnotes" class="outlined">Add Notes</button>
-        </div>
-      </div>
-    </div>
+      <div class="card__overflow">
 
-    <div class="card">
-      <div class="card__controls">
-        <div class="card__input">
-          <label for="notation-input-key">Key Signature</label>
-          <input id="notation-input-key" placeholder="Gb">
-          <button id="notation-button-key">Draw Key</button>
-        </div>
-        <div class="card__input">
-          <label for="notation-input-time">Time Signature</label>
-          <input id="notation-input-time" placeholder="4,4">
-          <button id="notation-button-time">Draw Time Signature</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card__controls">
-        <p class="card__control-label">Music Staff Actions</p>
-
-        <div class="card__input">
-          <label for="notation-input-index">Note Index</label>
-          <input type="number" id="notation-input-index" value="0" min="0">
-        </div>
-        <div class="card__input">
-          <label for="notation-input-actionsnotes">Input</label>
-          <input type="text" id="notation-input-actionnotes" placeholder="e.g. C#4w/B3q..." autocomplete="off">
-        </div>
-
-        <div class="card__buttons">
-          <button id="notation-button-changechord" class="outlined">Change Chord</button>
-          <button id="notation-button-changenote" class="outlined">Change Note</button>
-        </div>
-        <div class="card__buttons">
-          <button id="notation-button-justify" class="outlined">Justify Notes</button>
-          <button id="notation-button-clearnotes" class="danger">Clear Notes</button>
-        </div>
-      </div>
-
-      <div class="card__controls">
-        <p class="card__control-label">Rhythm Staff Actions</p>
-        <div class="card__buttons">
-          <button id="notation-button-drawbeam" class="outlined">Draw Beamed Note</button>
-          <button id="notation-button-drawrest" class="outlined">Draw rest</button>
-        </div>
-        <div class="card__buttons">
-          <button id="notation-button-incrementbeat" class="outlined">Increment Current Beat UI</button>
-          <button id="notation-button-resetbeat" class="outlined">Reset Current Beat UI</button>
-        </div>
-        <div class="card__buttons">
-          <button id="notation-button-compare" class="outlined">Compare Notes</button>
-          <button id="notation-button-resetcompare" class="outlined">Reset Compare Notes</button>
+        <div class="card__controls">
+          <div class="card__input">
+            <label for="musicstaff-select-staff">Change Staff</label>
+            <select id="musicstaff-select-staff">
+              <option value="grand">Grand</option>
+              <option value="treble">Treble</option>
+              <option value="bass">Bass</option>
+              <option value="alto">Alto</option>
+            </select>
+          </div>
         </div>
 
         <div class="card__controls">
-          <p class="card__control-label">Scrolling Staff Actions</p>
+          <p class="card__control-label">Add Note</p>
+          <div class="card__input">
+            <label for="musicstaff-input-note">Note</label>
+            <input type="text" id="musicstaff-input-note" placeholder="C#4w" value="C4q" autocomplete="off">
+          </div>
+          <div class="card__checkbox">
+            <label for="musicstaff-input-note-istop">Draw on Top Staff?</label>
+            <input type="checkbox" id="musicstaff-input-note-istop" autocomplete="off" checked="true">
+          </div>
           <div class="card__buttons">
-            <button id="notation-button-fill" class="outlined">Fill Notes</button>
-            <button id="notation-button-advance">Advance</button>
+            <button id="musicstaff-button-addnote">Add Note</button>
           </div>
         </div>
-      </div>
 
+        <div class="card__controls">
+          <p class="card__control-label">Add Chord</p>
+          <div class="card__input">
+            <label for="musicstaff-input-chord">Chord</label>
+            <input type="text" id="musicstaff-input-chord" placeholder="C#4/E#4/G#4" value="C4/E4/G4"
+              autocomplete="off">
+          </div>
+          <div class="card__input">
+            <label for="musicstaff-input-chord-duration">Duration</label>
+            <input type="text" id="musicstaff-input-chord-duration" placeholder="q" value="q" autocomplete="off">
+          </div>
+          <div class="card__buttons">
+            <button id="musicstaff-button-addchord">Add Chord</button>
+          </div>
+        </div>
+
+        <div class="card__controls">
+          <p class="card__control-label">Key Signature</p>
+          <div class="card__input">
+            <label for="musicstaff-input-key">Key</label>
+            <input type="text" id="musicstaff-input-key" placeholder="Bb" value="" autocomplete="off">
+          </div>
+          <div class="card__buttons">
+            <button id="musicstaff-button-key-remove" class="outlined">Remove Key</button>
+            <button id="musicstaff-button-key-add">Add Key</button>
+          </div>
+        </div>
+
+        <div class="card__controls">
+          <p class="card__control-label">Time Signature</p>
+          <div class="card__input">
+            <label for="musicstaff-input-time-top">Top Number</label>
+            <input type="number" id="musicstaff-input-time-top" placeholder="4" value="4" autocomplete="off">
+          </div>
+          <div class="card__input">
+            <label for="musicstaff-input-time-bottom">Bottom Number</label>
+            <input type="number" id="musicstaff-input-time-bottom" placeholder="4" value="4" autocomplete="off">
+          </div>
+          <div class="card__buttons">
+            <button id="musicstaff-button-time-remove" class="outlined">Remove Time</button>
+            <button id="musicstaff-button-time-add">Add Time</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </section>
 
   <section id="section-guitar">

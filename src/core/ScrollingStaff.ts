@@ -4,9 +4,9 @@ import GrandStaffStrategy from "../strategies/GrandStaffStrategy";
 import SingleStaffStrategy from "../strategies/SingleStaffStrategy";
 import type { StaffStrategy } from "../strategies/StrategyInterface";
 import type { SystemTypes } from "../types";
-import NoteRenderer from "./NoteRenderer";
-import StaffRenderer, { CLEF_X_OFFSET, COMPONENT_GAP } from "./StaffRenderer";
-import SVGRenderer from "./SVGRenderer";
+import NoteRenderer from "../classes/NoteRenderer";
+import StaffRenderer, { CLEF_X_OFFSET, COMPONENT_GAP } from "../classes/StaffRenderer";
+import SVGRenderer from "../classes/SVGRenderer";
 
 export type ScrollingStaffOptions = {
   width?: number;
@@ -152,7 +152,7 @@ export default class ScrollingStaff {
 
     if (this.options.keySignature) {
       this.keySigWidth = this.staffRenderer.drawKeySignature({
-        keySignature: this.options.keySignature,
+        key: this.options.keySignature,
         staffGroup: staffKeySigGroup,
         staffType: this.options.staffType,
       });

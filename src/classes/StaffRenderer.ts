@@ -1,6 +1,6 @@
 import { getAccidentalGlyph, getClefGlyph, getTimeSigGlyph } from "../glyphs";
 import { getPitchStepClefDifference } from "../helpers/_noteHelpers";
-import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, validateKeySignature, validateTimeSignature } from "../helpers/staffHelpers";
+import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, validateKeySignature, validateTimeSignature, type KeySignatures } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import type SVGRenderer from "./SVGRenderer";
 
@@ -12,7 +12,7 @@ type DrawStaffArgs = {
 };
 
 type DrawKeySignatureArgs = {
-  keySignature: string,
+  key: KeySignatures,
   staffType: SystemTypes,
   staffGroup: SVGGElement,
 }
@@ -22,11 +22,6 @@ type DrawTimeSignatureArgs = {
   bottomNumber: number,
   staffType: SystemTypes,
   staffGroup: SVGGElement,
-}
-
-export type TimeSignature = {
-  topNumber: number;
-  bottomNumber: number;
 }
 
 const STAFF_LINE_COUNT = 5;
@@ -135,14 +130,14 @@ export default class StaffRenderer {
   };
 
   /** @returns Total X space taken by the key signature */
-  public drawKeySignature({ keySignature, staffType, staffGroup }: DrawKeySignatureArgs): number {
-    validateKeySignature(keySignature);
+  public drawKeySignature({ key, staffType, staffGroup }: DrawKeySignatureArgs): number {
+    validateKeySignature(key);
 
-    const def = KEY_SIGNATURES[keySignature];
-    if (def.count === 0) return 0;
+    const keyDef = KEY_SIGNATURES[key];
+    if (keyDef.count === 0) return 0;
 
-    const keySigType = def.type;
-    const keySigCount = def.count;
+    const keySigType = keyDef.type;
+    const keySigCount = keyDef.count;
     const glyphDef = getAccidentalGlyph(keySigType);
     const letters = KEY_SIGNATURE_ORDER[keySigType].slice(0, keySigCount);
 

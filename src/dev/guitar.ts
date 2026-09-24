@@ -1,4 +1,4 @@
-import GuitarChord from "../classes/GuitarChord";
+import GuitarChord from "../core/GuitarChord";
 
 const rendererRootElement = document.getElementById("guitar-chords-root");
 

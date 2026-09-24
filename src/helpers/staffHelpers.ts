@@ -1,5 +1,14 @@
 import type { ClefTypes } from "../types";
 
+
+export type TimeSignature = {
+  topNumber: number;
+  bottomNumber: number;
+}
+
+const KeySignaturesArr = ["C", "G", "D", "A", "E", "B", "F#", "C#", "F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"] as const;
+export type KeySignatures = typeof KeySignaturesArr[number];
+
 type KeySignatureDef = { type: "sharp" | "flat"; count: number };
 
 export const KEY_SIGNATURE_ORDER: Record<string, string[]> = {
@@ -7,7 +16,7 @@ export const KEY_SIGNATURE_ORDER: Record<string, string[]> = {
   flat: ["B", "E", "A", "D", "G", "C", "F"],
 };
 
-export const KEY_SIGNATURES: Record<string, KeySignatureDef> = {
+export const KEY_SIGNATURES: Record<KeySignatures, KeySignatureDef> = {
   C: { type: "sharp", count: 0 },
   G: { type: "sharp", count: 1 },
   D: { type: "sharp", count: 2 },
@@ -42,9 +51,9 @@ export const KEY_SIG_OCTAVES: Record<ClefTypes, Record<string, number[]>> = {
 };
 
 /** @throws Error - If key is not in record */
-export function validateKeySignature(key: string): void {
-  const def = KEY_SIGNATURES[key];
-  if (!def) throw new Error(`Unknown key signature "${key}". Valid keys: ${Object.keys(KEY_SIGNATURES).join(", ")}`);
+export function validateKeySignature(key: string) {
+  const foundKey = KeySignaturesArr.find(k => k === key);
+  if (!foundKey) throw new Error(`Unknown key signature "${key}". Valid keys: ${KeySignaturesArr.join(", ")}`);
 };
 
 /** @throws Error - Invalid values, numbers over 100 or NaN */

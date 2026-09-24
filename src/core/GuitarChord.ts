@@ -22,7 +22,7 @@ import {
 } from "../constants";
 import { calculateStartFret, createStateStrings, parseFingersEntry, parseFretsEntry } from "../helpers/guitarHelpers";
 import type { GuitarBarreDef, GuitarChordDrawOptions, GuitarStringState } from "../types";
-import SVGRenderer from "./SVGRenderer";
+import SVGRenderer from "../classes/SVGRenderer";
 
 export type GuitarChordOptions = {
   width?: number;
