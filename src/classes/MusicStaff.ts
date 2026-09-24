@@ -186,19 +186,28 @@ export default class MusicStaff {
     // TEST
 
     const noteObjs = [
-      parseChordNoteString("A3"),
-      parseChordNoteString("B3"),
-      parseChordNoteString("C4"),
+      // parseChordNoteString("G3"),
+      // parseChordNoteString("B3"),
+      // parseChordNoteString("C4"),
       // parseChordNoteString("D4"),
-      parseChordNoteString("E4"),
-      // parseChordNoteString("F4"),
-      parseChordNoteString("G4"),
-      // parseChordNoteString("A4"),
+      // parseChordNoteString("B5"),
+      // parseChordNoteString("C6"),
 
-      // parseChordNoteString("A5"),
-      // parseChordNoteString("G5"),
-      // parseChordNoteString("F5"),
+      parseChordNoteString("A3"),
+      parseChordNoteString("C4"),
+      parseChordNoteString("D4"),
+      parseChordNoteString("E4"),
+      parseChordNoteString("F4"),
+      // parseChordNoteString("G4"),
+      // parseChordNoteString("A4"),
+      // parseChordNoteString("B4"),
+
+      // parseChordNoteString("D5"),
       // parseChordNoteString("E5"),
+      parseChordNoteString("F5"),
+      parseChordNoteString("G5"),
+      parseChordNoteString("A5"),
+      parseChordNoteString("B5"),
     ];
 
     const chordGroup = this.svgRendererInstance.createGroup("chord");
@@ -208,6 +217,7 @@ export default class MusicStaff {
 
   public devDrawNote(noteString: string) {
     const noteObj = _parseNoteString(noteString);
+    this.noteCursorX += 45;
 
     const fixedStaffType = this.options.staffType === "grand" ? "treble" : this.options.staffType;
     const notePitchStep = getPitchStepClefDifference(noteObj.letter, noteObj.octave, fixedStaffType);
@@ -269,6 +279,13 @@ export default class MusicStaff {
 
     this.updateStaffLayout();
   };
+
+  public removeTimeSignature() {
+    this.options.timeSignature = { topNumber: 0, bottomNumber: 0 };
+    this.timeSigGroup.replaceChildren();
+
+    this.updateStaffLayout();
+  }
 
   public changeKeySignature(key: string) {
     validateKeySignature(key);

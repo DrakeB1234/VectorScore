@@ -21,6 +21,12 @@ export type NoteLetters = "A" | "B" | "C" | "D" | "E" | "F" | "G";
 export type NoteDurations = "w" | "h" | "q" | "e" | "s";
 export type NoteAccidentals = "#" | "b" | "n" | "##" | "bb";
 
+export type LedgerLineSpan = {
+  y: number;
+  minX: number;
+  maxX: number;
+};
+
 const DIATONIC_STEPS: Record<string, number> = {
   "C": 0, "D": 1, "E": 2, "F": 3, "G": 4, "A": 5, "B": 6
 };
@@ -34,7 +40,12 @@ const CLEF_TOP_LINE_STEPS: Record<ClefTypes, number> = {
 };
 
 export const MIDDLE_LINE_STEP = 4;
+const TOP_LINE_STEP = 0;
+const BOTTOM_LINE_STEP = 8;
+
+export const STANDARD_STEM_STEPS = 7;
 const SECOND_INTERVAL_X_OFFSET = 1;
+
 
 const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqesWHQES])$/;
 const REGEX_CHORD_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)$/;
@@ -94,6 +105,10 @@ export function convertPitchStepToYPos(pitchStep: number) {
   return pitchStep * (STAFF_LINE_SPACING / 2);
 };
 
+/** 
+ * - Handles cases of ledger lines above / below the staff
+ * - For example, i starts at -2 (two steps) above staff and i starts at 10 (2 steps below staff)
+ */
 export function getLedgerLineYCoords(rawPitchStep: number): number[] {
   const ledgerYCoords: number[] = [];
   const halfStaffLineSpacing = STAFF_LINE_SPACING / 2;
@@ -113,20 +128,51 @@ export function isSecondInterval(lowNotePitchStep: number, highNotePitchStep: nu
   return Math.abs(highNotePitchStep - lowNotePitchStep) === 1;
 };
 
-export function getChordStemDirection(notes: PositionedChordNote[]): boolean {
+export function getChordStemDirection(notes: Pick<PositionedChordNote, "pitchStep">[]): boolean {
   if (notes.length === 0) return false;
 
-  const steps = notes.map(n => n.pitchStep);
-  const lowestPitchStep = Math.max(...steps);
-  const highestPitchStep = Math.min(...steps);
+  // Rule 1: whichever side of the middle line holds more noteheads decides direction.
+  // Notes on the middle line count for neither side. More notes above -> stem down, more below -> stem up.
+  const notesAbove = notes.filter(n => n.pitchStep < MIDDLE_LINE_STEP).length;
+  const notesBelow = notes.filter(n => n.pitchStep > MIDDLE_LINE_STEP).length;
+  if (notesAbove !== notesBelow) return notesAbove > notesBelow;
 
-  const distLow = Math.abs(lowestPitchStep - MIDDLE_LINE_STEP);
-  const distHigh = Math.abs(highestPitchStep - MIDDLE_LINE_STEP);
+  // Rule 2: If equal amount of notes, the note furthest from the middle line decides.
+  // If still equal, standard notation defaults to stem DOWN.
+  const { highStep, lowStep } = getPitchStepRange(notes);
+  const distHigh = Math.abs(highStep - MIDDLE_LINE_STEP);
+  const distLow = Math.abs(lowStep - MIDDLE_LINE_STEP);
 
-  // Rule: The note furthest from the middle line dictates the stem. 
-  // If equal distance, standard notation defaults to stem DOWN.
   return distHigh >= distLow;
-}
+};
+
+/** 
+ * - Where a stem starts and ends, in pitch steps. Works for single note / chords
+ * - Will attach stem to AT LEAST the middle line.
+ */
+export function getStemSteps(highStep: number, lowStep: number, isStemDown: boolean) {
+  if (isStemDown) {
+    return {
+      startStep: highStep,
+      endStep: Math.max(lowStep + STANDARD_STEM_STEPS, MIDDLE_LINE_STEP)
+    };
+  }
+
+  return {
+    startStep: lowStep,
+    endStep: Math.min(highStep - STANDARD_STEM_STEPS, MIDDLE_LINE_STEP)
+  };
+};
+
+/** 
+ * - Pitch steps count down from the top line of staff. Smallest step is the highest pitch.
+ * @returns highStep: highest pitch in range
+ * @returns lowStep: lowest pitch in range
+ */
+export function getPitchStepRange(notes: Pick<PositionedChordNote, "pitchStep">[]) {
+  const steps = notes.map(n => n.pitchStep);
+  return { highStep: Math.min(...steps), lowStep: Math.max(...steps) };
+};
 
 /** @returns X offset IF has second interval, will be 0 unless is offsetted negatively */
 export function applySecondIntervalOffsets(notes: PositionedChordNote[], isStemDown: boolean, baseWidth: number) {
@@ -155,4 +201,52 @@ export function applySecondIntervalOffsets(notes: PositionedChordNote[], isStemD
       }
     }
   }
-}
+};
+
+// Only considers notes above and below the staff. Notes inside staff are ignored.
+export function getChordLedgerLineSpans(
+  notes: Pick<PositionedChordNote, "pitchStep" | "xOffset">[],
+  noteHeadWidth: number
+): LedgerLineSpan[] {
+  const above = notes.filter(n => n.pitchStep < TOP_LINE_STEP);
+  const below = notes.filter(n => n.pitchStep > BOTTOM_LINE_STEP);
+  let spans: LedgerLineSpan[] = [];
+
+  if (above.length > 0) {
+    const ledgerLineSpans = createSideLedgerSpans(above, getPitchStepRange(above).highStep, noteHeadWidth);
+    spans.push(...ledgerLineSpans);
+  }
+  if (below.length > 0) {
+    const ledgerLineSpans = createSideLedgerSpans(below, getPitchStepRange(below).lowStep, noteHeadWidth);
+    spans.push(...ledgerLineSpans);
+  }
+
+  return spans;
+};
+
+// Extreme step is the furthest note from either above or below the staff. Side notes refer to which side on staff (above / below).
+function createSideLedgerSpans(
+  sideNotes: Pick<PositionedChordNote, "pitchStep" | "xOffset">[],
+  extremeStep: number,
+  noteHeadWidth: number
+): LedgerLineSpan[] {
+  const ledgerYCoords = getLedgerLineYCoords(extremeStep);
+  if (ledgerYCoords.length === 0) return [];
+
+  // Every ledger line on this side (above / below staff) spans all noteheads beyond
+  const xOffsets = sideNotes.map(n => n.xOffset);
+  const minX = Math.min(...xOffsets);
+  const maxX = Math.max(...xOffsets) + noteHeadWidth;
+  const spans: LedgerLineSpan[] = ledgerYCoords.map(y => ({ y, minX, maxX }));
+
+  // Exception: if the extreme (first / last) note sits ON the outermost line, that line only needs
+  // to cover that single notehead. Even steps are lines, odd steps are spaces.
+  if (Math.abs(extremeStep) % 2 === 0) {
+    const extremeXOffsets = sideNotes.filter(n => n.pitchStep === extremeStep).map(n => n.xOffset);
+    const outermost = spans[spans.length - 1];
+    outermost.minX = Math.min(...extremeXOffsets);
+    outermost.maxX = Math.max(...extremeXOffsets) + noteHeadWidth;
+  }
+
+  return spans;
+};

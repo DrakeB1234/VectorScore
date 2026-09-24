@@ -1,10 +1,17 @@
-import { getAccidentalGlyph, getFlagGlyph, getNoteheadGlyphByDuration, type GlyphDef } from "../glyphs";
-import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getLedgerLineYCoords, getPitchStepClefDifference, isSecondInterval, MIDDLE_LINE_STEP, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj } from "../helpers/_noteHelpers";
+import { getAccidentalGlyph, getFlagGlyph, getNoteheadGlyphByDuration } from "../glyphs";
+import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj } from "../helpers/_noteHelpers";
 import type { ClefTypes } from "../types";
 import type SVGRenderer from "./SVGRenderer";
 
+type StemOptions = {
+  duration: NoteDurations;
+  isStemDown: boolean;
+  highStep: number;
+  lowStep: number;
+  noteHeadWidth: number;
+};
+
 const ACCIDENTAL_X_OFFSET = 3;
-const STANDARD_STEM_STEPS = 7;
 const STEM_X_OFFSET = 0.5;
 const LEDGER_LINE_PADDING = 3;
 const FLAG_X_OFFSET = 1;
@@ -14,7 +21,39 @@ export default class NoteRenderer {
 
   constructor(svgRenderer: SVGRenderer) {
     this.svgRendererInstance = svgRenderer;
-  }
+  };
+
+  private drawStemAndFlag(group: SVGGElement, { duration, isStemDown, highStep, lowStep, noteHeadWidth }: StemOptions) {
+    if (duration === "w") return;
+
+    const stemX = isStemDown ? STEM_X_OFFSET : noteHeadWidth - STEM_X_OFFSET;
+    const { startStep, endStep } = getStemSteps(highStep, lowStep, isStemDown);
+    const stemStartY = convertPitchStepToYPos(startStep);
+    const stemEndY = convertPitchStepToYPos(endStep);
+
+    this.svgRendererInstance.drawLine(stemX, stemStartY, stemX, stemEndY, group);
+
+    if (duration === "e" || duration === "s") {
+      const flagDef = getFlagGlyph(duration, isStemDown);
+
+      this.svgRendererInstance.drawGlyph(flagDef.name, group, {
+        x: isStemDown ? 0 : noteHeadWidth - FLAG_X_OFFSET,
+        y: stemEndY
+      });
+    };
+  };
+
+  private drawChordLedgerLines(spans: LedgerLineSpan[], group: SVGGElement) {
+    spans.forEach(({ y, minX, maxX }) => {
+      this.svgRendererInstance.drawLine(
+        minX - LEDGER_LINE_PADDING,
+        y,
+        maxX + LEDGER_LINE_PADDING,
+        y,
+        group
+      );
+    });
+  };
 
   /** 
    * @returns {number} noteHeadWidth
@@ -42,47 +81,14 @@ export default class NoteRenderer {
       accidentalWidth = def.glyphWidth + ACCIDENTAL_X_OFFSET;
     };
 
-    const isStemDown = notePitchStep <= 4;
-    let stemX = 0;
-    let stemEndY = 0;
-
-    // Render stem, will draw to middle line if note is greater than +-1 ledger line below staff
-    if (noteObj.duration !== "w") {
-      let stemStartY: number;
-
-      if (isStemDown) {
-        stemX = STEM_X_OFFSET;
-        stemStartY = noteYPos;
-
-        const targetTipStep = Math.max(notePitchStep + STANDARD_STEM_STEPS, MIDDLE_LINE_STEP);
-        stemEndY = convertPitchStepToYPos(targetTipStep);
-      } else {
-        stemX = noteHeadDef.glyphWidth - STEM_X_OFFSET;
-        stemStartY = noteYPos;
-
-        const targetTipStep = Math.min(notePitchStep - STANDARD_STEM_STEPS, MIDDLE_LINE_STEP);
-        stemEndY = convertPitchStepToYPos(targetTipStep);
-      };
-
-      this.svgRendererInstance.drawLine(stemX, stemStartY, stemX, stemEndY, noteGroup);
-    };
-
-    // Render flag
-    if (noteObj.duration === "e" || noteObj.duration === "s") {
-      const def = getFlagGlyph(noteObj.duration, isStemDown);
-
-      if (isStemDown) {
-        this.svgRendererInstance.drawGlyph(def.name, noteGroup, {
-          x: 0,
-          y: stemEndY
-        });
-      } else {
-        this.svgRendererInstance.drawGlyph(def.name, noteGroup, {
-          x: noteHeadDef.glyphWidth - FLAG_X_OFFSET,
-          y: stemEndY
-        });
-      };
-    };
+    // Draw note stem and flag (if applicable)
+    this.drawStemAndFlag(noteGroup, {
+      duration: noteObj.duration,
+      isStemDown: notePitchStep <= MIDDLE_LINE_STEP,
+      highStep: notePitchStep,
+      lowStep: notePitchStep,
+      noteHeadWidth: noteHeadDef.glyphWidth
+    });
 
     // Render ledger lines
     const ledgerYCoords = getLedgerLineYCoords(notePitchStep);
@@ -104,9 +110,10 @@ export default class NoteRenderer {
 
   public drawChord(noteObjs: VSChordNoteObj[], duration: NoteDurations, clef: ClefTypes, chordGroup: SVGGElement) {
 
-    // Pre calculate values for each note in chord
+    // Get Y pos for each note and sorted from lowest to highest
     const positionedNoteObjs: PositionedChordNote[] = noteObjs.map(noteObj => {
       const pitchStep = getPitchStepClefDifference(noteObj.letter, noteObj.octave, clef);
+
       return {
         noteObj,
         pitchStep,
@@ -131,79 +138,19 @@ export default class NoteRenderer {
       });
     });
 
-    // Draw unifed chord stem
-    if (duration !== "w") {
-      const minStep = Math.min(...positionedNoteObjs.map(n => n.pitchStep));
-      const maxStep = Math.max(...positionedNoteObjs.map(n => n.pitchStep));
-
-      const minY = convertPitchStepToYPos(minStep);
-      const maxY = convertPitchStepToYPos(maxStep);
-
-      let stemX = 0;
-      let stemStartY = 0;
-      let stemEndY = 0;
-
-      if (isStemDown) {
-        stemX = STEM_X_OFFSET;
-        stemStartY = minY; // Starts at the top note
-
-        // Target is the bottom note + standard length, or the middle line
-        const targetTipStep = Math.max(maxStep + STANDARD_STEM_STEPS, MIDDLE_LINE_STEP);
-        stemEndY = convertPitchStepToYPos(targetTipStep);
-      } else {
-        stemX = noteHeadDef.glyphWidth - STEM_X_OFFSET;
-        stemStartY = maxY;
-
-        const targetTipStep = Math.min(minStep - STANDARD_STEM_STEPS, MIDDLE_LINE_STEP);
-        stemEndY = convertPitchStepToYPos(targetTipStep);
-      };
-      this.svgRendererInstance.drawLine(stemX, stemStartY, stemX, stemEndY, chordGroup);
-
-      // Draw flags attached to the end of the stem
-      if (duration === "e" || duration === "s") {
-        const flagDef = getFlagGlyph(duration, isStemDown);
-
-        if (isStemDown) {
-          this.svgRendererInstance.drawGlyph(flagDef.name, chordGroup, { x: 0, y: stemEndY });
-        } else {
-          this.svgRendererInstance.drawGlyph(flagDef.name, chordGroup, {
-            x: noteHeadDef.glyphWidth - FLAG_X_OFFSET,
-            y: stemEndY
-          });
-        }
-      };
-    }
-
-    // Draw unified ledger lines
-    // Maps a Y pos to the min and max X pos required at that level
-    // First level of note DOES NOT extend fully across potential second intervals
-    const ledgerMap = new Map<number, { minX: number, maxX: number }>();
-
-    positionedNoteObjs.forEach(n => {
-      const noteMinX = n.xOffset;
-      const noteMaxX = n.xOffset + noteHeadDef.glyphWidth;
-
-      getLedgerLineYCoords(n.pitchStep).forEach(y => {
-        if (ledgerMap.has(y)) {
-          const bounds = ledgerMap.get(y);
-          if (!bounds) return;
-          bounds.minX = Math.min(bounds.minX, noteMinX);
-          bounds.maxX = Math.max(bounds.maxX, noteMaxX);
-        } else {
-          ledgerMap.set(y, { minX: noteMinX, maxX: noteMaxX });
-        }
-      });
+    // Draw chord stem and flag (if applicable)
+    const { highStep, lowStep } = getPitchStepRange(positionedNoteObjs);
+    this.drawStemAndFlag(chordGroup, {
+      duration,
+      isStemDown,
+      highStep,
+      lowStep,
+      noteHeadWidth: noteHeadDef.glyphWidth
     });
 
-    ledgerMap.forEach((bounds, ledgerY) => {
-      this.svgRendererInstance.drawLine(
-        bounds.minX - LEDGER_LINE_PADDING,
-        ledgerY,
-        bounds.maxX + LEDGER_LINE_PADDING,
-        ledgerY,
-        chordGroup
-      );
-    });
+    // Draw ledger lines
+    const ledgerLineSpans = getChordLedgerLineSpans(positionedNoteObjs, noteHeadDef.glyphWidth);
+    this.drawChordLedgerLines(ledgerLineSpans, chordGroup);
 
     return {
       totalWidth: noteHeadDef.glyphWidth,
