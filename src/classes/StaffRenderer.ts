@@ -24,6 +24,11 @@ type DrawTimeSignatureArgs = {
   staffGroup: SVGGElement,
 }
 
+export type TimeSignature = {
+  topNumber: number;
+  bottomNumber: number;
+}
+
 const STAFF_LINE_COUNT = 5;
 const STAFF_LINE_SPACING = 10;
 const STAFF_LINE_SPACING_HALVED = STAFF_LINE_SPACING / 2;
