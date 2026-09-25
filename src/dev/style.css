@@ -62,7 +62,7 @@ body {
 }
 
 section {
-  padding: 0.5rem;
+  padding-bottom: 1rem;
 }
 
 .header {
@@ -233,20 +233,8 @@ section>.card:nth-of-type(n + 3) {
 
 /* Staff */
 
-.staffs-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1rem;
-  padding: 0.5rem;
-}
-
 #guitar-chords-root {
   overflow-x: auto;
-}
-
-.staffs-container:nth-child(2) {
-  margin-top: 1rem;
 }
 
 [id^="staff-root"]:not(.show) {
@@ -264,6 +252,21 @@ section>.card:nth-of-type(n + 3) {
 
 .wrong-note-ui.show {
   color: rgba(255, 0, 0, 0.558);
+}
+
+.staffs-container {
+  position: sticky;
+  top: 56px;
+  z-index: 10;
+  background-color: var(--card-color);
+
+  display: flex;
+  justify-content: center;
+
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+
+  box-shadow: 0 0 8x 4px rgba(6, 11, 32, 0.034);
 }
 
 /* Elements */

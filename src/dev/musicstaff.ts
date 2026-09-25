@@ -72,6 +72,7 @@ const domElements = {
 
   inputChord: document.getElementById("musicstaff-input-chord") as HTMLInputElement,
   inputChordDuration: document.getElementById("musicstaff-input-chord-duration") as HTMLInputElement,
+  inputChordIsTop: document.getElementById("musicstaff-input-chord-istop") as HTMLInputElement,
   buttonAddChord: document.getElementById("musicstaff-button-addchord") as HTMLButtonElement,
 
   inputKey: document.getElementById("musicstaff-input-key") as HTMLInputElement,
@@ -102,8 +103,11 @@ domElements.buttonAddChord.addEventListener("click", () => {
   const value = domElements.inputChord.value;
   const valueParts = value.split("/");
   const valueDuration = domElements.inputChordDuration.value;
+  const isTop = Boolean(domElements.inputChordIsTop.checked);
 
-  currentStaff.drawChord(valueParts, valueDuration as any);
+  currentStaff.drawChord(valueParts, valueDuration as any, {
+    staff: isTop ? "top" : "bottom"
+  });
 })
 
 domElements.buttonKeyAdd.addEventListener("click", () => {

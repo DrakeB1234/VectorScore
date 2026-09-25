@@ -1,7 +1,7 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { _parseNoteString, parseChordNoteString, type NoteDurations } from "../helpers/_noteHelpers";
+import { _parseNoteString, parseChordNoteString, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/_noteHelpers";
 import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
-import type { NoteObj, SystemTypes } from "../types";
+import type { ClefTypes, SystemTypes } from "../types";
 import _NoteRenderer from "../classes/_NoteRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING } from "../classes/StaffRenderer";
@@ -35,7 +35,7 @@ const USE_GLPYHS: GlyphDef[] = [
 ];
 
 const NOTE_LAYER_START_X = 16;
-const NOTE_SPACING = 40;
+const NOTE_SPACING = 14;
 
 const DEFAULT_STAFF_OPTIONS: Required<Omit<MusicStaffUserOptions, "keySignature" | "timeSignature">> = {
   width: 300,
@@ -47,11 +47,22 @@ const DEFAULT_STAFF_OPTIONS: Required<Omit<MusicStaffUserOptions, "keySignature"
   svgAutoFill: true,
 };
 
+type ChordEntry = {
+  gElement: SVGGElement;
+  noteData: VSChordNoteObj[];
+  duration: NoteDurations;
+  xPos: number;
+  totalWidth: number;
+  // xOffset: number;
+  isTopStaff: boolean;
+}
+
 type NoteEntry = {
   gElement: SVGGElement;
-  note: NoteObj;
+  noteData: VSNoteObj;
   xPos: number;
-  yPos: number;
+  totalWidth: number;
+  isTopStaff: boolean;
 };
 
 export type DrawOptions = {
@@ -68,7 +79,7 @@ export default class MusicStaff {
 
   private notesLayer: SVGGElement;
 
-  private noteEntries: NoteEntry[] = [];
+  private noteEntries: (NoteEntry | ChordEntry)[] = [];
   private noteCursorX: number = 0;
 
   /**
@@ -98,8 +109,29 @@ export default class MusicStaff {
     this.svgRendererInstance.commitElementsToDOM(this.svgRendererInstance.svgElementRef);
   };
 
-  private validateDrawOptions(options: DrawOptions) {
+  /** - Takes care of edge cases of targeted staff to draw notes / chords */
+  private resolveStaffTarget(rawStaff?: "top" | "bottom") {
+    let targetStaff = rawStaff || "top";
 
+    if (targetStaff === "bottom" && this.options.staffType !== "grand") {
+      console.warn("MusicStaff: Options stated 'staff: bottom', but staff configuration type is not 'grand'. Using default 'staff: top'.");
+      targetStaff = "top";
+    }
+
+    const isTopStaff = targetStaff === "top";
+    let targetClef: ClefTypes;
+    let yOffset = 0;
+
+    if (this.options.staffType === "grand") {
+      targetClef = isTopStaff ? "treble" : "bass";
+      yOffset = isTopStaff ? 0 : GRAND_STAFF_SPACING + BASE_STAFF_HEIGHT;
+    } else {
+      // Safe cast since we verified it isn't "grand"
+      targetClef = this.options.staffType as ClefTypes;
+      yOffset = 0;
+    }
+
+    return { targetClef, yOffset, isTopStaff };
   }
 
   private updateNotesLayerTransform(startX: number) {
@@ -129,49 +161,55 @@ export default class MusicStaff {
   /** 
    * - Draws a note on the staff. 
    */
-  drawNote(note: string, options?: DrawOptions) {
-    let targetStaff = options?.staff || "top";
-
+  public drawNote(note: string, options?: DrawOptions) {
     const noteObj = _parseNoteString(note);
-    const fixedStaffType = this.options.staffType === "grand" ? "treble" : this.options.staffType;
+    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
 
     const noteGroup = this.svgRendererInstance.createGroup("note");
-    let accidentalWidth = 0;
 
-    if (targetStaff === "bottom" && this.options.staffType !== "grand") {
-      console.warn("MusicStaff drawNote: Options stated 'staff: bottom', but staff configuration type is not 'grand'. Using default 'staff: top'.");
-      targetStaff = "top";
-    }
+    const { fullWidth, originXOffset } = this._noteRendererInstance.drawNote(noteObj, targetClef, noteGroup);
 
-    // Draw on bass staff if applicable
-    if (targetStaff === "bottom" && this.options.staffType === "grand") {
-      const { noteHeadWidth: _, accidentalWidth: _accidentalWidth } = this._noteRendererInstance.drawNote(noteObj, "bass", noteGroup);
-      noteGroup.setAttribute("transform", `translate(${accidentalWidth + this.noteCursorX}, ${GRAND_STAFF_SPACING + BASE_STAFF_HEIGHT})`);
-      this.notesLayer.appendChild(noteGroup);
-      accidentalWidth = _accidentalWidth;
-    }
-    else {
-      const { noteHeadWidth: _, accidentalWidth: _accidentalWidth } = this._noteRendererInstance.drawNote(noteObj, fixedStaffType, noteGroup);
-      noteGroup.setAttribute("transform", `translate(${accidentalWidth + this.noteCursorX}, 0)`);
-      this.notesLayer.appendChild(noteGroup);
-      accidentalWidth = _accidentalWidth;
-    }
+    noteGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
+    this.notesLayer.appendChild(noteGroup);
 
-    this.noteCursorX += NOTE_SPACING + accidentalWidth;
-  };
+    // 3. Save to state
+    this.noteEntries.push({
+      gElement: noteGroup,
+      noteData: noteObj,
+      xPos: this.noteCursorX,
+      totalWidth: fullWidth,
+      isTopStaff
+    });
+
+    this.noteCursorX += NOTE_SPACING + fullWidth;
+    console.log(fullWidth)
+  }
 
   /** - Draws a chord on the staff. */
-  drawChord(noteStrings: string[], duration: NoteDurations) {
+  public drawChord(noteStrings: string[], duration: NoteDurations, options?: DrawOptions) {
     const noteObjs = noteStrings.map(str => parseChordNoteString(str));
-
-    const fixedStaffType = this.options.staffType === "grand" ? "treble" : this.options.staffType;
+    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
 
     const chordGroup = this.svgRendererInstance.createGroup("chord");
-    const { totalWidth, totalXOffset } = this._noteRendererInstance.drawChord(noteObjs, duration, fixedStaffType, chordGroup);
-    chordGroup.setAttribute("transform", `translate(${totalXOffset + this.noteCursorX}, 0)`);
+
+    const { fullWidth, originXOffset } = this._noteRendererInstance.drawChord(noteObjs, duration, targetClef, chordGroup);
+
+    chordGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(chordGroup);
 
-    this.noteCursorX += NOTE_SPACING + totalXOffset;
+    // 3. Save to state
+    this.noteEntries.push({
+      gElement: chordGroup,
+      noteData: noteObjs,
+      duration: duration,
+      xPos: this.noteCursorX,
+      totalWidth: fullWidth,
+      isTopStaff
+    });
+
+    this.noteCursorX += NOTE_SPACING + fullWidth;
+
+    console.log(fullWidth)
   }
 
   /** - Evenly spaces out the notes on the staff. */

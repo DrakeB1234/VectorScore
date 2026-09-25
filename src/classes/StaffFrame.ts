@@ -133,6 +133,8 @@ export default class StaffFrame {
   }
 
   public removeTimeSignature(): number {
+    if (this.options.timeSignature === undefined) return this.currentNoteStartX;
+
     this.options.timeSignature = undefined;
     this.timeSigGroup.replaceChildren();
 
@@ -151,6 +153,8 @@ export default class StaffFrame {
   }
 
   public removeKeySignature(): number {
+    if (this.options.keySignature === undefined) return this.currentNoteStartX;
+
     this.options.keySignature = undefined;
     this.keySigGroup.replaceChildren();
 

@@ -36,79 +36,78 @@
     </div>
 
     <div class="card">
-      <div class="card__overflow">
-
-        <div class="card__controls">
-          <div class="card__input">
-            <label for="musicstaff-select-staff">Change Staff</label>
-            <select id="musicstaff-select-staff">
-              <option value="grand">Grand</option>
-              <option value="treble">Treble</option>
-              <option value="bass">Bass</option>
-              <option value="alto">Alto</option>
-            </select>
-          </div>
+      <div class="card__controls">
+        <div class="card__input">
+          <label for="musicstaff-select-staff">Change Staff</label>
+          <select id="musicstaff-select-staff">
+            <option value="grand">Grand</option>
+            <option value="treble">Treble</option>
+            <option value="bass">Bass</option>
+            <option value="alto">Alto</option>
+          </select>
         </div>
+      </div>
 
-        <div class="card__controls">
-          <p class="card__control-label">Add Note</p>
-          <div class="card__input">
-            <label for="musicstaff-input-note">Note</label>
-            <input type="text" id="musicstaff-input-note" placeholder="C#4w" value="C4q" autocomplete="off">
-          </div>
-          <div class="card__checkbox">
-            <label for="musicstaff-input-note-istop">Draw on Top Staff?</label>
-            <input type="checkbox" id="musicstaff-input-note-istop" autocomplete="off" checked="true">
-          </div>
-          <div class="card__buttons">
-            <button id="musicstaff-button-addnote">Add Note</button>
-          </div>
+      <div class="card__controls">
+        <p class="card__control-label">Add Note</p>
+        <div class="card__input">
+          <label for="musicstaff-input-note">Note</label>
+          <input type="text" id="musicstaff-input-note" placeholder="C#4w" value="C4q" autocomplete="off">
         </div>
-
-        <div class="card__controls">
-          <p class="card__control-label">Add Chord</p>
-          <div class="card__input">
-            <label for="musicstaff-input-chord">Chord</label>
-            <input type="text" id="musicstaff-input-chord" placeholder="C#4/E#4/G#4" value="C4/E4/G4"
-              autocomplete="off">
-          </div>
-          <div class="card__input">
-            <label for="musicstaff-input-chord-duration">Duration</label>
-            <input type="text" id="musicstaff-input-chord-duration" placeholder="q" value="q" autocomplete="off">
-          </div>
-          <div class="card__buttons">
-            <button id="musicstaff-button-addchord">Add Chord</button>
-          </div>
+        <div class="card__checkbox">
+          <label for="musicstaff-input-note-istop">Draw on Top Staff?</label>
+          <input type="checkbox" id="musicstaff-input-note-istop" autocomplete="off" checked="true">
         </div>
-
-        <div class="card__controls">
-          <p class="card__control-label">Key Signature</p>
-          <div class="card__input">
-            <label for="musicstaff-input-key">Key</label>
-            <input type="text" id="musicstaff-input-key" placeholder="Bb" value="" autocomplete="off">
-          </div>
-          <div class="card__buttons">
-            <button id="musicstaff-button-key-remove" class="outlined">Remove Key</button>
-            <button id="musicstaff-button-key-add">Add Key</button>
-          </div>
+        <div class="card__buttons">
+          <button id="musicstaff-button-addnote">Add Note</button>
         </div>
+      </div>
 
-        <div class="card__controls">
-          <p class="card__control-label">Time Signature</p>
-          <div class="card__input">
-            <label for="musicstaff-input-time-top">Top Number</label>
-            <input type="number" id="musicstaff-input-time-top" placeholder="4" value="4" autocomplete="off">
-          </div>
-          <div class="card__input">
-            <label for="musicstaff-input-time-bottom">Bottom Number</label>
-            <input type="number" id="musicstaff-input-time-bottom" placeholder="4" value="4" autocomplete="off">
-          </div>
-          <div class="card__buttons">
-            <button id="musicstaff-button-time-remove" class="outlined">Remove Time</button>
-            <button id="musicstaff-button-time-add">Add Time</button>
-          </div>
+      <div class="card__controls">
+        <p class="card__control-label">Add Chord</p>
+        <div class="card__input">
+          <label for="musicstaff-input-chord">Chord</label>
+          <input type="text" id="musicstaff-input-chord" placeholder="C#4/E#4/G#4" value="C4/E4/G4" autocomplete="off">
         </div>
+        <div class="card__input">
+          <label for="musicstaff-input-chord-duration">Duration</label>
+          <input type="text" id="musicstaff-input-chord-duration" placeholder="q" value="q" autocomplete="off">
+        </div>
+        <div class="card__checkbox">
+          <label for="musicstaff-input-chord-istop">Draw on Top Staff?</label>
+          <input type="checkbox" id="musicstaff-input-chord-istop" autocomplete="off" checked="true">
+        </div>
+        <div class="card__buttons">
+          <button id="musicstaff-button-addchord">Add Chord</button>
+        </div>
+      </div>
 
+      <div class="card__controls">
+        <p class="card__control-label">Key Signature</p>
+        <div class="card__input">
+          <label for="musicstaff-input-key">Key</label>
+          <input type="text" id="musicstaff-input-key" placeholder="Bb" value="" autocomplete="off">
+        </div>
+        <div class="card__buttons">
+          <button id="musicstaff-button-key-remove" class="outlined">Remove Key</button>
+          <button id="musicstaff-button-key-add">Add Key</button>
+        </div>
+      </div>
+
+      <div class="card__controls">
+        <p class="card__control-label">Time Signature</p>
+        <div class="card__input">
+          <label for="musicstaff-input-time-top">Top Number</label>
+          <input type="number" id="musicstaff-input-time-top" placeholder="4" value="4" autocomplete="off">
+        </div>
+        <div class="card__input">
+          <label for="musicstaff-input-time-bottom">Bottom Number</label>
+          <input type="number" id="musicstaff-input-time-bottom" placeholder="4" value="4" autocomplete="off">
+        </div>
+        <div class="card__buttons">
+          <button id="musicstaff-button-time-remove" class="outlined">Remove Time</button>
+          <button id="musicstaff-button-time-add">Add Time</button>
+        </div>
       </div>
     </div>
   </section>

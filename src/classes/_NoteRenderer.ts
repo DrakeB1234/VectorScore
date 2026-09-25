@@ -88,14 +88,14 @@ export default class NoteRenderer {
       });
     });
 
-    // Gets total width that accidentals take
+    // Returns the leftmost X coord (will be higher the more accidentals are drawn)
     const lastColumn = columnWidths.length - 1;
-    return -(columnRightEdges[lastColumn] - columnWidths[lastColumn]);
+    return columnRightEdges[lastColumn] - columnWidths[lastColumn];
   };
 
   /** 
-   * @returns {number} noteHeadWidth
-   * @returns {number} accidentalWidth: Width of the glpyh + the accidental x offset 
+   * @returns {number} fullWidth: Full bounding box width of the all drawn glyphs in group
+   * @returns {number} originXOffset: Amount of space drawn into negative space (below x:0 in group)
   */
   public drawNote(noteObj: VSNoteObj, clef: ClefTypes, noteGroup: SVGGElement) {
 
@@ -109,14 +109,15 @@ export default class NoteRenderer {
     });
 
     // Render accidental
-    let accidentalWidth = 0;
+    let accidentalMinX = 0;
     if (noteObj.accidental) {
       const def = getAccidentalGlyph(noteObj.accidental);
+      accidentalMinX = -(def.glyphWidth + ACCIDENTAL_X_OFFSET);
+
       this.svgRendererInstance.drawGlyph(def.name, noteGroup, {
         y: noteYPos,
         x: -(def.glyphWidth + ACCIDENTAL_X_OFFSET)
       });
-      accidentalWidth = def.glyphWidth + ACCIDENTAL_X_OFFSET;
     };
 
     // Draw note stem and flag (if applicable)
@@ -140,9 +141,18 @@ export default class NoteRenderer {
       );
     });
 
+    // Get bounding box width to return to caller
+    const hasLedgers = ledgerYCoords.length > 0;
+    const ledgerMinX = hasLedgers ? -LEDGER_LINE_PADDING : 0;
+    const ledgerMaxX = noteHeadDef.glyphWidth + (hasLedgers ? LEDGER_LINE_PADDING : 0);
+
+    // The leftmost point is either the ledger line or the accidental, whichever takes more space
+    const minX = Math.min(ledgerMinX, accidentalMinX);
+    const maxX = ledgerMaxX;
+
     return {
-      noteHeadWidth: noteHeadDef.glyphWidth,
-      accidentalWidth
+      fullWidth: maxX - minX,
+      originXOffset: Math.abs(minX)
     };
   };
 
@@ -190,22 +200,33 @@ export default class NoteRenderer {
     const ledgerLineSpans = getChordLedgerLineSpans(positionedNoteObjs, noteHeadDef.glyphWidth);
     this.drawChordLedgerLines(ledgerLineSpans, chordGroup);
 
-    // Draw accidentals
-    const accidentalWidth = this.drawChordAccidentals(positionedNoteObjs, chordGroup);
+    // Draw accidentals, returns the leftmost coord of the accidentals
+    const accidentalMinX = this.drawChordAccidentals(positionedNoteObjs, chordGroup);
 
-    // Calculate total widths
-    let totalWidth = noteHeadDef.glyphWidth;
-    if (positionedNoteObjs.find(e => e.xOffset !== 0)) totalWidth += noteHeadDef.glyphWidth - SECOND_INTERVAL_X_OFFSET;
-    totalWidth += accidentalWidth;
+    // Bounding box math for caller
+    // Noteheads can be shifted negative (left) due to 2nd intervals (which is determined by the notes set X offset)
+    const noteMinX = Math.min(...positionedNoteObjs.map(n => n.xOffset));
+    const noteMaxX = Math.max(...positionedNoteObjs.map(n => n.xOffset)) + noteHeadDef.glyphWidth;
 
-    let totalXOffset = accidentalWidth;
-    if (isStemDown) {
-      totalXOffset -= positionedNoteObjs.find(e => e.xOffset !== 0)?.xOffset ?? 0;
-    };
+    // Caculate padding for the ledger line
+    // EDGE CASE: First ledger line for second intervals DOES NOT FULLY EXTENT, accounted for in this block
+    let ledgerMinX = noteMinX;
+    let ledgerMaxX = noteMaxX;
+
+    if (ledgerLineSpans.length > 0) {
+      const spanMinX = Math.min(...ledgerLineSpans.map(s => s.minX));
+      const spanMaxX = Math.max(...ledgerLineSpans.map(s => s.maxX));
+
+      ledgerMinX = spanMinX - LEDGER_LINE_PADDING;
+      ledgerMaxX = spanMaxX + LEDGER_LINE_PADDING;
+    }
+
+    const minX = Math.min(noteMinX, ledgerMinX, accidentalMinX);
+    const maxX = Math.max(noteMaxX, ledgerMaxX);
 
     return {
-      totalWidth: totalWidth,
-      totalXOffset: totalXOffset
+      fullWidth: maxX - minX,
+      originXOffset: Math.abs(minX)
     };
   }
 }
