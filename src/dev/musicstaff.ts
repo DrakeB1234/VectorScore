@@ -1,4 +1,4 @@
-import MusicStaff, { type MusicStaffUserOptions } from "../core/MusicStaff";
+import MusicStaff, { type ReplaceConfig, type MusicStaffUserOptions, type NoteReplaceConfig, type DrawOptions, type ChordReplaceConfig, type RestReplaceConfig } from "../core/MusicStaff";
 
 const rootGrand = document.getElementById("staff-root-grand");
 const rootTreble = document.getElementById("staff-root-treble");
@@ -66,17 +66,16 @@ changeStaff("grand");
 const domElements = {
   staffSelect: document.getElementById("musicstaff-select-staff") as HTMLSelectElement,
 
+  inputIsTop: document.getElementById("musicstaff-input-istop") as HTMLInputElement,
+
   inputNote: document.getElementById("musicstaff-input-note") as HTMLInputElement,
-  inputNoteIsTop: document.getElementById("musicstaff-input-note-istop") as HTMLInputElement,
   buttonAddNote: document.getElementById("musicstaff-button-addnote") as HTMLButtonElement,
 
   inputChord: document.getElementById("musicstaff-input-chord") as HTMLInputElement,
   inputChordDuration: document.getElementById("musicstaff-input-chord-duration") as HTMLInputElement,
-  inputChordIsTop: document.getElementById("musicstaff-input-chord-istop") as HTMLInputElement,
   buttonAddChord: document.getElementById("musicstaff-button-addchord") as HTMLButtonElement,
 
   inputRestDuration: document.getElementById("musicstaff-input-rest-duration") as HTMLInputElement,
-  inputRestIsTop: document.getElementById("musicstaff-input-rest-istop") as HTMLInputElement,
   buttonAddRest: document.getElementById("musicstaff-button-addrest") as HTMLButtonElement,
 
   inputKey: document.getElementById("musicstaff-input-key") as HTMLInputElement,
@@ -99,7 +98,7 @@ domElements.staffSelect.addEventListener("change", (e) => {
 
 domElements.buttonAddNote.addEventListener("click", () => {
   const value = domElements.inputNote.value;
-  const isTop = Boolean(domElements.inputNoteIsTop.checked);
+  const isTop = Boolean(domElements.inputIsTop.checked);
 
   currentStaff.drawNote(value, {
     staff: isTop ? "top" : "bottom"
@@ -110,7 +109,7 @@ domElements.buttonAddChord.addEventListener("click", () => {
   const value = domElements.inputChord.value;
   const valueParts = value.split("/");
   const valueDuration = domElements.inputChordDuration.value;
-  const isTop = Boolean(domElements.inputChordIsTop.checked);
+  const isTop = Boolean(domElements.inputIsTop.checked);
 
   currentStaff.drawChord(valueParts, valueDuration as any, {
     staff: isTop ? "top" : "bottom"
@@ -119,7 +118,7 @@ domElements.buttonAddChord.addEventListener("click", () => {
 
 domElements.buttonAddRest.addEventListener("click", () => {
   const value = domElements.inputRestDuration.value;
-  const isTop = Boolean(domElements.inputRestIsTop.checked);
+  const isTop = Boolean(domElements.inputIsTop.checked);
 
   currentStaff.drawRest(value as any, {
     staff: isTop ? "top" : "bottom"
@@ -153,4 +152,76 @@ domElements.buttonActionClear.addEventListener("click", () => {
 
 domElements.buttonActionJustify.addEventListener("click", () => {
   currentStaff.justifyNotes();
+})
+
+// ==== REPLACE ====
+
+const replaceInputElements = {
+  noteDiv: document.getElementById("replace-note") as HTMLDivElement,
+  chordDiv: document.getElementById("replace-chord") as HTMLDivElement,
+  restDiv: document.getElementById("replace-rest") as HTMLDivElement,
+
+  selectReplace: document.getElementById("musicstaff-select-replace") as HTMLSelectElement,
+  inputIndex: document.getElementById("musicstaff-input-replace-index") as HTMLInputElement,
+  inputIsTop: document.getElementById("musicstaff-input-replace-istop") as HTMLInputElement,
+
+  inputNote: document.getElementById("musicstaff-input-replace-note") as HTMLInputElement,
+
+  inputChord: document.getElementById("musicstaff-input-replace-chord") as HTMLInputElement,
+  inputChordDuration: document.getElementById("musicstaff-input-replace-chord-duration") as HTMLInputElement,
+
+  inputRest: document.getElementById("musicstaff-input-replace-rest") as HTMLInputElement,
+
+  buttonReplace: document.getElementById("musicstaff-button-replace") as HTMLButtonElement,
+}
+
+type Replace = "note" | "chord" | "rest";
+
+function changeReplace(replace: Replace) {
+  Object.entries(replaceInputElements).filter(e => e[0].includes("Div")).map(e => e[1].classList.remove("show"));
+
+  if (replace === "note") {
+    replaceInputElements.noteDiv.classList.add("show");
+  };
+  if (replace === "chord") {
+    replaceInputElements.chordDiv.classList.add("show");
+  };
+  if (replace === "rest") {
+    replaceInputElements.restDiv.classList.add("show");
+  };
+};
+
+changeReplace("note");
+
+replaceInputElements.selectReplace.addEventListener("change", (e) => {
+  const target = e.target as HTMLSelectElement;
+  changeReplace(target.value as Replace);
+})
+
+replaceInputElements.buttonReplace.addEventListener("click", () => {
+  const index = Number(replaceInputElements.inputIndex.value);
+  const type = replaceInputElements.selectReplace.value;
+  const isTop = replaceInputElements.inputIsTop.checked;
+
+  const drawOptions: DrawOptions = {
+    staff: isTop ? "top" : "bottom"
+  }
+
+  if (type === "note") {
+    const note = replaceInputElements.inputNote.value;
+
+    currentStaff.replaceByIndex(index, { type: type, note: note } as NoteReplaceConfig, drawOptions);
+  };
+  if (type === "chord") {
+    const chord = replaceInputElements.inputChord.value;
+    const duration = replaceInputElements.inputChordDuration.value;
+    const chordParts = chord.split("/");
+
+    currentStaff.replaceByIndex(index, { type: type, notes: chordParts, duration } as ChordReplaceConfig, drawOptions);
+  };
+  if (type === "rest") {
+    const duration = replaceInputElements.inputRest.value;
+
+    currentStaff.replaceByIndex(index, { type: type, duration } as RestReplaceConfig, drawOptions);
+  };
 })

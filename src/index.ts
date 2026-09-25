@@ -13,3 +13,4 @@ export type { GuitarChordDrawOptions, GuitarBarreDef } from './types';
 
 // NEW IMPORTS WITH MAJOR RELEASE
 export type { DrawOptions } from './core/MusicStaff';
+export type { ReplaceConfig, NoteReplaceConfig, ChordReplaceConfig, RestReplaceConfig } from './core/MusicStaff';

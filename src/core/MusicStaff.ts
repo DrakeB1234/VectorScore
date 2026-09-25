@@ -81,6 +81,13 @@ export type DrawOptions = {
   // className?: string;
 };
 
+// Config types for use in replaceByIndex
+export type NoteReplaceConfig = { type: "note"; note: string };
+export type ChordReplaceConfig = { type: "chord"; notes: string[]; duration: NoteDurations };
+export type RestReplaceConfig = { type: "rest"; duration: NoteDurations };
+
+export type ReplaceConfig = NoteReplaceConfig | ChordReplaceConfig | RestReplaceConfig;
+
 export default class MusicStaff {
   private options: ResolvedStaffOptions;
 
@@ -247,6 +254,74 @@ export default class MusicStaff {
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
+  }
+
+  /** - Replaces a note, chord, or rest by index on staff. */
+  public replaceByIndex(index: number, config: ReplaceConfig, options?: DrawOptions) {
+    if (index < 0 || index >= this.noteEntries.length) throw new Error(`MusicStaff replaceByIndex: Index ${index} is out of bounds.`);
+    if (!config.type) throw new Error(`MusicStaff replaceByIndex: Incorrect replace config provided.`);
+
+    const oldEntry = this.noteEntries[index];
+    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
+
+    const newGroup = this.svgRendererInstance.createGroup(config.type);
+    let newEntry: StaffEntry;
+
+    // Set starting point back to original X pos of target, minus its offset from negative space (accidentals, ledgerlines, etc..)
+    const startingX = oldEntry.xPos - oldEntry.originXOffset;
+
+    if (config.type === "note") {
+      const noteObj = _parseNoteString(config.note);
+      const { fullWidth, originXOffset } = this._noteRendererInstance.drawNote(noteObj, targetClef, newGroup);
+      const newX = startingX + originXOffset;
+
+      newEntry = {
+        type: "note",
+        gElement: newGroup,
+        noteData: noteObj,
+        xPos: newX,
+        totalWidth: fullWidth,
+        originXOffset,
+        yOffset,
+        isTopStaff
+      };
+    }
+    else if (config.type === "chord") {
+      const noteObjs = config.notes.map(str => parseChordNoteString(str));
+      const { fullWidth, originXOffset } = this._noteRendererInstance.drawChord(noteObjs, config.duration, targetClef, newGroup);
+      const newX = startingX + originXOffset;
+
+      newEntry = {
+        type: "chord",
+        gElement: newGroup,
+        noteData: noteObjs,
+        duration: config.duration,
+        xPos: newX,
+        totalWidth: fullWidth,
+        originXOffset,
+        yOffset,
+        isTopStaff
+      };
+    }
+    else {
+      const { fullWidth, originXOffset } = this._noteRendererInstance.drawRest(config.duration, newGroup);
+      const newX = startingX + originXOffset;
+
+      newEntry = {
+        type: "rest",
+        gElement: newGroup,
+        duration: config.duration,
+        xPos: newX,
+        totalWidth: fullWidth,
+        originXOffset,
+        yOffset,
+        isTopStaff
+      };
+    }
+
+    newGroup.setAttribute("transform", `translate(${newEntry.xPos}, ${newEntry.yOffset})`);
+    this.notesLayer.replaceChild(newGroup, oldEntry.gElement);
+    this.noteEntries[index] = newEntry;
   }
 
   /** - Evenly spaces out the notes on the staff. */
