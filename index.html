@@ -83,6 +83,21 @@
       </div>
 
       <div class="card__controls">
+        <p class="card__control-label">Add Rest</p>
+        <div class="card__input">
+          <label for="musicstaff-input-rest-duration">Duration</label>
+          <input type="text" id="musicstaff-input-rest-duration" placeholder="q" value="q" autocomplete="off">
+        </div>
+        <div class="card__checkbox">
+          <label for="musicstaff-input-rest-istop">Draw on Top Staff?</label>
+          <input type="checkbox" id="musicstaff-input-rest-istop" autocomplete="off" checked="true">
+        </div>
+        <div class="card__buttons">
+          <button id="musicstaff-button-addrest">Add Rest</button>
+        </div>
+      </div>
+
+      <div class="card__controls">
         <p class="card__control-label">Key Signature</p>
         <div class="card__input">
           <label for="musicstaff-input-key">Key</label>
@@ -109,6 +124,15 @@
           <button id="musicstaff-button-time-add">Add Time</button>
         </div>
       </div>
+
+      <div class="card__controls">
+        <p class="card__control-label">Actions</p>
+        <div class="card__buttons">
+          <button id="musicstaff-button-action-clear" class="outlined">Clear all Notes</button>
+          <button id="musicstaff-button-action-justify" class="outlined">Justify Notes</button>
+        </div>
+      </div>
+
     </div>
   </section>
 

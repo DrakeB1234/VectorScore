@@ -1,4 +1,4 @@
-import { getAccidentalGlyph, getFlagGlyph, getNoteheadGlyphByDuration } from "../glyphs";
+import { getAccidentalGlyph, getFlagGlyph, getNoteheadGlyphByDuration, getRestGlyphByDuration } from "../glyphs";
 import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj, assignAccidentalColumns, SECOND_INTERVAL_X_OFFSET } from "../helpers/_noteHelpers";
 import type { ClefTypes } from "../types";
 import type SVGRenderer from "./SVGRenderer";
@@ -25,7 +25,7 @@ export default class NoteRenderer {
   };
 
   private drawStemAndFlag(group: SVGGElement, { duration, isStemDown, highStep, lowStep, noteHeadWidth }: StemOptions) {
-    if (duration === "w") return;
+    if (duration === "w") return 0;
 
     const stemX = isStemDown ? STEM_X_OFFSET : noteHeadWidth - STEM_X_OFFSET;
     const { startStep, endStep } = getStemSteps(highStep, lowStep, isStemDown);
@@ -34,14 +34,21 @@ export default class NoteRenderer {
 
     this.svgRendererInstance.drawLine(stemX, stemStartY, stemX, stemEndY, group);
 
+    let flagMaxX = 0;
+
     if (duration === "e" || duration === "s") {
       const flagDef = getFlagGlyph(duration, isStemDown);
+      const flagX = isStemDown ? 0 : noteHeadWidth - FLAG_X_OFFSET;
 
       this.svgRendererInstance.drawGlyph(flagDef.name, group, {
         x: isStemDown ? 0 : noteHeadWidth - FLAG_X_OFFSET,
         y: stemEndY
       });
+
+      flagMaxX = flagX + flagDef.glyphWidth;
     };
+
+    return flagMaxX;
   };
 
   private drawChordLedgerLines(spans: LedgerLineSpan[], group: SVGGElement) {
@@ -121,7 +128,7 @@ export default class NoteRenderer {
     };
 
     // Draw note stem and flag (if applicable)
-    this.drawStemAndFlag(noteGroup, {
+    const flagMaxX = this.drawStemAndFlag(noteGroup, {
       duration: noteObj.duration,
       isStemDown: notePitchStep <= MIDDLE_LINE_STEP,
       highStep: notePitchStep,
@@ -148,7 +155,7 @@ export default class NoteRenderer {
 
     // The leftmost point is either the ledger line or the accidental, whichever takes more space
     const minX = Math.min(ledgerMinX, accidentalMinX);
-    const maxX = ledgerMaxX;
+    const maxX = Math.max(ledgerMaxX, flagMaxX);
 
     return {
       fullWidth: maxX - minX,
@@ -188,7 +195,7 @@ export default class NoteRenderer {
 
     // Draw chord stem and flag (if applicable)
     const { highStep, lowStep } = getPitchStepRange(positionedNoteObjs);
-    this.drawStemAndFlag(chordGroup, {
+    const flagMaxX = this.drawStemAndFlag(chordGroup, {
       duration,
       isStemDown,
       highStep,
@@ -222,11 +229,23 @@ export default class NoteRenderer {
     }
 
     const minX = Math.min(noteMinX, ledgerMinX, accidentalMinX);
-    const maxX = Math.max(noteMaxX, ledgerMaxX);
+    const maxX = Math.max(noteMaxX, ledgerMaxX, flagMaxX);
 
     return {
       fullWidth: maxX - minX,
       originXOffset: Math.abs(minX)
+    };
+  }
+
+  /** - Returns the width of the drawn rest glyph */
+  public drawRest(duration: NoteDurations, restGroup: SVGGElement) {
+    const glyphDef = getRestGlyphByDuration(duration);
+
+    this.svgRendererInstance.drawGlyph(glyphDef.name, restGroup);
+
+    return {
+      fullWidth: glyphDef.glyphWidth,
+      originXOffset: 0 // Rests in this case don't shift into negative space
     };
   }
 }

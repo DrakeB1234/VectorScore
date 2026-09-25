@@ -32,7 +32,7 @@ export const GRAND_STAFF_SPACING = 60;
 export const COMPONENT_GAP = 10;
 
 export const CLEF_X_OFFSET = 4;
-const KEY_SIG_ACCIDENTAL_SPACING = 10;
+const KEY_SIG_ACCIDENTAL_SPACING = 12;
 
 export default class StaffRenderer {
   private svgRendererInstance: SVGRenderer;

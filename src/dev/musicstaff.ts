@@ -75,6 +75,10 @@ const domElements = {
   inputChordIsTop: document.getElementById("musicstaff-input-chord-istop") as HTMLInputElement,
   buttonAddChord: document.getElementById("musicstaff-button-addchord") as HTMLButtonElement,
 
+  inputRestDuration: document.getElementById("musicstaff-input-rest-duration") as HTMLInputElement,
+  inputRestIsTop: document.getElementById("musicstaff-input-rest-istop") as HTMLInputElement,
+  buttonAddRest: document.getElementById("musicstaff-button-addrest") as HTMLButtonElement,
+
   inputKey: document.getElementById("musicstaff-input-key") as HTMLInputElement,
   buttonKeyAdd: document.getElementById("musicstaff-button-key-add") as HTMLButtonElement,
   buttonKeyRemove: document.getElementById("musicstaff-button-key-remove") as HTMLButtonElement,
@@ -83,6 +87,9 @@ const domElements = {
   inputTimeBottom: document.getElementById("musicstaff-input-time-bottom") as HTMLInputElement,
   buttonTimeAdd: document.getElementById("musicstaff-button-time-add") as HTMLButtonElement,
   buttonTimeRemove: document.getElementById("musicstaff-button-time-remove") as HTMLButtonElement,
+
+  buttonActionClear: document.getElementById("musicstaff-button-action-clear") as HTMLButtonElement,
+  buttonActionJustify: document.getElementById("musicstaff-button-action-justify") as HTMLButtonElement,
 };
 
 domElements.staffSelect.addEventListener("change", (e) => {
@@ -110,6 +117,15 @@ domElements.buttonAddChord.addEventListener("click", () => {
   });
 })
 
+domElements.buttonAddRest.addEventListener("click", () => {
+  const value = domElements.inputRestDuration.value;
+  const isTop = Boolean(domElements.inputRestIsTop.checked);
+
+  currentStaff.drawRest(value as any, {
+    staff: isTop ? "top" : "bottom"
+  });
+})
+
 domElements.buttonKeyAdd.addEventListener("click", () => {
   const value = domElements.inputKey.value;
 
@@ -129,4 +145,12 @@ domElements.buttonTimeAdd.addEventListener("click", () => {
 
 domElements.buttonTimeRemove.addEventListener("click", () => {
   currentStaff.removeTimeSignature();
+})
+
+domElements.buttonActionClear.addEventListener("click", () => {
+  currentStaff.clearAllNotes();
+})
+
+domElements.buttonActionJustify.addEventListener("click", () => {
+  currentStaff.justifyNotes();
 })

@@ -1,4 +1,4 @@
-import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
 import { _parseNoteString, parseChordNoteString, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/_noteHelpers";
 import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
@@ -31,7 +31,8 @@ const USE_GLPYHS: GlyphDef[] = [
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
   ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT,
   TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9,
-  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP
+  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP,
+  REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH
 ];
 
 const NOTE_LAYER_START_X = 16;
@@ -47,23 +48,33 @@ const DEFAULT_STAFF_OPTIONS: Required<Omit<MusicStaffUserOptions, "keySignature"
   svgAutoFill: true,
 };
 
-type ChordEntry = {
+type BaseEntry = {
   gElement: SVGGElement;
-  noteData: VSChordNoteObj[];
-  duration: NoteDurations;
   xPos: number;
   totalWidth: number;
-  // xOffset: number;
-  isTopStaff: boolean;
-}
-
-type NoteEntry = {
-  gElement: SVGGElement;
-  noteData: VSNoteObj;
-  xPos: number;
-  totalWidth: number;
+  originXOffset: number;
+  yOffset: number;
   isTopStaff: boolean;
 };
+
+type NoteEntry = BaseEntry & {
+  type: "note";
+  noteData: VSNoteObj;
+};
+
+type ChordEntry = BaseEntry & {
+  type: "chord";
+  noteData: VSChordNoteObj[];
+  duration: NoteDurations;
+};
+
+type RestEntry = BaseEntry & {
+  type: "rest";
+  duration: NoteDurations;
+};
+
+// The new unified type for the array
+type StaffEntry = NoteEntry | ChordEntry | RestEntry;
 
 export type DrawOptions = {
   staff?: "top" | "bottom";
@@ -79,7 +90,7 @@ export default class MusicStaff {
 
   private notesLayer: SVGGElement;
 
-  private noteEntries: (NoteEntry | ChordEntry)[] = [];
+  private noteEntries: StaffEntry[] = [];
   private noteCursorX: number = 0;
 
   /**
@@ -126,7 +137,6 @@ export default class MusicStaff {
       targetClef = isTopStaff ? "treble" : "bass";
       yOffset = isTopStaff ? 0 : GRAND_STAFF_SPACING + BASE_STAFF_HEIGHT;
     } else {
-      // Safe cast since we verified it isn't "grand"
       targetClef = this.options.staffType as ClefTypes;
       yOffset = 0;
     }
@@ -172,17 +182,18 @@ export default class MusicStaff {
     noteGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(noteGroup);
 
-    // 3. Save to state
     this.noteEntries.push({
+      type: "note",
       gElement: noteGroup,
       noteData: noteObj,
       xPos: this.noteCursorX,
       totalWidth: fullWidth,
+      originXOffset,
+      yOffset,
       isTopStaff
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
-    console.log(fullWidth)
   }
 
   /** - Draws a chord on the staff. */
@@ -197,24 +208,79 @@ export default class MusicStaff {
     chordGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(chordGroup);
 
-    // 3. Save to state
     this.noteEntries.push({
+      type: "chord",
       gElement: chordGroup,
       noteData: noteObjs,
       duration: duration,
       xPos: this.noteCursorX,
       totalWidth: fullWidth,
+      originXOffset,
+      yOffset,
       isTopStaff
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
+  }
 
-    console.log(fullWidth)
+  /** - Draws a rest on the staff. */
+  public drawRest(duration: NoteDurations, options?: DrawOptions) {
+    const { targetClef: _, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
+
+    const restGroup = this.svgRendererInstance.createGroup("rest");
+
+    // originXOffset will be 0, due to rest not shifting into negative space.
+    const { fullWidth, originXOffset } = this._noteRendererInstance.drawRest(duration, restGroup);
+
+    restGroup.setAttribute("transform", `translate(${this.noteCursorX}, ${yOffset})`);
+    this.notesLayer.appendChild(restGroup);
+
+    this.noteEntries.push({
+      type: "rest",
+      gElement: restGroup,
+      duration: duration,
+      xPos: this.noteCursorX,
+      totalWidth: fullWidth,
+      yOffset,
+      originXOffset: originXOffset,
+      isTopStaff
+    });
+
+    this.noteCursorX += NOTE_SPACING + fullWidth;
   }
 
   /** - Evenly spaces out the notes on the staff. */
-  justifyNotes() {
-    // REFACTOR / IMPLEMENT
+  public justifyNotes() {
+    const notesCount = this.noteEntries.length;
+    if (notesCount <= 0) return;
+
+    const startX = this.staffFrame.getNoteStartX();
+    const rightPadding = NOTE_SPACING;
+    const availableWidth = this.options.width - startX - rightPadding;
+
+    // Calculate the total footprint of all glyphs (no empty space included)
+    const totalGlyphWidth = this.noteEntries.reduce((sum, entry) => sum + entry.totalWidth, 0);
+
+    const remainingSpace = availableWidth - totalGlyphWidth;
+
+    // If notes overflow the staff, fallback to the standard minimum spacing
+    const dynamicGap = remainingSpace > 0
+      ? remainingSpace / notesCount
+      : NOTE_SPACING;
+
+    let currentX = 0;
+    this.noteEntries.forEach(entry => {
+      entry.xPos = currentX;
+
+      entry.gElement.setAttribute(
+        "transform",
+        `translate(${currentX + entry.originXOffset}, ${entry.yOffset})`
+      );
+
+      currentX += entry.totalWidth + dynamicGap;
+    });
+
+    this.noteCursorX = currentX;
   }
 
   /** - Clears staff of notes and resets internal positioning. */
