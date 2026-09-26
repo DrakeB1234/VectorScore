@@ -1,5 +1,5 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { _parseNoteString, parseChordNoteString, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/_noteHelpers";
+import { _parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/_noteHelpers";
 import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import _NoteRenderer from "../classes/_NoteRenderer";
@@ -82,11 +82,8 @@ export type DrawOptions = {
 };
 
 // Config types for use in replaceByIndex
-export type NoteReplaceConfig = { type: "note"; note: string };
-export type ChordReplaceConfig = { type: "chord"; notes: string[]; duration: NoteDurations };
-export type RestReplaceConfig = { type: "rest"; duration: NoteDurations };
 
-export type ReplaceConfig = NoteReplaceConfig | ChordReplaceConfig | RestReplaceConfig;
+export type ReplaceConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig;
 
 export default class MusicStaff {
   private options: ResolvedStaffOptions;
@@ -99,6 +96,8 @@ export default class MusicStaff {
 
   private noteEntries: StaffEntry[] = [];
   private noteCursorX: number = 0;
+
+  private currentNoteSpacing: number = NOTE_SPACING;
 
   /**
    * Creates an instance of a MusicStaff, A single staff.
@@ -149,31 +148,11 @@ export default class MusicStaff {
     }
 
     return { targetClef, yOffset, isTopStaff };
-  }
+  };
 
   private updateNotesLayerTransform(startX: number) {
     this.notesLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
   };
-
-  public changeTimeSignature(top: number, bottom: number) {
-    const newStartX = this.staffFrame.changeTimeSignature(top, bottom);
-    this.updateNotesLayerTransform(newStartX);
-  };
-
-  public removeTimeSignature() {
-    const newStartX = this.staffFrame.removeTimeSignature();
-    this.updateNotesLayerTransform(newStartX);
-  }
-
-  public changeKeySignature(key: KeySignatures) {
-    const newStartX = this.staffFrame.changeKeySignature(key);
-    this.updateNotesLayerTransform(newStartX);
-  };
-
-  public removeKeySignature() {
-    const newStartX = this.staffFrame.removeKeySignature();
-    this.updateNotesLayerTransform(newStartX);
-  }
 
   /** 
    * - Draws a note on the staff. 
@@ -262,24 +241,22 @@ export default class MusicStaff {
     if (!config.type) throw new Error(`MusicStaff replaceByIndex: Incorrect replace config provided.`);
 
     const oldEntry = this.noteEntries[index];
-    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
+
+    const staffArg = options?.staff ?? (oldEntry.isTopStaff ? "top" : "bottom"); // Ensures if staff not in options, use old entries type
+    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(staffArg);
 
     const newGroup = this.svgRendererInstance.createGroup(config.type);
     let newEntry: StaffEntry;
 
-    // Set starting point back to original X pos of target, minus its offset from negative space (accidentals, ledgerlines, etc..)
-    const startingX = oldEntry.xPos - oldEntry.originXOffset;
-
     if (config.type === "note") {
       const noteObj = _parseNoteString(config.note);
       const { fullWidth, originXOffset } = this._noteRendererInstance.drawNote(noteObj, targetClef, newGroup);
-      const newX = startingX + originXOffset;
 
       newEntry = {
         type: "note",
         gElement: newGroup,
         noteData: noteObj,
-        xPos: newX,
+        xPos: 0,
         totalWidth: fullWidth,
         originXOffset,
         yOffset,
@@ -289,14 +266,13 @@ export default class MusicStaff {
     else if (config.type === "chord") {
       const noteObjs = config.notes.map(str => parseChordNoteString(str));
       const { fullWidth, originXOffset } = this._noteRendererInstance.drawChord(noteObjs, config.duration, targetClef, newGroup);
-      const newX = startingX + originXOffset;
 
       newEntry = {
         type: "chord",
         gElement: newGroup,
         noteData: noteObjs,
         duration: config.duration,
-        xPos: newX,
+        xPos: 0,
         totalWidth: fullWidth,
         originXOffset,
         yOffset,
@@ -305,13 +281,12 @@ export default class MusicStaff {
     }
     else {
       const { fullWidth, originXOffset } = this._noteRendererInstance.drawRest(config.duration, newGroup);
-      const newX = startingX + originXOffset;
 
       newEntry = {
         type: "rest",
         gElement: newGroup,
         duration: config.duration,
-        xPos: newX,
+        xPos: 0,
         totalWidth: fullWidth,
         originXOffset,
         yOffset,
@@ -319,10 +294,11 @@ export default class MusicStaff {
       };
     }
 
-    newGroup.setAttribute("transform", `translate(${newEntry.xPos}, ${newEntry.yOffset})`);
     this.notesLayer.replaceChild(newGroup, oldEntry.gElement);
     this.noteEntries[index] = newEntry;
-  }
+
+    this.applySpacing();
+  };
 
   /** - Evenly spaces out the notes on the staff. */
   public justifyNotes() {
@@ -333,7 +309,7 @@ export default class MusicStaff {
     const rightPadding = NOTE_SPACING;
     const availableWidth = this.options.width - startX - rightPadding;
 
-    // Calculate the total footprint of all glyphs (no empty space included)
+    // Calculate the total footprint of all glyphs (no note spacing included)
     const totalGlyphWidth = this.noteEntries.reduce((sum, entry) => sum + entry.totalWidth, 0);
 
     const remainingSpace = availableWidth - totalGlyphWidth;
@@ -343,7 +319,21 @@ export default class MusicStaff {
       ? remainingSpace / notesCount
       : NOTE_SPACING;
 
+    this.applySpacing(dynamicGap);
+  };
+
+  /** 
+   * - Applies spacing between each note
+   * @param spacingOverride - Default is normal note spacing, if value is provided then it will override
+  */
+  public applySpacing(spacingOverride?: number) {
+
+    // Useful if justifyNotes was called, it will remember it for if replaceByIndex is called. 
+    const gap = spacingOverride ?? this.currentNoteSpacing;
+    this.currentNoteSpacing = gap;
+
     let currentX = 0;
+
     this.noteEntries.forEach(entry => {
       entry.xPos = currentX;
 
@@ -352,14 +342,14 @@ export default class MusicStaff {
         `translate(${currentX + entry.originXOffset}, ${entry.yOffset})`
       );
 
-      currentX += entry.totalWidth + dynamicGap;
+      currentX += entry.totalWidth + gap;
     });
 
     this.noteCursorX = currentX;
   }
 
   /** - Clears staff of notes and resets internal positioning. */
-  clearAllNotes() {
+  public clearAllNotes() {
     this.noteCursorX = 0;
 
     const notesLayer = this.svgRendererInstance.getLayer("notes");
@@ -367,29 +357,38 @@ export default class MusicStaff {
     this.noteEntries = [];
   }
 
-
-  /** - Changes the note by index to the specified note. */
-  changeNoteByIndex(note: string, noteIndex: number) {
-    // REFACTOR / IMPLEMENT
+  public changeTimeSignature(top: number, bottom: number) {
+    const newStartX = this.staffFrame.changeTimeSignature(top, bottom);
+    this.updateNotesLayerTransform(newStartX);
   };
 
-  /** - Changes the note by index to the specified chord. */
-  changeChordByIndex(notes: string[], chordIndex: number) {
-    // REFACTOR / IMPLEMENT
+  public removeTimeSignature() {
+    const newStartX = this.staffFrame.removeTimeSignature();
+    this.updateNotesLayerTransform(newStartX);
+  }
+
+  public changeKeySignature(key: KeySignatures) {
+    const newStartX = this.staffFrame.changeKeySignature(key);
+    this.updateNotesLayerTransform(newStartX);
   };
+
+  public removeKeySignature() {
+    const newStartX = this.staffFrame.removeKeySignature();
+    this.updateNotesLayerTransform(newStartX);
+  }
 
   /** - Adds a class to the note by the index provided. */
-  addClassToNoteByIndex(className: string, noteIndex: number) {
+  public addClassToNoteByIndex(className: string, noteIndex: number) {
     // REFACTOR / IMPLEMENT
   }
 
   /** - Removes a class to the note by the index provided. */
-  removeClassToNoteByIndex(className: string, noteIndex: number) {
+  public removeClassToNoteByIndex(className: string, noteIndex: number) {
     // REFACTOR / IMPLEMENT
   };
 
   /** - Removes the root svg element and cleans up arrays. */
-  destroy() {
+  public destroy() {
     this.noteEntries = [];
     this.svgRendererInstance.destroy();
   };

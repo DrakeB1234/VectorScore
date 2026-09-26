@@ -1,4 +1,6 @@
-import MusicStaff, { type ReplaceConfig, type MusicStaffUserOptions, type NoteReplaceConfig, type DrawOptions, type ChordReplaceConfig, type RestReplaceConfig } from "../core/MusicStaff";
+import MusicStaff from "../core/MusicStaff";
+import type { DrawOptions, MusicStaffUserOptions } from "../core/MusicStaff";
+import { chordConfig, noteConfig, restConfig } from "../helpers/_noteHelpers";
 
 const rootGrand = document.getElementById("staff-root-grand");
 const rootTreble = document.getElementById("staff-root-treble");
@@ -210,18 +212,18 @@ replaceInputElements.buttonReplace.addEventListener("click", () => {
   if (type === "note") {
     const note = replaceInputElements.inputNote.value;
 
-    currentStaff.replaceByIndex(index, { type: type, note: note } as NoteReplaceConfig, drawOptions);
+    currentStaff.replaceByIndex(index, noteConfig(note), drawOptions);
   };
   if (type === "chord") {
     const chord = replaceInputElements.inputChord.value;
     const duration = replaceInputElements.inputChordDuration.value;
     const chordParts = chord.split("/");
 
-    currentStaff.replaceByIndex(index, { type: type, notes: chordParts, duration } as ChordReplaceConfig, drawOptions);
+    currentStaff.replaceByIndex(index, chordConfig(chordParts, duration as any), drawOptions);
   };
   if (type === "rest") {
     const duration = replaceInputElements.inputRest.value;
 
-    currentStaff.replaceByIndex(index, { type: type, duration } as RestReplaceConfig, drawOptions);
+    currentStaff.replaceByIndex(index, restConfig(duration as any), drawOptions);
   };
 })

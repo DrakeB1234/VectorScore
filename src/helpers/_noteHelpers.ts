@@ -101,10 +101,6 @@ export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
   return noteObj;
 }
 
-function getPitchStep(letter: string, octave: number) {
-  return (octave * 7) + DIATONIC_STEPS[letter];
-};
-
 export function getPitchStepClefDifference(letter: string, octave: number, clef: ClefTypes): number {
   const noteStep = (octave * 7) + DIATONIC_STEPS[letter];
   return CLEF_TOP_LINE_STEPS[clef] - noteStep;
@@ -287,4 +283,22 @@ export function assignAccidentalColumns(notes: PositionedChordNote[]): Accidenta
   }
 
   return placements;
+};
+
+// Common types / actions for drawing methods on staff
+
+export type DrawNoteConfig = { type: "note"; note: string };
+export type DrawChordConfig = { type: "chord"; notes: string[]; duration: NoteDurations };
+export type DrawRestConfig = { type: "rest"; duration: NoteDurations };
+
+export function noteConfig(note: string): DrawNoteConfig {
+  return { type: "note", note };
+};
+
+export function chordConfig(notes: string[], duration: NoteDurations): DrawChordConfig {
+  return { type: "chord", notes, duration };
+};
+
+export function restConfig(duration: NoteDurations): DrawRestConfig {
+  return { type: "rest", duration };
 };
