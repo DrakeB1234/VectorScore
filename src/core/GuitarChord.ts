@@ -263,7 +263,7 @@ export default class GuitarChord {
 
   // Builds a single chord diagram's group element: grid, nut/fret-position label, and per-string markers.
   private renderChordDiagram(frets: string[], fingers: string[], options?: GuitarChordDrawOptions): SVGGElement {
-    const group = this.svgRendererInstance.createGroup("chord");
+    const group = this.svgRendererInstance.createGroup("guitar-chord");
     const startFret = options?.startFret ?? 1;
 
     if (options?.label) {

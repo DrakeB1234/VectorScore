@@ -26,7 +26,7 @@
     }
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run dev --prefix sandbox",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest",
@@ -36,6 +36,7 @@
     "@types/node": "^25.0.0",
     "jsdom": "^27.3.0",
     "render-scan": "^0.0.3",
+    "svelte-render-scan": "^1.1.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vite-plugin-dts": "^4.5.4",

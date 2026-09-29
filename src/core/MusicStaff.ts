@@ -41,7 +41,7 @@ const DEFAULT_STAFF_OPTIONS: Required<Omit<MusicStaffUserOptions, "keySignature"
   width: 300,
   scale: 1,
   noteStartX: NOTE_LAYER_START_X,
-  staffType: "treble",
+  staffType: "grand",
   paddingTop: 20,
   paddingBottom: 20,
   svgAutoFill: true,
