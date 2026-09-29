@@ -24,6 +24,7 @@ export function getRestGlyphByDuration(duration: NoteDurations) {
     case "q": return REST_QUARTER;
     case "e": return REST_EIGHTH;
     case "s": return REST_SIXTEENTH;
+    case "t": return REST_THIRTY_SECOND;
     default: {
       throw new Error("Unable to retrieve rest glpyh for given value " + duration);
     };
@@ -73,7 +74,7 @@ export function getTimeSigGlyph(number: number) {
   }
 };
 
-export function getFlagGlyph(duration: Extract<NoteDurations, "s" | "e">, isDown: boolean) {
+export function getFlagGlyph(duration: Extract<NoteDurations, "s" | "e" | "t">, isDown: boolean) {
   switch (duration) {
     case "e": {
       if (isDown) return FLAG_EIGHTH_DOWN
@@ -82,6 +83,10 @@ export function getFlagGlyph(duration: Extract<NoteDurations, "s" | "e">, isDown
     case "s": {
       if (isDown) return FLAG_SIXTEENTH_DOWN
       return FLAG_SIXTEENTH_UP
+    }
+    case "t": {
+      if (isDown) return FLAG_THIRTY_SECOND_DOWN
+      return FLAG_THIRTY_SECOND_UP
     }
     default: {
       throw new Error("Unable to retrieve flag glpyh for given value " + duration);
@@ -113,15 +118,15 @@ export const NOTEHEAD_BLACK: GlyphDef = {
 
 export const REST_WHOLE: GlyphDef = {
   name: "REST_WHOLE",
-  path: "M11.3 4.7q-.1 1-1 1H1a1 1 0 0 1-1-1V1q0-1 1-1h9.2q1 0 1 1z",
-  glyphWidth: 11,
+  path: "M14 4.7q-.1 1-1.3 1H1.3Q0 5.8 0 4.8V1q0-1 1.3-1h11.4Q14 0 14 1z",
+  glyphWidth: 14,
   glyphHeight: 6,
   yOffset: 20
 };
 export const REST_HALF: GlyphDef = {
   name: "REST_HALF",
   path: REST_WHOLE.path,
-  glyphWidth: 11,
+  glyphWidth: 14,
   glyphHeight: 6,
   yOffset: 14
 };
@@ -137,7 +142,7 @@ export const REST_EIGHTH: GlyphDef = {
   path: "M5.4 2.7V3C6.7 3 8.7.7 9 .4l.4-.1s.5.2.5.6l-.4 1.6-4 14.1q-.8.4-1.5.4c-.2 0-1.1 0-1.1-.5.7-2.7 3.6-10.6 3.7-11.2v-.5q0-.3-.2-.3h-.2q-.6.4-1.4.6-.7.3-1.6.3l-1-.2q-.6 0-1.1-.5Q0 4 0 2.7a2.7 2.7 0 0 1 5.4 0",
   glyphWidth: 10,
   glyphHeight: 17,
-  yOffset: 10
+  yOffset: 12
 
 };
 export const REST_SIXTEENTH: GlyphDef = {
@@ -145,7 +150,14 @@ export const REST_SIXTEENTH: GlyphDef = {
   path: "M8.3 2.7v.4C9.7 3.1 11.7.7 12 .4l.4-.1s.4.2.4.4V1l-1.1 4-1.8 6-4.7 15.2c-.1.5-.3 1-1.5 1q-1.3-.1-1.2-.8L6.3 15v-.1l-.1-.2q-.6.4-1.3.5-.8.3-1.7.3l-1-.1q-.7-.2-1-.6a3 3 0 0 1-1.2-2c0-1.5 1.2-2.7 2.7-2.7s2.7 1.2 2.7 2.7v.4c.6 0 1.6-.5 2-1.2l2.3-7.2q0-.3-.2-.3h-.3l-1.4.7-1.7.2H5l-1-.7a3 3 0 0 1-1.1-2 2.7 2.7 0 0 1 5.4 0",
   glyphWidth: 13,
   glyphHeight: 27,
-  yOffset: 10
+  yOffset: 12
+};
+export const REST_THIRTY_SECOND: GlyphDef = {
+  name: "REST_THIRTY_SECOND",
+  path: "M14.1.3q.3-.1.4.4V1l-1 4s-7 30.8-7 31.3c-.2.4-.3.8-1.6.8q-1.2 0-1.1-.6v-.2l2.9-11.5q0-.2-.3-.2l-1.5.6q-.8.3-1.7.3l-1-.1q-.6-.2-1-.6a3 3 0 0 1-1.2-2 2.7 2.7 0 0 1 5.4 0v.4c.6 0 1.8-.6 2-1.4L9 15q0-.4-.2-.5h-.2l-1.4.6-1.6.3-1-.1q-.6-.2-1.1-.6a3 3 0 0 1-1.1-2c0-1.5 1.2-2.7 2.7-2.7s2.7 1.2 2.7 2.7v.4c.6 0 2-.8 2.1-1.5l1.6-6.4v-.1q0-.6-.4-.7h-.2l-1.4.7-1.6.2-1-.1-1.2-.6a3 3 0 0 1-1.1-2 2.7 2.7 0 0 1 5.4 0V3C11.4 3 13.4.6 13.7.4z",
+  glyphWidth: 15,
+  glyphHeight: 37,
+  yOffset: 2
 };
 
 export const ACCIDENTAL_SHARP: GlyphDef = {
@@ -211,6 +223,20 @@ export const FLAG_SIXTEENTH_DOWN: GlyphDef = {
   glyphWidth: 12,
   glyphHeight: 33,
   yOffset: -33
+};
+export const FLAG_THIRTY_SECOND_UP: GlyphDef = {
+  name: "FLAG_THIRTY_SECOND_UP",
+  path: "M10.4 32.9V34l-.2 3.8q-.5.6-.8.6H9q-.5-.3-.5-1v-.3q.4-1.7.4-3.4 0-2.8-1.3-5.5C5.2 23 2.5 23 .2 23H0V.5Q0 0 .6 0q.6.1.7.8C2 4.8 4 5.4 6 7.6c2.7 2.9 3.6 4 4 6.4l.1 1.1q-.1 2.5-.8 4.3a9 9 0 0 1 .9 3.7 13 13 0 0 1-1 4.7v.6q1 2.2 1.1 4.5m-2-19.7C6 9.5 3.7 8.5 1.5 8.5c.6 3.9 2.6 4.6 4.5 6.7l2.2 2.5.5-1.7.1-.9a4 4 0 0 0-.6-1.9m.4 11v-1q0-1.7-1-3.2c-1.2-1.8-3.2-3.8-5.8-3.8q-.5 0-.4.6c.8 3 2.5 3.8 4.2 5.8l.2.2 1.8 2.4.3.2q.3 0 .5-.3z",
+  glyphWidth: 11,
+  glyphHeight: 39,
+  yOffset: -8
+};
+export const FLAG_THIRTY_SECOND_DOWN: GlyphDef = {
+  name: "FLAG_THIRTY_SECOND_DOWN",
+  path: "M11 5.4V6c-.2 2.5-.4 3-1 4l-.1.3-.1.2v.4a12 12 0 0 1 .8 5.8q-.2 1.4-.8 2.4.6 1.9.8 4.6v1.2c-.5 2.5-1.4 3.6-4.2 6.7-2.1 2.3-4.4 2.9-5 7q-.2.7-.8.9-.6 0-.6-.6V15.3c2.4-.1 5-.2 8-5.6q1.4-2.4 1.3-4l-.8-4.2V1q0-.9.5-1l.2-.1q.5 0 .9.6c.1.3.8 2.8.8 4.8M1.5 21.8q0 .4.5.5h.2c2.5 0 4.6-2.1 5.8-4a6 6 0 0 0 1-4.4l-.2-1-.5-.2-.3.2-2 2.7c-1.9 2-3.7 3-4.5 6.2m7.6 1-.6-2-2.2 2.5c-2.1 2.3-4.2 2.9-4.8 7v.2c2.3 0 4.8-1 7-4.9a4 4 0 0 0 .7-2z",
+  glyphWidth: 11,
+  glyphHeight: 39,
+  yOffset: -31
 };
 
 export const CLEF_TREBLE: GlyphDef = {
@@ -304,5 +330,5 @@ export const AUGMENTATION_DOT: GlyphDef = {
   path: "M4 2a2 2 0 0 1-2 2 2 2 0 0 1-2-2Q.2.2 2 0a2 2 0 0 1 2 2",
   glyphWidth: 4,
   glyphHeight: 4,
-  yOffset: 0
+  yOffset: -2
 }

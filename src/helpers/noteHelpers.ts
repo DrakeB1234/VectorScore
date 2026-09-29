@@ -6,9 +6,35 @@ export interface VSNoteObj {
   accidental: NoteAccidentals | null;
   octave: number;
   duration: NoteDurations;
+  isDotted?: boolean;
 };
 
-export type VSChordNoteObj = Omit<VSNoteObj, "duration">;
+export type VSChordNoteObj = Omit<VSNoteObj, "duration" | "isDotted">;
+
+// Common types / actions for drawing methods on staff
+
+export type DrawNoteConfig = { type: "note"; note: VSNoteObj; };
+export type DrawChordConfig = { type: "chord"; notes: VSChordNoteObj[]; duration: NoteDurations, isDotted: boolean };
+export type DrawRestConfig = { type: "rest"; duration: NoteDurations, isDotted: boolean };
+
+export function noteConfig(note: string): DrawNoteConfig {
+  const noteObj = parseNoteString(note);
+
+  return { type: "note", note: noteObj };
+};
+
+export function chordConfig(notes: string[], duration: string): DrawChordConfig {
+  const { duration: _duration, isDotted } = parseDurationString(duration);
+  const noteObjs = notes.map(note => parseChordNoteString(note));
+
+  return { type: "chord", notes: noteObjs, duration: _duration, isDotted };
+};
+
+export function restConfig(duration: string): DrawRestConfig {
+  const { duration: _duration, isDotted } = parseDurationString(duration);
+
+  return { type: "rest", duration: _duration, isDotted };
+};
 
 export type PositionedChordNote = {
   noteObj: VSChordNoteObj;
@@ -18,7 +44,7 @@ export type PositionedChordNote = {
 };
 
 export type NoteLetters = "A" | "B" | "C" | "D" | "E" | "F" | "G";
-export type NoteDurations = "w" | "h" | "q" | "e" | "s";
+export type NoteDurations = "w" | "h" | "q" | "e" | "s" | "t";
 export type NoteAccidentals = "#" | "b" | "n" | "##" | "bb";
 
 export type LedgerLineSpan = {
@@ -56,17 +82,18 @@ export const SECOND_INTERVAL_X_OFFSET = 1;
 // Accidentals whose notes are a seventh (6 steps) or more apart don't overlap vertically, so they can share a column.
 const ACCIDENTAL_MIN_STEP_GAP = 6;
 
-const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqesWHQES])$/;
+const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqestWHQEST])(?<dot>\.?)$/;
 const REGEX_CHORD_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)$/;
+const REGEX_DURATION_STRING = /^(?<duration>[whqestWHQEST])(?<dot>\.?)$/;
 
 export function parseNoteString(noteString: string): VSNoteObj {
   const match = noteString.match(REGEX_NOTE_STRING);
 
   if (!match || !match.groups) {
-    throw new Error(`Invalid note string format: ${noteString}. Expected format: [A-Ga-g][#|b]?[0-9][w|h|q|e].`);
+    throw new Error(`Invalid note string format: ${noteString}. Expected format: [A-Ga-g][#|b]?[0-9][w|h|q|e|s|t].`);
   };
 
-  let { letter, accidental, octave, duration } = match.groups;
+  let { letter, accidental, octave, duration, dot } = match.groups;
 
   letter = letter.toUpperCase();
   duration = duration.toLowerCase();
@@ -75,11 +102,24 @@ export function parseNoteString(noteString: string): VSNoteObj {
     letter: letter as NoteLetters,
     octave: parseInt(octave),
     duration: duration as NoteDurations,
-    accidental: accidental ? accidental as NoteAccidentals : null
-  }
+    accidental: accidental ? accidental as NoteAccidentals : null,
+    isDotted: dot === "."
+  };
 
   return noteObj;
 };
+
+export function parseDurationString(durationString: string) {
+  const match = durationString.match(REGEX_DURATION_STRING);
+  if (!match || !match.groups) {
+    throw new Error(`Invalid duration string format: ${durationString}. Expected format: [w|h|q|e|s|t][.]?`);
+  }
+
+  return {
+    duration: match.groups.duration.toLowerCase() as NoteDurations,
+    isDotted: match.groups.dot === "."
+  };
+}
 
 export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
   const match = chordNoteString.match(REGEX_CHORD_NOTE_STRING);
@@ -283,22 +323,4 @@ export function assignAccidentalColumns(notes: PositionedChordNote[]): Accidenta
   }
 
   return placements;
-};
-
-// Common types / actions for drawing methods on staff
-
-export type DrawNoteConfig = { type: "note"; note: string };
-export type DrawChordConfig = { type: "chord"; notes: string[]; duration: NoteDurations };
-export type DrawRestConfig = { type: "rest"; duration: NoteDurations };
-
-export function noteConfig(note: string): DrawNoteConfig {
-  return { type: "note", note };
-};
-
-export function chordConfig(notes: string[], duration: NoteDurations): DrawChordConfig {
-  return { type: "chord", notes, duration };
-};
-
-export function restConfig(duration: NoteDurations): DrawRestConfig {
-  return { type: "rest", duration };
 };

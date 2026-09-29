@@ -1,5 +1,5 @@
-import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/noteHelpers";
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, AUGMENTATION_DOT, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
+import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
@@ -30,8 +30,9 @@ const USE_GLPYHS: GlyphDef[] = [
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
   ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT,
   TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9,
-  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP,
-  REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH
+  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP,
+  REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH, REST_THIRTY_SECOND,
+  AUGMENTATION_DOT
 ];
 
 const NOTE_LAYER_START_X = 16;
@@ -181,13 +182,15 @@ export default class MusicStaff {
   }
 
   /** - Draws a chord on the staff. */
-  public drawChord(noteStrings: string[], duration: NoteDurations, options?: DrawOptions) {
+  public drawChord(noteStrings: string[], duration: string, options?: DrawOptions) {
     const noteObjs = noteStrings.map(str => parseChordNoteString(str));
+    const { duration: _duration, isDotted } = parseDurationString(duration);
+
     const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
 
     const chordGroup = this.svgRendererInstance.createGroup("chord");
 
-    const { fullWidth, originXOffset } = this.noteRendererInstance.drawChord(noteObjs, duration, targetClef, chordGroup);
+    const { fullWidth, originXOffset } = this.noteRendererInstance.drawChord(noteObjs, _duration, isDotted, targetClef, chordGroup);
 
     chordGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(chordGroup);
@@ -196,7 +199,7 @@ export default class MusicStaff {
       type: "chord",
       gElement: chordGroup,
       noteData: noteObjs,
-      duration: duration,
+      duration: _duration,
       xPos: this.noteCursorX,
       totalWidth: fullWidth,
       originXOffset,
@@ -208,13 +211,14 @@ export default class MusicStaff {
   }
 
   /** - Draws a rest on the staff. */
-  public drawRest(duration: NoteDurations, options?: DrawOptions) {
+  public drawRest(duration: string, options?: DrawOptions) {
+    const { duration: _duration, isDotted } = parseDurationString(duration);
     const { targetClef: _, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
 
     const restGroup = this.svgRendererInstance.createGroup("rest");
 
     // originXOffset will be 0, due to rest not shifting into negative space.
-    const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(duration, restGroup);
+    const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(_duration, isDotted, restGroup);
 
     restGroup.setAttribute("transform", `translate(${this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(restGroup);
@@ -222,7 +226,7 @@ export default class MusicStaff {
     this.noteEntries.push({
       type: "rest",
       gElement: restGroup,
-      duration: duration,
+      duration: _duration,
       xPos: this.noteCursorX,
       totalWidth: fullWidth,
       yOffset,
@@ -247,13 +251,12 @@ export default class MusicStaff {
     let newEntry: StaffEntry;
 
     if (config.type === "note") {
-      const noteObj = parseNoteString(config.note);
-      const { fullWidth, originXOffset } = this.noteRendererInstance.drawNote(noteObj, targetClef, newGroup);
+      const { fullWidth, originXOffset } = this.noteRendererInstance.drawNote(config.note, targetClef, newGroup);
 
       newEntry = {
         type: "note",
         gElement: newGroup,
-        noteData: noteObj,
+        noteData: config.note,
         xPos: 0,
         totalWidth: fullWidth,
         originXOffset,
@@ -262,13 +265,12 @@ export default class MusicStaff {
       };
     }
     else if (config.type === "chord") {
-      const noteObjs = config.notes.map(str => parseChordNoteString(str));
-      const { fullWidth, originXOffset } = this.noteRendererInstance.drawChord(noteObjs, config.duration, targetClef, newGroup);
+      const { fullWidth, originXOffset } = this.noteRendererInstance.drawChord(config.notes, config.duration, config.isDotted, targetClef, newGroup);
 
       newEntry = {
         type: "chord",
         gElement: newGroup,
-        noteData: noteObjs,
+        noteData: config.notes,
         duration: config.duration,
         xPos: 0,
         totalWidth: fullWidth,
@@ -278,7 +280,7 @@ export default class MusicStaff {
       };
     }
     else {
-      const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(config.duration, newGroup);
+      const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(config.duration, config.isDotted, newGroup);
 
       newEntry = {
         type: "rest",

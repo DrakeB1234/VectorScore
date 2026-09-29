@@ -46,7 +46,7 @@
     });
 
     if (staffType === "grand") {
-      staffMap[staffType].drawNote("D4q");
+      staffMap[staffType].drawNote("C4q");
       staff = staffMap[staffType];
     }
   }
@@ -81,7 +81,7 @@
   }
 
   function drawRest() {
-    staff?.drawRest(inputState.restValue as any, currentDrawOptions);
+    staff?.drawRest(inputState.restValue, currentDrawOptions);
   }
 
   function replaceByIndex(type: DrawType) {
@@ -99,14 +99,14 @@
 
       staff?.replaceByIndex(
         index,
-        chordConfig(noteParts, inputState.chordDuration as any),
+        chordConfig(noteParts, inputState.chordDuration),
         currentDrawOptions,
       );
     }
     if (type === "rest") {
       staff?.replaceByIndex(
         index,
-        restConfig(inputState.restValue as any),
+        restConfig(inputState.restValue),
         currentDrawOptions,
       );
     }
