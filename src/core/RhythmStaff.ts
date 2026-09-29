@@ -1,6 +1,5 @@
-import { durationBeatValueMap, HALF_NOTEHEAD_WIDTH, NOTE_LAYER_START_X, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
+import { durationBeatValueMap, HALF_NOTEHEAD_WIDTH, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
 import { NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_3, TIMESIG_4, type GlyphDef } from "../glyphs";
-import { parseDurationNoteString } from "../helpers/notehelpers";
 import type { NoteDurations } from "../types";
 import SVGRenderer from "../classes/SVGRenderer";
 
@@ -29,7 +28,7 @@ const BEAM_LINE_Y_OFFSET = 6;
 // STAFF RIGHT SPACING TO PREVENT EIGTH NOTES FROM OVERFLOWING
 const STAFF_RIGHT_PADDING = 1;
 
-const CURRENT_BEAT_UI_START_X_POS = NOTE_LAYER_START_X;
+const CURRENT_BEAT_UI_START_X_POS = 16;
 
 const USE_GLPYHS: GlyphDef[] = [
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,

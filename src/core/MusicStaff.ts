@@ -1,10 +1,9 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { _parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/_noteHelpers";
-import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
+import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/noteHelpers";
+import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
-import _NoteRenderer from "../classes/_NoteRenderer";
+import NoteRenderer from "../classes/NoteRenderer";
 import StaffFrame from "../classes/StaffFrame";
-import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING } from "../classes/StaffRenderer";
 import SVGRenderer from "../classes/SVGRenderer";
 
 export type MusicStaffUserOptions = {
@@ -73,7 +72,6 @@ type RestEntry = BaseEntry & {
   duration: NoteDurations;
 };
 
-// The new unified type for the array
 type StaffEntry = NoteEntry | ChordEntry | RestEntry;
 
 export type DrawOptions = {
@@ -89,7 +87,7 @@ export default class MusicStaff {
   private options: ResolvedStaffOptions;
 
   private svgRendererInstance: SVGRenderer;
-  private _noteRendererInstance: _NoteRenderer;
+  private noteRendererInstance: NoteRenderer;
   private staffFrame: StaffFrame;
 
   private notesLayer: SVGGElement;
@@ -112,7 +110,7 @@ export default class MusicStaff {
     if (this.options.timeSignature) validateTimeSignature(this.options.timeSignature.topNumber, this.options.timeSignature.bottomNumber);
 
     this.svgRendererInstance = new SVGRenderer(rootElementCtx, USE_GLPYHS);
-    this._noteRendererInstance = new _NoteRenderer(this.svgRendererInstance);
+    this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance);
     // Renders the frame on init
     this.staffFrame = new StaffFrame(this.svgRendererInstance, this.options);
 
@@ -158,12 +156,12 @@ export default class MusicStaff {
    * - Draws a note on the staff. 
    */
   public drawNote(note: string, options?: DrawOptions) {
-    const noteObj = _parseNoteString(note);
+    const noteObj = parseNoteString(note);
     const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
 
     const noteGroup = this.svgRendererInstance.createGroup("note");
 
-    const { fullWidth, originXOffset } = this._noteRendererInstance.drawNote(noteObj, targetClef, noteGroup);
+    const { fullWidth, originXOffset } = this.noteRendererInstance.drawNote(noteObj, targetClef, noteGroup);
 
     noteGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(noteGroup);
@@ -189,7 +187,7 @@ export default class MusicStaff {
 
     const chordGroup = this.svgRendererInstance.createGroup("chord");
 
-    const { fullWidth, originXOffset } = this._noteRendererInstance.drawChord(noteObjs, duration, targetClef, chordGroup);
+    const { fullWidth, originXOffset } = this.noteRendererInstance.drawChord(noteObjs, duration, targetClef, chordGroup);
 
     chordGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(chordGroup);
@@ -216,7 +214,7 @@ export default class MusicStaff {
     const restGroup = this.svgRendererInstance.createGroup("rest");
 
     // originXOffset will be 0, due to rest not shifting into negative space.
-    const { fullWidth, originXOffset } = this._noteRendererInstance.drawRest(duration, restGroup);
+    const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(duration, restGroup);
 
     restGroup.setAttribute("transform", `translate(${this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(restGroup);
@@ -249,8 +247,8 @@ export default class MusicStaff {
     let newEntry: StaffEntry;
 
     if (config.type === "note") {
-      const noteObj = _parseNoteString(config.note);
-      const { fullWidth, originXOffset } = this._noteRendererInstance.drawNote(noteObj, targetClef, newGroup);
+      const noteObj = parseNoteString(config.note);
+      const { fullWidth, originXOffset } = this.noteRendererInstance.drawNote(noteObj, targetClef, newGroup);
 
       newEntry = {
         type: "note",
@@ -265,7 +263,7 @@ export default class MusicStaff {
     }
     else if (config.type === "chord") {
       const noteObjs = config.notes.map(str => parseChordNoteString(str));
-      const { fullWidth, originXOffset } = this._noteRendererInstance.drawChord(noteObjs, config.duration, targetClef, newGroup);
+      const { fullWidth, originXOffset } = this.noteRendererInstance.drawChord(noteObjs, config.duration, targetClef, newGroup);
 
       newEntry = {
         type: "chord",
@@ -280,7 +278,7 @@ export default class MusicStaff {
       };
     }
     else {
-      const { fullWidth, originXOffset } = this._noteRendererInstance.drawRest(config.duration, newGroup);
+      const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(config.duration, newGroup);
 
       newEntry = {
         type: "rest",

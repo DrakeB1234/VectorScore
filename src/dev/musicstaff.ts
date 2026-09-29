@@ -1,6 +1,6 @@
 import MusicStaff from "../core/MusicStaff";
 import type { DrawOptions, MusicStaffUserOptions } from "../core/MusicStaff";
-import { chordConfig, noteConfig, restConfig } from "../helpers/_noteHelpers";
+import { chordConfig, noteConfig, restConfig } from "../helpers/noteHelpers.ts";
 
 const rootGrand = document.getElementById("staff-root-grand");
 const rootTreble = document.getElementById("staff-root-treble");

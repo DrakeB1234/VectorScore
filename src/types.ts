@@ -1,21 +1,6 @@
 export type SystemTypes = ClefTypes | 'grand';
 export type ClefTypes = 'treble' | 'bass' | 'alto';
 
-export type NoteObj = {
-  name: NoteNames;
-  octave: number;
-  accidental?: Accidentals;
-  duration?: NoteDurations;
-}
-
-export type NoteNames = 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B';
-export type NoteDurations = 'w' | 'h' | 'q' | 'e' | 's';
-export type Accidentals = '#' | 'b' | '##' | 'bb' | 'n';
-
-export type DurationsBeatValues = 4 | 2 | 1 | 0.5;
-
-export type AccidentalType = "sharp" | "flat";
-
 export type GuitarStringState = { fret: string; finger: string };
 
 export type GuitarBarreDef = {

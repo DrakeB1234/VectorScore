@@ -1,5 +1,4 @@
-import type { NoteAccidentals } from "./helpers/_noteHelpers";
-import type { NoteDurations } from "./types";
+import type { NoteAccidentals, NoteDurations } from "./helpers/noteHelpers";
 
 export type GlyphDef = {
   name: string;
@@ -299,3 +298,11 @@ export const TIMESIG_9: GlyphDef = {
   glyphHeight: 20,
   yOffset: 0
 };
+
+export const AUGMENTATION_DOT: GlyphDef = {
+  name: "AUGMENTATION_DOT",
+  path: "M4 2a2 2 0 0 1-2 2 2 2 0 0 1-2-2Q.2.2 2 0a2 2 0 0 1 2 2",
+  glyphWidth: 4,
+  glyphHeight: 4,
+  yOffset: 0
+}

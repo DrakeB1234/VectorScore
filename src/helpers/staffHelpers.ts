@@ -1,5 +1,10 @@
 import type { ClefTypes } from "../types";
 
+export const STAFF_LINE_SPACING = 10;
+export const STAFF_LINE_COUNT = 5;
+export const STAFF_LINE_SPACING_HALVED = STAFF_LINE_SPACING / 2;
+export const BASE_STAFF_HEIGHT = ((STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING);
+export const GRAND_STAFF_SPACING = 60;
 
 export type TimeSignature = {
   topNumber: number;

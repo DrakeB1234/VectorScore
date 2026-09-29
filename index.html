@@ -16,6 +16,7 @@
 
     <div class="navbar__buttons">
       <button id="nav-button-musicstaff" class="active text">Music Staff</button>
+      <button id="nav-button-scrollingstaff" class="active text">Scrolling Staff</button>
       <button id="nav-button-guitar" class="text">Guitar Chords</button>
     </div>
 
@@ -190,6 +191,63 @@
 
     </div>
 
+  </section>
+
+  <section id="section-scrollingstaff">
+    <div class="staffs-container">
+      <div id="scrollingstaff-root"></div>
+    </div>
+
+    <div class="card-grid">
+
+      <div class="card">
+        <div class="card__controls">
+          <div class="card__checkbox">
+            <label for="musicstaff-input-istop">Draw on Top Staff?</label>
+            <input type="checkbox" id="musicstaff-input-istop" autocomplete="off" checked="true">
+          </div>
+        </div>
+
+        <div class="card__controls">
+          <p class="card__control-label">Add Note</p>
+          <div class="card__input">
+            <label for="musicstaff-input-note">Note</label>
+            <input type="text" id="musicstaff-input-note" placeholder="C#4w" value="C4q" autocomplete="off">
+          </div>
+          <div class="card__buttons">
+            <button id="musicstaff-button-addnote">Add Note</button>
+          </div>
+        </div>
+
+        <div class="card__controls">
+          <p class="card__control-label">Add Chord</p>
+          <div class="card__input">
+            <label for="musicstaff-input-chord">Chord</label>
+            <input type="text" id="musicstaff-input-chord" placeholder="C#4/E#4/G#4" value="C4/E4/G4"
+              autocomplete="off">
+          </div>
+          <div class="card__input">
+            <label for="musicstaff-input-chord-duration">Duration</label>
+            <input type="text" id="musicstaff-input-chord-duration" placeholder="q" value="q" autocomplete="off">
+          </div>
+          <div class="card__buttons">
+            <button id="musicstaff-button-addchord">Add Chord</button>
+          </div>
+        </div>
+
+        <div class="card__controls">
+          <p class="card__control-label">Add Rest</p>
+          <div class="card__input">
+            <label for="musicstaff-input-rest-duration">Duration</label>
+            <input type="text" id="musicstaff-input-rest-duration" placeholder="q" value="q" autocomplete="off">
+          </div>
+          <div class="card__buttons">
+            <button id="musicstaff-button-addrest">Add Rest</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </section>
 
   <section id="section-guitar">

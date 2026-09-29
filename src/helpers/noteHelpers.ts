@@ -1,5 +1,5 @@
-import { STAFF_LINE_SPACING } from "../constants";
 import type { ClefTypes } from "../types";
+import { STAFF_LINE_SPACING } from "./staffHelpers";
 
 export interface VSNoteObj {
   letter: NoteLetters;
@@ -59,7 +59,7 @@ const ACCIDENTAL_MIN_STEP_GAP = 6;
 const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqesWHQES])$/;
 const REGEX_CHORD_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)$/;
 
-export function _parseNoteString(noteString: string): VSNoteObj {
+export function parseNoteString(noteString: string): VSNoteObj {
   const match = noteString.match(REGEX_NOTE_STRING);
 
   if (!match || !match.groups) {

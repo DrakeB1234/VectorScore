@@ -18,11 +18,11 @@ import {
   GUITAR_STRING_LABEL_HEIGHT,
   GUITAR_STRING_LABEL_OFFSET,
   GUITAR_STRING_SPACING,
-  NAMESPACE,
-} from "../constants";
+} from "../helpers/guitarHelpers";
 import { calculateStartFret, createStateStrings, parseFingersEntry, parseFretsEntry } from "../helpers/guitarHelpers";
 import type { GuitarBarreDef, GuitarChordDrawOptions, GuitarStringState } from "../types";
 import SVGRenderer from "../classes/SVGRenderer";
+import { NAMESPACE } from "../constants";
 
 export type GuitarChordOptions = {
   width?: number;

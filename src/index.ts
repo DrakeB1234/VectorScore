@@ -5,7 +5,7 @@ export { default as GuitarChord } from './core/GuitarChord';
 
 export type { MusicStaffUserOptions } from './core/MusicStaff';
 export type { RhythmStaffOptions } from './core/RhythmStaff';
-export type { ScrollingStaffOptions } from './core/ScrollingStaff';
+export type { ScrollingStaffUserOptions } from './core/ScrollingStaff';
 export type { GuitarChordOptions } from './core/GuitarChord';
 
 export type { ClefTypes as StaffTypes } from './types';

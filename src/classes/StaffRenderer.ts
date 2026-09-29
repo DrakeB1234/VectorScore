@@ -1,6 +1,6 @@
 import { getAccidentalGlyph, getClefGlyph, getTimeSigGlyph } from "../glyphs";
-import { getPitchStepClefDifference } from "../helpers/_noteHelpers";
-import { KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, validateKeySignature, validateTimeSignature, type KeySignatures } from "../helpers/staffHelpers";
+import { getPitchStepClefDifference } from "../helpers/noteHelpers";
+import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, STAFF_LINE_COUNT, STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED, validateKeySignature, validateTimeSignature, type KeySignatures } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import type SVGRenderer from "./SVGRenderer";
 
@@ -24,11 +24,6 @@ type DrawTimeSignatureArgs = {
   staffGroup: SVGGElement,
 }
 
-const STAFF_LINE_COUNT = 5;
-const STAFF_LINE_SPACING = 10;
-const STAFF_LINE_SPACING_HALVED = STAFF_LINE_SPACING / 2;
-export const BASE_STAFF_HEIGHT = ((STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING);
-export const GRAND_STAFF_SPACING = 60;
 export const COMPONENT_GAP = 10;
 
 export const CLEF_X_OFFSET = 4;
