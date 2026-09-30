@@ -8,6 +8,11 @@ type DrawGlyphOptions = {
   x?: number;
 }
 
+type DrawPolygonOptions = {
+  fill?: string;
+  classes?: string | string[];
+}
+
 type DrawLineOptions = {
   strokeWidth?: number;
   classes?: string | string[];
@@ -174,7 +179,7 @@ export default class SVGRenderer {
     line.setAttribute("stroke", "currentColor");
     line.setAttribute("stroke-width", strokeWidth.toString());
 
-    if (options?.classes) this.addNamespacedClassesToElement(options.classes, parent);
+    if (options?.classes) this.addNamespacedClassesToElement(options.classes, line);
 
     parent.appendChild(line);
 
@@ -202,22 +207,6 @@ export default class SVGRenderer {
     return rect;
   }
 
-  drawGlyph(glyphName: string, parent: SVGElement, options?: DrawGlyphOptions) {
-    options = {
-      x: 0,
-      y: 0,
-      ...options
-    };
-
-    const useElement = document.createElementNS(SVG_HREF, "use");
-    useElement.setAttribute("href", `#glyph-${glyphName}`);
-    useElement.setAttribute("fill", `currentColor`);
-
-    if (options.x || options.y) useElement.setAttribute("transform", `translate(${options.x}, ${options.y})`);
-
-    parent.appendChild(useElement);
-  }
-
   drawCircle(cx: number, cy: number, radius: number, parent: SVGElement, options?: DrawCircleOptions): SVGCircleElement {
     const circle = document.createElementNS(SVG_HREF, "circle");
     circle.setAttribute("cx", cx.toString());
@@ -236,6 +225,35 @@ export default class SVGRenderer {
 
     parent.appendChild(circle);
     return circle;
+  }
+
+  /**  Points are [x, y] pairs, connected in order and closed automatically */
+  drawPolygon(points: [number, number][], parent: SVGElement, options?: DrawPolygonOptions): SVGPolygonElement {
+    const polygon = document.createElementNS(SVG_HREF, "polygon");
+
+    polygon.setAttribute("points", points.map(([x, y]) => `${x},${y}`).join(" "));
+    polygon.setAttribute("fill", options?.fill ?? "currentColor");
+
+    if (options?.classes) this.addNamespacedClassesToElement(options.classes, polygon);
+
+    parent.appendChild(polygon);
+    return polygon;
+  }
+
+  drawGlyph(glyphName: string, parent: SVGElement, options?: DrawGlyphOptions) {
+    options = {
+      x: 0,
+      y: 0,
+      ...options
+    };
+
+    const useElement = document.createElementNS(SVG_HREF, "use");
+    useElement.setAttribute("href", `#glyph-${glyphName}`);
+    useElement.setAttribute("fill", `currentColor`);
+
+    if (options.x || options.y) useElement.setAttribute("transform", `translate(${options.x}, ${options.y})`);
+
+    parent.appendChild(useElement);
   }
 
   drawText(text: string, x: number, y: number, parent: SVGElement, options?: DrawTextOptions): SVGTextElement {

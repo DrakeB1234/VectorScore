@@ -6,6 +6,7 @@
     restConfig,
   } from "../../../src/helpers/noteHelpers";
   import type { SystemTypes } from "../../../src/types";
+  import BeamCard from "./BeamCard.svelte";
   import DrawingCard from "./DrawingCard.svelte";
 
   let staff: MusicStaff | null = $state(null);
@@ -35,6 +36,7 @@
   function setupStaff(element: HTMLDivElement, staffType: SystemTypes) {
     staffMap[staffType] = new MusicStaff(element, {
       width: 400,
+      scale: 1,
       staffType: staffType,
       paddingTop: 40,
       paddingBottom: 40,
@@ -46,8 +48,9 @@
     });
 
     if (staffType === "grand") {
-      staffMap[staffType].drawNote("C4q");
-      staff = staffMap[staffType];
+      staff = staffMap["grand"];
+      staff.drawNote("C4q");
+      staff.drawChord(["A3", "C4", "E4"], "q");
     }
   }
 
@@ -133,10 +136,6 @@
 
     staff?.changeTimeSignature(valueParts[0], valueParts[1]);
   }
-
-  function test() {
-    staff?.drawBeam();
-  }
 </script>
 
 <div class="staff-container">
@@ -169,19 +168,9 @@
       <div class="card-buttons">
         <button onclick={clearAllNotes}>Clear All Notes</button>
         <button onclick={justifyNotes}>Justify Notes</button>
-        <button class="primary" onclick={test}>Test</button>
       </div>
     </div>
   </div>
-
-  <DrawingCard
-    bind:currentDrawType
-    bind:inputState
-    handleDrawNote={drawNote}
-    handleDrawChord={drawChord}
-    handleDrawRest={drawRest}
-    handleReplaceByIndex={replaceByIndex}
-  />
 
   <div class="card">
     <p class="card-title">Staff Signatures</p>
@@ -211,6 +200,17 @@
       </div>
     </div>
   </div>
+
+  <DrawingCard
+    bind:currentDrawType
+    bind:inputState
+    handleDrawNote={drawNote}
+    handleDrawChord={drawChord}
+    handleDrawRest={drawRest}
+    handleReplaceByIndex={replaceByIndex}
+  />
+
+  <BeamCard bind:musicStaffInstance={staff} />
 </div>
 
 <style>
@@ -233,9 +233,5 @@
     place-items: center;
     background-color: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
-  }
-
-  .controls-grid {
-    padding: var(--space-16);
   }
 </style>

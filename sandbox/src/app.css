@@ -41,25 +41,30 @@ svg {
   --space-52: 3.25rem;
   --space-72: 4.5rem;
 
-  --color-page: oklch(97% 0.015 250);
-  --color-surface: oklch(99% 0.01 250);
+  --color-page: oklch(96% 0.012 250);
+  --color-surface: oklch(99% 0.005 250);
   --color-surface-active: oklch(94% 0.015 250);
   --color-on-surface: oklch(10% 0.1 250);
   --color-on-surface-subtle: oklch(55% 0.05 250);
   --color-on-surface-inverse: oklch(99% 0.01 250);
 
   --color-primary: oklch(60% 0.22 260);
-  --color-primary-active: oklch(55% 0.22 260);
+  --color-primary-active: oklch(52% 0.22 260);
 
   --color-border: oklch(88% 0.025 250);
 
   --radius: 4px;
   --radius-lg: 8px;
+
+  --shadow-1: 0 2px 6px -2px rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+  --shadow-2: 0 4px 12px -2px rgba(0, 0, 0, 0.33), 0 2px 4px -1px rgba(0, 0, 0, 0.22);
+  --shadow-3: 0 5px 16px -2px rgba(0, 0, 0, 0.4), 0 3px 5px -1px rgba(0, 0, 0, 0.25);
 }
 
 body.dark {
-  --color-page: oklch(20% 0.02 250);
-  --color-surface: oklch(30% 0.025 250);
+  --color-page: oklch(20% 0.017 250);
+  --color-surface: oklch(28% 0.023 250);
+  --color-surface-active: oklch(36% 0.025 250);
   --color-on-surface: oklch(99% 0.01 250);
   --color-on-surface-subtle: oklch(70% 0.01 250);
   --color-on-surface-inverse: oklch(10% 0.1 250);
@@ -110,6 +115,7 @@ button.text {
 button.primary {
   background-color: var(--color-primary);
   color: white;
+  border-color: transparent;
 }
 
 button.primary:hover {
@@ -119,12 +125,20 @@ button.primary:hover {
 /* Inputs */
 
 .controls-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  column-count: 3;
+  column-width: 300px;
+  column-gap: var(--space-16);
+
+
   gap: var(--space-16);
-  padding: var(--space-24);
-  max-width: 1200px;
+  padding: var(--space-12);
+  max-width: 1000px;
   margin: 0 auto;
+}
+
+.controls-grid>.card {
+  break-inside: avoid;
+  margin-bottom: 16px;
 }
 
 .card {

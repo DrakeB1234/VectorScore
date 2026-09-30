@@ -1,5 +1,5 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, AUGMENTATION_DOT, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, noteConfig, chordConfig, beamConfig } from "../helpers/noteHelpers";
+import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, noteConfig, chordConfig, beamConfig, type BeamableConfig } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
@@ -73,7 +73,11 @@ type RestEntry = BaseEntry & {
   duration: NoteDurations;
 };
 
-type StaffEntry = NoteEntry | ChordEntry | RestEntry;
+type BeamEntry = BaseEntry & {
+  type: "beam";
+};
+
+type StaffEntry = NoteEntry | ChordEntry | RestEntry | BeamEntry;
 
 export type DrawOptions = {
   staff?: "top" | "bottom";
@@ -237,22 +241,12 @@ export default class MusicStaff {
     this.noteCursorX += NOTE_SPACING + fullWidth;
   };
 
-  public drawBeam() {
+  public drawBeam(entries: BeamableConfig[], options?: DrawOptions) {
 
-    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget("top");
+    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
 
     const group = this.svgRendererInstance.createGroup("beam");
 
-    const entries = [
-      noteConfig("A3e"),
-      noteConfig("B4e"),
-      noteConfig("D5e"),
-    ]
-    // const entries = [
-    //   noteConfig("C4s"),
-    //   chordConfig(["E4", "G4"], "s"),
-    //   noteConfig("D4e"),
-    // ]
     const { fullWidth, originXOffset } = this.noteRendererInstance.drawBeam(entries, targetClef, group);
 
     group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, ${yOffset})`);
@@ -260,6 +254,15 @@ export default class MusicStaff {
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
 
+    this.noteEntries.push({
+      type: "beam",
+      gElement: group,
+      xPos: this.noteCursorX,
+      totalWidth: fullWidth,
+      yOffset,
+      originXOffset: originXOffset,
+      isTopStaff
+    });
   }
 
   /** - Replaces a note, chord, or rest by index on staff. */

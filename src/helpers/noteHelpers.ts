@@ -148,6 +148,10 @@ export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
   return noteObj;
 }
 
+export function getPitchStep(letter: string, octave: number): number {
+  return (octave * 7) + DIATONIC_STEPS[letter];
+};
+
 export function getPitchStepClefDifference(letter: string, octave: number, clef: ClefTypes): number {
   const noteStep = (octave * 7) + DIATONIC_STEPS[letter];
   return CLEF_TOP_LINE_STEPS[clef] - noteStep;
@@ -202,21 +206,22 @@ export function getChordStemDirection(notes: Pick<PositionedChordNote, "pitchSte
  * - Where a stem starts and ends, in pitch steps. Works for single note / chords
  * - Will attach stem to AT LEAST the middle line.
  */
-export function getStemSteps(highStep: number, lowStep: number, isStemDown: boolean, duration: NoteDurations) {
+export function getStemSteps(highStep: number, lowStep: number, isStemDown: boolean, duration: NoteDurations, overrideStandardStemSteps?: number) {
 
   // Handles that 32nd flags need taller stems
   const stemSteps = duration === "t" ? 8 : STANDARD_STEM_STEPS;
+  const finalStemSteps = overrideStandardStemSteps ? overrideStandardStemSteps : stemSteps;
 
   if (isStemDown) {
     return {
       startStep: highStep,
-      endStep: Math.max(lowStep + stemSteps, MIDDLE_LINE_STEP)
+      endStep: Math.max(lowStep + finalStemSteps, MIDDLE_LINE_STEP)
     };
   }
 
   return {
     startStep: lowStep,
-    endStep: Math.min(highStep - stemSteps, MIDDLE_LINE_STEP)
+    endStep: Math.min(highStep - finalStemSteps, MIDDLE_LINE_STEP)
   };
 };
 
@@ -335,3 +340,7 @@ export function assignAccidentalColumns(notes: PositionedChordNote[]): Accidenta
 
   return placements;
 };
+
+export function snapPitchStepToStaffSpace(pitchStep: number) {
+  return pitchStep % 2 === 0 ? pitchStep += -1 : pitchStep;
+}

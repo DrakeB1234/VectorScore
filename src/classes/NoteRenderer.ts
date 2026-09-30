@@ -1,5 +1,5 @@
 import { AUGMENTATION_DOT, getAccidentalGlyph, getFlagGlyph, getNoteheadGlyphByDuration, getRestGlyphByDuration } from "../glyphs";
-import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj, assignAccidentalColumns, type BeamableConfig } from "../helpers/noteHelpers";
+import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj, assignAccidentalColumns, type BeamableConfig, snapPitchStepToStaffSpace, isSecondInterval } from "../helpers/noteHelpers";
 import type { ClefTypes } from "../types";
 import BeamRenderer from "./BeamRenderer";
 import type SVGRenderer from "./SVGRenderer";
@@ -17,13 +17,17 @@ type RenderOptions = {
 }
 
 const ACCIDENTAL_X_OFFSET = 3;
-const STEM_X_OFFSET = 0.5;
-const LEDGER_LINE_PADDING = 3;
+const STEM_UP_X_OFFSET = 0.7;
+const STEM_DOWN_X_OFFSET = 0.5;
+const STEM_Y_OFFSET = 1;
+const LEDGER_LINE_PADDING = 4;
 const FLAG_X_OFFSET = 1;
 const ACCIDENTAL_COLUMN_GAP = 3;
 
 const REST_DOT_STEP = 3; // Dots on each rest lay on 2nd space from top of staff
 const NOTE_DOT_WITH_FLAG_X_OFFSET = 2;
+
+const LEDGER_LINE_STROKE_WIDTH = 2;
 
 export default class NoteRenderer {
   private svgRendererInstance: SVGRenderer;
@@ -37,9 +41,10 @@ export default class NoteRenderer {
   private drawStemAndFlag(group: SVGGElement, { duration, isStemDown, highStep, lowStep, noteHeadWidth }: StemOptions) {
     if (duration === "w") return 0;
 
-    const stemX = isStemDown ? STEM_X_OFFSET : noteHeadWidth - STEM_X_OFFSET;
+    const stemX = isStemDown ? STEM_DOWN_X_OFFSET : noteHeadWidth - STEM_UP_X_OFFSET;
     const { startStep, endStep } = getStemSteps(highStep, lowStep, isStemDown, duration);
-    const stemStartY = convertPitchStepToYPos(startStep);
+    let stemStartY = convertPitchStepToYPos(startStep);
+    stemStartY += isStemDown ? STEM_Y_OFFSET : -STEM_Y_OFFSET;
     const stemEndY = convertPitchStepToYPos(endStep);
 
     this.svgRendererInstance.drawLine(stemX, stemStartY, stemX, stemEndY, group);
@@ -68,7 +73,8 @@ export default class NoteRenderer {
         y,
         maxX + LEDGER_LINE_PADDING,
         y,
-        group
+        group,
+        { strokeWidth: LEDGER_LINE_STROKE_WIDTH }
       );
     });
   };
@@ -158,9 +164,8 @@ export default class NoteRenderer {
       const baseRightEdge = Math.max(noteHeadDef.glyphWidth, flagMaxX - NOTE_DOT_WITH_FLAG_X_OFFSET);
       const startX = baseRightEdge + def.glyphWidth;
 
-      let fixedStep = notePitchStep;
-      if (fixedStep % 2 === 0) fixedStep += -1;
-      const fixedYPos = convertPitchStepToYPos(fixedStep);
+      const snappedStep = snapPitchStepToStaffSpace(notePitchStep);
+      const fixedYPos = convertPitchStepToYPos(snappedStep);
 
       dotMaxX = startX + def.glyphWidth;
 
@@ -178,7 +183,8 @@ export default class NoteRenderer {
         ledgerY,
         noteHeadDef.glyphWidth + LEDGER_LINE_PADDING,
         ledgerY,
-        noteGroup
+        noteGroup,
+        { strokeWidth: LEDGER_LINE_STROKE_WIDTH }
       );
     });
 
@@ -239,6 +245,44 @@ export default class NoteRenderer {
         lowStep,
         noteHeadWidth: noteHeadDef.glyphWidth
       });
+    };
+
+    // Render dot
+    let dotMaxX = 0;
+    if (isDotted && duration !== "w") {
+
+      const def = AUGMENTATION_DOT;
+
+      // Determines if chord contains second interval
+      const isSecond = positionedNoteObjs.some((posNoteObj, i) => {
+        if (i > positionedNoteObjs.length - 2) return false;
+        const nextNote = positionedNoteObjs[i + 1];
+        return isSecondInterval(posNoteObj.pitchStep, nextNote.pitchStep);
+      });
+
+      const baseRightEdge = Math.max(noteHeadDef.glyphWidth, flagMaxX - NOTE_DOT_WITH_FLAG_X_OFFSET);
+      let startX = baseRightEdge + def.glyphWidth;
+      if (isSecond && !isStemDown) {
+        startX += noteHeadDef.glyphWidth
+      };
+
+      positionedNoteObjs.forEach(posNoteObj => {
+
+        let startingStep = posNoteObj.pitchStep;
+        // If current note is second interval, shift its dot by space
+        if (posNoteObj.xOffset !== 0) {
+          const stemAddend = isStemDown ? 1 : 2;
+          startingStep += stemAddend;
+        }
+        const snappedStep = snapPitchStepToStaffSpace(startingStep);
+        const finalYPos = convertPitchStepToYPos(snappedStep);
+        dotMaxX = Math.max(startX + def.glyphWidth, dotMaxX);
+
+        this.svgRendererInstance.drawGlyph(def.name, chordGroup, {
+          y: finalYPos,
+          x: startX
+        })
+      })
     }
 
     // Draw ledger lines
@@ -267,7 +311,7 @@ export default class NoteRenderer {
     }
 
     const minX = Math.min(noteMinX, ledgerMinX, accidentalMinX);
-    const maxX = Math.max(noteMaxX, ledgerMaxX, flagMaxX);
+    const maxX = Math.max(noteMaxX, ledgerMaxX, flagMaxX, dotMaxX);
 
     return {
       fullWidth: maxX - minX,
