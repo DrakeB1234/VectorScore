@@ -1,4 +1,5 @@
 import type { NoteAccidentals, NoteDurations } from "./helpers/noteHelpers";
+import type { ClefTypes } from "./types";
 
 export type GlyphDef = {
   name: string;
@@ -46,7 +47,7 @@ export function getAccidentalGlyph(accidental: NoteAccidentals | "sharp" | "flat
   };
 };
 
-export function getClefGlyph(clef: string) {
+export function getClefGlyph(clef: ClefTypes) {
   switch (clef) {
     case "treble": return CLEF_TREBLE;
     case "bass": return CLEF_BASS;

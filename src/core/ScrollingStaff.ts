@@ -1,9 +1,9 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, AUGMENTATION_DOT, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import type { SystemTypes } from "../types";
+import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
 import SVGRenderer from "../classes/SVGRenderer";
 import StaffFrame from "../classes/StaffFrame";
-import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
+import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { DrawBeamConfig, DrawChordConfig, DrawNoteConfig, DrawRestConfig } from "../helpers/noteHelpers";
 import { NAMESPACE } from "../constants";
 
@@ -108,6 +108,12 @@ export default class ScrollingStaff {
     this.notesLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
   };
 
+  private resolveStaffTarget() {
+    const targetClef: ClefTypes = this.options.staffType === "grand" ? "treble" : this.options.staffType;
+
+    return targetClef;
+  };
+
   private renderNextNote() {
     if (this.noteBuffer.length < 1) return 0;
 
@@ -116,12 +122,14 @@ export default class ScrollingStaff {
 
     let fullWidth: number, originXOffset: number;
 
+    const targetClef = this.resolveStaffTarget();
+
     if (nextNoteInBuffer.type === "chord") {
       const res = this.noteRendererInstance.drawChord(
         nextNoteInBuffer.notes,
         nextNoteInBuffer.duration,
         nextNoteInBuffer.isDotted,
-        "treble",
+        targetClef,
         group
       );
       fullWidth = res.fullWidth;
@@ -130,7 +138,7 @@ export default class ScrollingStaff {
     else if (nextNoteInBuffer.type === "note") {
       const res = this.noteRendererInstance.drawNote(
         nextNoteInBuffer.note,
-        "treble",
+        targetClef,
         group
       );
       fullWidth = res.fullWidth;
@@ -139,7 +147,7 @@ export default class ScrollingStaff {
     else if (nextNoteInBuffer.type === "beam") {
       const res = this.noteRendererInstance.drawBeam(
         nextNoteInBuffer.entries,
-        "treble",
+        targetClef,
         group
       );
       fullWidth = res.fullWidth;

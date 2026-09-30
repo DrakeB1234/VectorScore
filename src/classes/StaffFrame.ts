@@ -1,8 +1,8 @@
 import { CLEF_X_OFFSET, COMPONENT_GAP } from "./StaffRenderer";
 import StaffRenderer from "./StaffRenderer";
 import type SVGRenderer from "./SVGRenderer";
-import type { SystemTypes } from "../types";
-import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
+import type { ClefTypes, SystemTypes } from "../types";
+import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 
 export type StaffLayoutOptions = {
   width: number;
@@ -21,13 +21,14 @@ export default class StaffFrame {
 
   private staffLayer: SVGGElement;
   private staffGroup: SVGGElement;
+  private clefGroup: SVGGElement;
   private keySigGroup: SVGGElement;
   private timeSigGroup: SVGGElement;
 
-  public readonly totalStaffHeight: number;
+  public totalStaffHeight: number;
   private currentNoteStartX: number = 0;
 
-  private clefWidth: number = 0;
+  private clefWidth: number;
   private keySigWidth: number = 0;
   private timeSigWidth: number = 0;
 
@@ -42,22 +43,36 @@ export default class StaffFrame {
     this.staffLayer.setAttribute("transform", `translate(0, ${this.options.paddingTop})`);
 
     this.staffGroup = this.svgRendererInstance.createGroup("staff");
+    this.clefGroup = this.svgRendererInstance.createGroup("clef");
     this.keySigGroup = this.svgRendererInstance.createGroup("key-sig");
     this.timeSigGroup = this.svgRendererInstance.createGroup("time-sig");
 
     this.staffLayer.appendChild(this.staffGroup);
+    this.staffLayer.appendChild(this.clefGroup);
     this.staffLayer.appendChild(this.keySigGroup);
     this.staffLayer.appendChild(this.timeSigGroup);
 
-    // Draw Base Staff
-    const { totalStaffHeight, glyphWidth } = this.staffRenderer.drawStaff({
-      width: this.options.width,
-      staffType: this.options.staffType,
-      startYPos: 0,
-      staffGroup: this.staffGroup,
-    });
-    this.totalStaffHeight = totalStaffHeight;
-    this.clefWidth = glyphWidth + CLEF_X_OFFSET;
+    // Draw Staff
+    if (this.options.staffType === "grand") {
+      const res = this.renderGrandStaff();
+      this.totalStaffHeight = res.totalStaffHeight;
+      this.clefWidth = res.clefWidth;
+    }
+    else {
+      const staffHeight = this.staffRenderer.drawStaffLines({
+        width: this.options.width,
+        startYPos: 0,
+        staffGroup: this.staffGroup,
+      });
+      const clefWidth = this.staffRenderer.drawClef({
+        clefType: this.options.staffType,
+        startYPos: 0,
+        clefGroup: this.clefGroup
+      });
+
+      this.totalStaffHeight = staffHeight;
+      this.clefWidth = clefWidth;
+    }
 
     // Draw Signatures & Barlines
     if (this.options.keySignature) this.drawKeySignature(this.options.keySignature);
@@ -67,6 +82,39 @@ export default class StaffFrame {
     this.staffRenderer.drawStaffBarLine(this.options.width - 0.5, this.options.staffType, this.staffGroup);
 
     this.updateStaffLayout();
+  }
+
+  private renderGrandStaff() {
+    let y = 0;
+
+    const trebleStaffHeight = this.staffRenderer.drawStaffLines({
+      width: this.options.width,
+      startYPos: y,
+      staffGroup: this.staffGroup,
+    });
+    const trebleClefWidth = this.staffRenderer.drawClef({
+      clefType: "treble",
+      startYPos: y,
+      clefGroup: this.clefGroup
+    });
+    y += trebleStaffHeight + GRAND_STAFF_SPACING;
+
+    const bassStaffHeight = this.staffRenderer.drawStaffLines({
+      width: this.options.width,
+      startYPos: y,
+      staffGroup: this.staffGroup,
+    });
+    const bassClefWidth = this.staffRenderer.drawClef({
+      clefType: "bass",
+      startYPos: y,
+      clefGroup: this.clefGroup
+    });
+    y += bassStaffHeight;
+
+    return {
+      clefWidth: Math.max(trebleClefWidth, bassClefWidth),
+      totalStaffHeight: y
+    }
   }
 
   /**
@@ -97,20 +145,57 @@ export default class StaffFrame {
   }
 
   private drawKeySignature(key: KeySignatures) {
-    this.keySigWidth = this.staffRenderer.drawKeySignature({
-      key: key,
-      staffGroup: this.keySigGroup,
-      staffType: this.options.staffType,
-    });
+    if (this.options.staffType === "grand") {
+      const trebleWidth = this.staffRenderer.drawKeySignature({
+        key: key,
+        clefType: "treble",
+        startYPos: 0,
+        staffGroup: this.keySigGroup,
+      });
+
+      const bassWidth = this.staffRenderer.drawKeySignature({
+        key: key,
+        clefType: "bass",
+        startYPos: BASE_STAFF_HEIGHT + GRAND_STAFF_SPACING,
+        staffGroup: this.keySigGroup,
+      });
+
+      this.keySigWidth = Math.max(trebleWidth, bassWidth);
+    } else {
+      this.keySigWidth = this.staffRenderer.drawKeySignature({
+        key: key,
+        clefType: this.options.staffType as ClefTypes,
+        startYPos: 0,
+        staffGroup: this.keySigGroup,
+      });
+    }
   }
 
   private drawTimeSignature(timeSig: TimeSignature) {
-    this.timeSigWidth = this.staffRenderer.drawTimeSignature({
-      topNumber: timeSig.topNumber,
-      bottomNumber: timeSig.bottomNumber,
-      staffGroup: this.timeSigGroup,
-      staffType: this.options.staffType,
-    });
+    if (this.options.staffType === "grand") {
+      const topWidth = this.staffRenderer.drawTimeSignature({
+        topNumber: timeSig.topNumber,
+        bottomNumber: timeSig.bottomNumber,
+        startYPos: 0,
+        staffGroup: this.timeSigGroup,
+      });
+
+      const bottomWidth = this.staffRenderer.drawTimeSignature({
+        topNumber: timeSig.topNumber,
+        bottomNumber: timeSig.bottomNumber,
+        startYPos: BASE_STAFF_HEIGHT + GRAND_STAFF_SPACING,
+        staffGroup: this.timeSigGroup,
+      });
+
+      this.timeSigWidth = Math.max(topWidth, bottomWidth);
+    } else {
+      this.timeSigWidth = this.staffRenderer.drawTimeSignature({
+        topNumber: timeSig.topNumber,
+        bottomNumber: timeSig.bottomNumber,
+        startYPos: 0,
+        staffGroup: this.timeSigGroup,
+      });
+    }
   }
 
   // --- PUBLIC API EXPOSED TO CONTROLLERS ---

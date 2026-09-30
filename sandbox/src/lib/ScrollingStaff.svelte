@@ -18,7 +18,7 @@
       staffType: "grand",
       paddingTop: 40,
       paddingBottom: 40,
-      // keySignature: "G",
+      keySignature: "D",
       // timeSignature: {
       //   topNumber: 4,
       //   bottomNumber: 4,
