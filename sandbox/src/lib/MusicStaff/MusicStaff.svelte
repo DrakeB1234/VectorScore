@@ -1,11 +1,7 @@
 <script lang="ts">
-  import MusicStaff, { type DrawOptions } from "../../../src/core/MusicStaff";
-  import {
-    chordConfig,
-    noteConfig,
-    restConfig,
-  } from "../../../src/helpers/noteHelpers";
-  import type { SystemTypes } from "../../../src/types";
+  import MusicStaff, { type DrawOptions } from "@VS/core/MusicStaff";
+  import { chordConfig, noteConfig, restConfig } from "@VS/helpers/noteHelpers";
+  import type { SystemTypes } from "@VS/types";
   import BeamCard from "./BeamCard.svelte";
   import DrawingCard from "./DrawingCard.svelte";
 
@@ -223,15 +219,5 @@
 
   .hide {
     display: none;
-  }
-
-  .staff-container {
-    position: sticky;
-    top: 0;
-
-    display: grid;
-    place-items: center;
-    background-color: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
   }
 </style>

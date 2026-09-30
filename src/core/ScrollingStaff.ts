@@ -1,18 +1,20 @@
-import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, AUGMENTATION_DOT, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
 import type { SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
 import SVGRenderer from "../classes/SVGRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
-import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig } from "../helpers/noteHelpers";
+import type { DrawBeamConfig, DrawChordConfig, DrawNoteConfig, DrawRestConfig } from "../helpers/noteHelpers";
+import { NAMESPACE } from "../constants";
 
 const USE_GLPYHS: GlyphDef[] = [
   CLEF_TREBLE, CLEF_BASS, CLEF_ALTO,
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
   ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT,
   TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9,
-  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP,
-  REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH
+  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP,
+  REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH, REST_THIRTY_SECOND,
+  AUGMENTATION_DOT
 ];
 
 export type ScrollingStaffUserOptions = {
@@ -36,7 +38,7 @@ type ResolvedScrollingStaffOptions =
   Pick<ScrollingStaffUserOptions, "keySignature" | "timeSignature" | "onNotesOut">;
 
 
-type DrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig;
+type DrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig;
 
 type ActiveEntry = {
   gElement: SVGGElement;
@@ -45,10 +47,11 @@ type ActiveEntry = {
   originXOffset: number;
 }
 
-const SCROLLING_NOTE_SPACING = 60;
-const SPAWN_X_OFFSET = SCROLLING_NOTE_SPACING;
+const SCROLLING_NOTE_SPACING = 30;
 
-const NOTE_LAYER_START_X = 16;
+const OFFSCREEN_BUFFER_X = 100;
+
+const NOTE_LAYER_START_X = 30;
 
 const DEFAULT_STAFF_OPTIONS: Required<Omit<ScrollingStaffUserOptions, "keySignature" | "timeSignature" | "onNotesOut">> = {
   width: 300,
@@ -91,6 +94,7 @@ export default class ScrollingStaff {
     this.staffFrame = new StaffFrame(this.svgRendererInstance, this.options);
 
     this.notesLayer = this.svgRendererInstance.createLayer("notes");
+    this.notesLayer.classList.add(`${NAMESPACE}-scrolling-notes-layer`);
     this.updateNotesLayerTransform(this.staffFrame.getNoteStartX());
 
     // Apply total sizing to root SVG
@@ -104,59 +108,82 @@ export default class ScrollingStaff {
     this.notesLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
   };
 
-  private renderFirstNoteGroups() {
-    // Calculate the cutoff point for visible notes, keep rendering notes until the cursor overreaches bounds + offset
-    const maxVisibleX = (this.options.width - this.options.noteStartX) + SPAWN_X_OFFSET;
-
-    while (this.noteBuffer.length > 0 && this.noteCursorX < maxVisibleX) {
-      this.renderNextNote();
-
-      this.noteCursorX += SCROLLING_NOTE_SPACING;
-    }
-
-    // Removed the lastly applied noteCurorX increment, due to the final op in while loop incrementing cursor
-    if (this.activeEntries.length > 1) this.noteCursorX -= SCROLLING_NOTE_SPACING;
-  }
-
   private renderNextNote() {
-    if (this.noteBuffer.length < 1) return;
+    if (this.noteBuffer.length < 1) return 0;
 
     const nextNoteInBuffer = this.noteBuffer[0];
     const group = this.svgRendererInstance.createGroup(nextNoteInBuffer.type);
 
-    let _fullWidth: number, _originXOffset: number;
+    let fullWidth: number, originXOffset: number;
 
     if (nextNoteInBuffer.type === "chord") {
-      const noteObjs = nextNoteInBuffer.notes.map(noteStr => parseChordNoteString(noteStr));
-      const { fullWidth, originXOffset } = this.noteRendererInstance.drawChord(noteObjs, nextNoteInBuffer.duration, "treble", group);
-      _fullWidth = fullWidth;
-      _originXOffset = originXOffset;
+      const res = this.noteRendererInstance.drawChord(
+        nextNoteInBuffer.notes,
+        nextNoteInBuffer.duration,
+        nextNoteInBuffer.isDotted,
+        "treble",
+        group
+      );
+      fullWidth = res.fullWidth;
+      originXOffset = res.originXOffset;
     }
     else if (nextNoteInBuffer.type === "note") {
-      const noteObj = parseNoteString(nextNoteInBuffer.note);
-      const { fullWidth, originXOffset } = this.noteRendererInstance.drawNote(noteObj, "treble", group);
-      _fullWidth = fullWidth;
-      _originXOffset = originXOffset;
+      const res = this.noteRendererInstance.drawNote(
+        nextNoteInBuffer.note,
+        "treble",
+        group
+      );
+      fullWidth = res.fullWidth;
+      originXOffset = res.originXOffset;
+    }
+    else if (nextNoteInBuffer.type === "beam") {
+      const res = this.noteRendererInstance.drawBeam(
+        nextNoteInBuffer.entries,
+        "treble",
+        group
+      );
+      fullWidth = res.fullWidth;
+      originXOffset = res.originXOffset;
     }
     else {
-      const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(nextNoteInBuffer.duration, group);
-      _fullWidth = fullWidth;
-      _originXOffset = originXOffset;
+      // Is rest
+      const res = this.noteRendererInstance.drawRest(
+        nextNoteInBuffer.duration,
+        nextNoteInBuffer.isDotted,
+        group
+      );
+      fullWidth = res.fullWidth;
+      originXOffset = res.originXOffset;
     }
 
     // The note cursor at this stage will be placed at the last spawned position
-    group.setAttribute("transform", `translate(${this.noteCursorX + _originXOffset}, 0)`);
+    group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, 0)`);
 
     // Add current rendered note to active drawn notes, remove from buffer
     this.activeEntries.push({
       gElement: group,
       xPos: this.noteCursorX,
-      width: _fullWidth,
-      originXOffset: _originXOffset,
+      width: fullWidth,
+      originXOffset: originXOffset,
     });
-    this.noteBuffer.shift();
 
+    this.noteBuffer.shift();
     this.notesLayer.appendChild(group);
+
+    return fullWidth;
+  };
+
+  private fillBufferOffscreen() {
+    const safeOffscreenX = (this.options.width - this.staffFrame.getNoteStartX()) + OFFSCREEN_BUFFER_X;
+
+    while (this.noteBuffer.length > 0 && this.noteCursorX < safeOffscreenX) {
+      const fullWidth = this.renderNextNote();
+      this.noteCursorX += fullWidth + SCROLLING_NOTE_SPACING;
+    }
+  }
+
+  private renderFirstNoteGroups() {
+    this.fillBufferOffscreen();
   }
 
   /** Adds notes to the queue for scrolling staff. Clears any previously added notes. */
@@ -169,27 +196,33 @@ export default class ScrollingStaff {
   }
 
   /**
-   * Advances to the next note in sequence, if theres any remaining notes left.
-   * @callback onNotesOut Constructor option: Calls if there are no more notes remaining.
-  */
+     * Advances to the next note in sequence, if theres any remaining notes left.
+     * @callback onNotesOut Constructor option: Calls if there are no more notes remaining.
+    */
   advanceNotes() {
     if (this.activeEntries.length <= 0) {
       this.clearAllNotes();
       if (this.options.onNotesOut) this.options.onNotesOut();
       return;
-    };
+    }
 
+    // Identify the note being removed and calculate its full size
+    const firstActiveNote = this.activeEntries[0];
+    const shiftAmount = firstActiveNote.width + SCROLLING_NOTE_SPACING;
+
+    // Remove the first note
+    this.notesLayer.removeChild(firstActiveNote.gElement);
+    this.activeEntries.shift();
+
+    // Shift all remaining active entries left by the calculated amount
     this.activeEntries.forEach(e => {
-      e.xPos -= SCROLLING_NOTE_SPACING;
-      e.gElement.setAttribute("transform", `translate(${e.xPos}, 0)`);
+      e.xPos -= shiftAmount;
+      e.gElement.setAttribute("transform", `translate(${e.xPos + e.originXOffset}, 0)`);
     });
 
-    const firstActiveNote = this.activeEntries[0];
-    if (firstActiveNote.xPos <= 0) {
-      this.notesLayer.removeChild(firstActiveNote.gElement);
-      this.activeEntries.shift();
-    }
-    this.renderNextNote();
+    this.noteCursorX -= shiftAmount;
+
+    this.fillBufferOffscreen();
   }
 
   /**

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import GuitarChords from "../../../src/core/GuitarChord";
+  import GuitarChords from "@VS/core/GuitarChord";
 
   let guitarInstance: GuitarChords | null = $state(null);
 

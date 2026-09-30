@@ -16,9 +16,9 @@ export type VSChordNoteObj = Omit<VSNoteObj, "duration" | "isDotted">;
 export type DrawNoteConfig = { type: "note"; note: VSNoteObj; };
 export type DrawChordConfig = { type: "chord"; notes: VSChordNoteObj[]; duration: NoteDurations, isDotted: boolean };
 export type DrawRestConfig = { type: "rest"; duration: NoteDurations, isDotted: boolean };
+export type DrawBeamConfig = { type: "beam"; entries: BeamableConfig[] };
 
 export type BeamableConfig = DrawNoteConfig | DrawChordConfig;
-export type DrawBeamConfig = { type: "beam"; entries: BeamableConfig[] };
 
 export function noteConfig(note: string): DrawNoteConfig {
   const noteObj = parseNoteString(note);

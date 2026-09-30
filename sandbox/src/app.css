@@ -122,6 +122,16 @@ button.primary:hover {
   background-color: var(--color-primary-active);
 }
 
+.staff-container {
+  position: sticky;
+  top: 0;
+
+  display: grid;
+  place-items: center;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
 /* Inputs */
 
 .controls-grid {

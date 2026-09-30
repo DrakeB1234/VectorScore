@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { DrawOptions } from "../../../src/core/MusicStaff";
-  import type MusicStaff from "../../../src/core/MusicStaff";
+  import type { DrawOptions } from "@VS/core/MusicStaff";
+  import type MusicStaff from "@VS/core/MusicStaff";
   import {
     chordConfig,
     noteConfig,
     type BeamableConfig,
-  } from "../../../src/helpers/noteHelpers";
+  } from "@VS/helpers/noteHelpers";
 
   let {
     musicStaffInstance = $bindable(),
