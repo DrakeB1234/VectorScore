@@ -1,6 +1,7 @@
 import { AUGMENTATION_DOT, getAccidentalGlyph, getFlagGlyph, getNoteheadGlyphByDuration, getRestGlyphByDuration } from "../glyphs";
-import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj, assignAccidentalColumns } from "../helpers/noteHelpers";
+import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj, assignAccidentalColumns, type BeamableConfig } from "../helpers/noteHelpers";
 import type { ClefTypes } from "../types";
+import BeamRenderer from "./BeamRenderer";
 import type SVGRenderer from "./SVGRenderer";
 
 type StemOptions = {
@@ -12,7 +13,7 @@ type StemOptions = {
 };
 
 type RenderOptions = {
-  skipStemFlag?: boolean
+  skipStem?: boolean;
 }
 
 const ACCIDENTAL_X_OFFSET = 3;
@@ -26,16 +27,18 @@ const NOTE_DOT_WITH_FLAG_X_OFFSET = 2;
 
 export default class NoteRenderer {
   private svgRendererInstance: SVGRenderer;
+  private beamRendererInstance: BeamRenderer;
 
   constructor(svgRenderer: SVGRenderer) {
     this.svgRendererInstance = svgRenderer;
+    this.beamRendererInstance = new BeamRenderer(svgRenderer, this);
   };
 
   private drawStemAndFlag(group: SVGGElement, { duration, isStemDown, highStep, lowStep, noteHeadWidth }: StemOptions) {
     if (duration === "w") return 0;
 
     const stemX = isStemDown ? STEM_X_OFFSET : noteHeadWidth - STEM_X_OFFSET;
-    const { startStep, endStep } = getStemSteps(highStep, lowStep, isStemDown);
+    const { startStep, endStep } = getStemSteps(highStep, lowStep, isStemDown, duration);
     const stemStartY = convertPitchStepToYPos(startStep);
     const stemEndY = convertPitchStepToYPos(endStep);
 
@@ -111,7 +114,7 @@ export default class NoteRenderer {
    * @returns {number} fullWidth: Full bounding box width of the all drawn glyphs in group
    * @returns {number} originXOffset: Amount of space drawn into negative space (below x:0 in group)
   */
-  public drawNote(noteObj: VSNoteObj, clef: ClefTypes, noteGroup: SVGGElement) {
+  public drawNote(noteObj: VSNoteObj, clef: ClefTypes, noteGroup: SVGGElement, options?: RenderOptions) {
 
     const notePitchStep = getPitchStepClefDifference(noteObj.letter, noteObj.octave, clef);
     const noteYPos = convertPitchStepToYPos(notePitchStep);
@@ -136,13 +139,17 @@ export default class NoteRenderer {
     };
 
     // Draw note stem and flag (if applicable)
-    const flagMaxX = this.drawStemAndFlag(noteGroup, {
-      duration: noteObj.duration,
-      isStemDown: isStemDown,
-      highStep: notePitchStep,
-      lowStep: notePitchStep,
-      noteHeadWidth: noteHeadDef.glyphWidth
-    });
+    let flagMaxX = 0
+    if (!options?.skipStem) {
+
+      flagMaxX = this.drawStemAndFlag(noteGroup, {
+        duration: noteObj.duration,
+        isStemDown: isStemDown,
+        highStep: notePitchStep,
+        lowStep: notePitchStep,
+        noteHeadWidth: noteHeadDef.glyphWidth
+      });
+    }
 
     // Render dot
     let dotMaxX = 0;
@@ -190,7 +197,7 @@ export default class NoteRenderer {
     };
   };
 
-  public drawChord(noteObjs: VSChordNoteObj[], duration: NoteDurations, isDotted: boolean, clef: ClefTypes, chordGroup: SVGGElement) {
+  public drawChord(noteObjs: VSChordNoteObj[], duration: NoteDurations, isDotted: boolean, clef: ClefTypes, chordGroup: SVGGElement, options?: RenderOptions) {
 
     // Get Y pos for each note and sorted from lowest to highest
     const positionedNoteObjs: PositionedChordNote[] = noteObjs.map(noteObj => {
@@ -221,14 +228,18 @@ export default class NoteRenderer {
     });
 
     // Draw chord stem and flag (if applicable)
-    const { highStep, lowStep } = getPitchStepRange(positionedNoteObjs);
-    const flagMaxX = this.drawStemAndFlag(chordGroup, {
-      duration,
-      isStemDown,
-      highStep,
-      lowStep,
-      noteHeadWidth: noteHeadDef.glyphWidth
-    });
+    let flagMaxX = 0
+    if (!options?.skipStem) {
+
+      const { highStep, lowStep } = getPitchStepRange(positionedNoteObjs);
+      flagMaxX = this.drawStemAndFlag(chordGroup, {
+        duration,
+        isStemDown,
+        highStep,
+        lowStep,
+        noteHeadWidth: noteHeadDef.glyphWidth
+      });
+    }
 
     // Draw ledger lines
     const ledgerLineSpans = getChordLedgerLineSpans(positionedNoteObjs, noteHeadDef.glyphWidth);
@@ -292,5 +303,9 @@ export default class NoteRenderer {
       fullWidth: maxX,
       originXOffset: 0 // Rests in this case don't shift into negative space
     };
+  };
+
+  public drawBeam(configs: BeamableConfig[], clef: ClefTypes, group: SVGGElement) {
+    return this.beamRendererInstance.drawBeamGroup(configs, clef, group);
   }
 }

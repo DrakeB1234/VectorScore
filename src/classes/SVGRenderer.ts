@@ -177,6 +177,8 @@ export default class SVGRenderer {
     if (options?.classes) this.addNamespacedClassesToElement(options.classes, parent);
 
     parent.appendChild(line);
+
+    return line;
   }
 
   drawRect(width: number, height: number, parent: SVGElement, options?: DrawRectOptions): SVGRectElement {

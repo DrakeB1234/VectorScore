@@ -133,6 +133,10 @@
 
     staff?.changeTimeSignature(valueParts[0], valueParts[1]);
   }
+
+  function test() {
+    staff?.drawBeam();
+  }
 </script>
 
 <div class="staff-container">
@@ -151,7 +155,7 @@
 
     <div class="card-section">
       <div class="card-input-group">
-        <label for="choose-staff">Choose Staff</label>
+        <label for="choose-staff">Staff</label>
         <select id="choose-staff" onchange={handleStaffSelect}>
           <option value="grand">Grand Staff</option>
           <option value="treble">Treble Clef</option>
@@ -165,6 +169,7 @@
       <div class="card-buttons">
         <button onclick={clearAllNotes}>Clear All Notes</button>
         <button onclick={justifyNotes}>Justify Notes</button>
+        <button class="primary" onclick={test}>Test</button>
       </div>
     </div>
   </div>
@@ -182,7 +187,7 @@
     <p class="card-title">Staff Signatures</p>
     <div class="card-section">
       <div class="card-input-group">
-        <label for="key-sig">Key signature</label>
+        <label for="key-sig">Key</label>
         <input id="key-sig" bind:value={inputState.keySig} placeholder="Bb" />
       </div>
       <div class="card-buttons">
@@ -193,7 +198,7 @@
 
     <div class="card-section">
       <div class="card-input-group">
-        <label for="time-sig">Time signature</label>
+        <label for="time-sig">Time</label>
         <input
           id="time-sig"
           bind:value={inputState.timeSig}

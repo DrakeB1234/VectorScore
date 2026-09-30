@@ -14,7 +14,7 @@
 
   <div class="card-section">
     <div class="card-input-group">
-      <label for="draw-type">Choose Type</label>
+      <label for="draw-type">Type</label>
       <select id="draw-type" bind:value={currentDrawType}>
         <option value="note">Note</option>
         <option value="chord">Chord</option>

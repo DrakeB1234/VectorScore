@@ -17,6 +17,9 @@ export type DrawNoteConfig = { type: "note"; note: VSNoteObj; };
 export type DrawChordConfig = { type: "chord"; notes: VSChordNoteObj[]; duration: NoteDurations, isDotted: boolean };
 export type DrawRestConfig = { type: "rest"; duration: NoteDurations, isDotted: boolean };
 
+export type BeamableConfig = DrawNoteConfig | DrawChordConfig;
+export type DrawBeamConfig = { type: "beam"; entries: BeamableConfig[] };
+
 export function noteConfig(note: string): DrawNoteConfig {
   const noteObj = parseNoteString(note);
 
@@ -35,6 +38,10 @@ export function restConfig(duration: string): DrawRestConfig {
 
   return { type: "rest", duration: _duration, isDotted };
 };
+
+export function beamConfig(entries: BeamableConfig[]): DrawBeamConfig {
+  return { type: "beam", entries };
+}
 
 export type PositionedChordNote = {
   noteObj: VSChordNoteObj;
@@ -195,17 +202,21 @@ export function getChordStemDirection(notes: Pick<PositionedChordNote, "pitchSte
  * - Where a stem starts and ends, in pitch steps. Works for single note / chords
  * - Will attach stem to AT LEAST the middle line.
  */
-export function getStemSteps(highStep: number, lowStep: number, isStemDown: boolean) {
+export function getStemSteps(highStep: number, lowStep: number, isStemDown: boolean, duration: NoteDurations) {
+
+  // Handles that 32nd flags need taller stems
+  const stemSteps = duration === "t" ? 8 : STANDARD_STEM_STEPS;
+
   if (isStemDown) {
     return {
       startStep: highStep,
-      endStep: Math.max(lowStep + STANDARD_STEM_STEPS, MIDDLE_LINE_STEP)
+      endStep: Math.max(lowStep + stemSteps, MIDDLE_LINE_STEP)
     };
   }
 
   return {
     startStep: lowStep,
-    endStep: Math.min(highStep - STANDARD_STEM_STEPS, MIDDLE_LINE_STEP)
+    endStep: Math.min(highStep - stemSteps, MIDDLE_LINE_STEP)
   };
 };
 
