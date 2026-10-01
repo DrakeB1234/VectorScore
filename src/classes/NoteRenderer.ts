@@ -200,7 +200,8 @@ export default class NoteRenderer {
 
     return {
       fullWidth: maxX - minX,
-      originXOffset: Math.abs(minX)
+      originXOffset: Math.abs(minX),
+      yPos: noteYPos
     };
   };
 
@@ -316,7 +317,8 @@ export default class NoteRenderer {
 
     return {
       fullWidth: maxX - minX,
-      originXOffset: Math.abs(minX)
+      originXOffset: Math.abs(minX),
+      yPosArray: positionedNoteObjs.map(n => n.yPos)
     };
   }
 
@@ -346,7 +348,8 @@ export default class NoteRenderer {
 
     return {
       fullWidth: maxX,
-      originXOffset: 0 // Rests in this case don't shift into negative space
+      originXOffset: 0, // Rests in this case don't shift into negative space
+      yPos: 0
     };
   };
 

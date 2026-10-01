@@ -335,15 +335,17 @@ export default class RhythmStaff {
   }
 
   public setMaxMeasures(count: number) {
-    this.options.maxMeasures = count;
 
     // Recalculate exact width per measure based on the new count
     const availableWidth = this.options.width - this.noteLayerStartX - STAFF_RIGHT_SPACING;
-    this.dynamicMeasureWidth = availableWidth / this.options.maxMeasures;
+    const dynamicMeasureWidth = availableWidth / count;
 
-    if (this.dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH) {
-      throw new Error(`RhythmStaff Layout Error: Not enough space to support '${this.options.maxMeasures}' measures with a staff width of '${this.options.width}'.`);
-    }
+    if (dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH) {
+      throw new Error(`RhythmStaff Layout Error: Not enough space to support '${count}' measures with a staff width of '${this.options.width}'.`);
+    };
+
+    this.options.maxMeasures = count;
+    this.dynamicMeasureWidth = dynamicMeasureWidth;
 
     this.clear();
   }

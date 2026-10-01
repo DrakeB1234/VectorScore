@@ -51,7 +51,6 @@ export default class SVGRenderer {
 
   // Positioning variables
   private viewBoxWidth: number = 0;
-  private viewBoxHeight: number = 0;
   private scale: number = 1;
 
   // Setups root SVG element and layers, sets attributes for scaling, creates defs for glyphs
@@ -99,7 +98,6 @@ export default class SVGRenderer {
     this.svgElementRef.setAttribute("height", scaledHeight.toString());
 
     this.viewBoxWidth = width;
-    this.viewBoxHeight = height;
     this.scale = scale;
   }
 
@@ -108,8 +106,6 @@ export default class SVGRenderer {
 
     this.svgElementRef.setAttribute("viewBox", `0 0 ${this.viewBoxWidth} ${newHeight}`);
     this.svgElementRef.setAttribute("height", scaledHeight.toString());
-
-    this.viewBoxHeight = newHeight;
   }
 
   setSVGAutoFill(autoFill: boolean) {

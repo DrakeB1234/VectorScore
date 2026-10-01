@@ -3,7 +3,7 @@ import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
 import SVGRenderer from "../classes/SVGRenderer";
 import StaffFrame from "../classes/StaffFrame";
-import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
+import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { DrawBeamConfig, DrawChordConfig, DrawNoteConfig, DrawRestConfig } from "../helpers/noteHelpers";
 import { NAMESPACE } from "../constants";
 

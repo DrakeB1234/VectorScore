@@ -140,5 +140,8 @@
       <button onclick={resetBeat}>Reset</button>
       <button class="primary" onclick={advanceBeat}>Next Beat</button>
     </div>
+    <span class="text-caption-subtle space-above-base"
+      >Functionality built in sandbox, using helpers from class.</span
+    >
   </div>
 </div>

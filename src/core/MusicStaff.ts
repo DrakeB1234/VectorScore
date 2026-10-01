@@ -1,5 +1,5 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, AUGMENTATION_DOT, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, noteConfig, chordConfig, beamConfig, type BeamableConfig } from "../helpers/noteHelpers";
+import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, type BeamableConfig, getPitchStepClefDifference, getPitchStep, convertPitchStepToYPos } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
@@ -60,21 +60,25 @@ type BaseEntry = {
 type NoteEntry = BaseEntry & {
   type: "note";
   noteData: VSNoteObj;
+  yPos: number;
 };
 
 type ChordEntry = BaseEntry & {
   type: "chord";
   noteData: VSChordNoteObj[];
   duration: NoteDurations;
+  yPosArray: number[];
 };
 
 type RestEntry = BaseEntry & {
   type: "rest";
   duration: NoteDurations;
+  yPos: number;
 };
 
 type BeamEntry = BaseEntry & {
   type: "beam";
+  yPosArray: number[];
 };
 
 type StaffEntry = NoteEntry | ChordEntry | RestEntry | BeamEntry;
@@ -96,6 +100,7 @@ export default class MusicStaff {
   private staffFrame: StaffFrame;
 
   private notesLayer: SVGGElement;
+  public uiLayer: SVGGElement;
 
   private noteEntries: StaffEntry[] = [];
   private noteCursorX: number = 0;
@@ -120,7 +125,8 @@ export default class MusicStaff {
     this.staffFrame = new StaffFrame(this.svgRendererInstance, this.options);
 
     this.notesLayer = this.svgRendererInstance.createLayer("notes");
-    this.updateNotesLayerTransform(this.staffFrame.getNoteStartX());
+    this.uiLayer = this.svgRendererInstance.createLayer("ui");
+    this.updateLayersX(this.staffFrame.getNoteStartX());
 
     // Apply total sizing to root SVG
     const totalHeight = this.staffFrame.totalStaffHeight + this.options.paddingTop + this.options.paddingBottom;
@@ -153,8 +159,9 @@ export default class MusicStaff {
     return { targetClef, yOffset, isTopStaff };
   };
 
-  private updateNotesLayerTransform(startX: number) {
+  private updateLayersX(startX: number) {
     this.notesLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
+    this.uiLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
   };
 
   /** 
@@ -166,7 +173,7 @@ export default class MusicStaff {
 
     const noteGroup = this.svgRendererInstance.createGroup("note");
 
-    const { fullWidth, originXOffset } = this.noteRendererInstance.drawNote(noteObj, targetClef, noteGroup);
+    const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawNote(noteObj, targetClef, noteGroup);
 
     noteGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(noteGroup);
@@ -179,7 +186,8 @@ export default class MusicStaff {
       totalWidth: fullWidth,
       originXOffset,
       yOffset,
-      isTopStaff
+      isTopStaff,
+      yPos: yPos
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
@@ -194,7 +202,7 @@ export default class MusicStaff {
 
     const chordGroup = this.svgRendererInstance.createGroup("chord");
 
-    const { fullWidth, originXOffset } = this.noteRendererInstance.drawChord(noteObjs, _duration, isDotted, targetClef, chordGroup);
+    const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(noteObjs, _duration, isDotted, targetClef, chordGroup);
 
     chordGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(chordGroup);
@@ -208,7 +216,8 @@ export default class MusicStaff {
       totalWidth: fullWidth,
       originXOffset,
       yOffset,
-      isTopStaff
+      isTopStaff,
+      yPosArray
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
@@ -222,7 +231,7 @@ export default class MusicStaff {
     const restGroup = this.svgRendererInstance.createGroup("rest");
 
     // originXOffset will be 0, due to rest not shifting into negative space.
-    const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(_duration, isDotted, restGroup);
+    const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawRest(_duration, isDotted, restGroup);
 
     restGroup.setAttribute("transform", `translate(${this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(restGroup);
@@ -235,7 +244,8 @@ export default class MusicStaff {
       totalWidth: fullWidth,
       yOffset,
       originXOffset: originXOffset,
-      isTopStaff
+      isTopStaff,
+      yPos
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
@@ -247,12 +257,10 @@ export default class MusicStaff {
 
     const group = this.svgRendererInstance.createGroup("beam");
 
-    const { fullWidth, originXOffset } = this.noteRendererInstance.drawBeam(entries, targetClef, group);
+    const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawBeam(entries, targetClef, group);
 
     group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, ${yOffset})`);
     this.notesLayer.appendChild(group);
-
-    this.noteCursorX += NOTE_SPACING + fullWidth;
 
     this.noteEntries.push({
       type: "beam",
@@ -261,11 +269,14 @@ export default class MusicStaff {
       totalWidth: fullWidth,
       yOffset,
       originXOffset: originXOffset,
-      isTopStaff
+      isTopStaff,
+      yPosArray
     });
+
+    this.noteCursorX += NOTE_SPACING + fullWidth;
   }
 
-  /** - Replaces a note, chord, or rest by index on staff. */
+  /** - Replaces a entry on staff by, only accepts notes, chords, and rests are possible replace values. */
   public replaceByIndex(index: number, config: ReplaceConfig, options?: DrawOptions) {
     if (index < 0 || index >= this.noteEntries.length) throw new Error(`MusicStaff replaceByIndex: Index ${index} is out of bounds.`);
     if (!config.type) throw new Error(`MusicStaff replaceByIndex: Incorrect replace config provided.`);
@@ -279,7 +290,7 @@ export default class MusicStaff {
     let newEntry: StaffEntry;
 
     if (config.type === "note") {
-      const { fullWidth, originXOffset } = this.noteRendererInstance.drawNote(config.note, targetClef, newGroup);
+      const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawNote(config.note, targetClef, newGroup);
 
       newEntry = {
         type: "note",
@@ -289,11 +300,12 @@ export default class MusicStaff {
         totalWidth: fullWidth,
         originXOffset,
         yOffset,
-        isTopStaff
+        isTopStaff,
+        yPos
       };
     }
     else if (config.type === "chord") {
-      const { fullWidth, originXOffset } = this.noteRendererInstance.drawChord(config.notes, config.duration, config.isDotted, targetClef, newGroup);
+      const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(config.notes, config.duration, config.isDotted, targetClef, newGroup);
 
       newEntry = {
         type: "chord",
@@ -304,11 +316,12 @@ export default class MusicStaff {
         totalWidth: fullWidth,
         originXOffset,
         yOffset,
-        isTopStaff
+        isTopStaff,
+        yPosArray
       };
     }
     else {
-      const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(config.duration, config.isDotted, newGroup);
+      const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawRest(config.duration, config.isDotted, newGroup);
 
       newEntry = {
         type: "rest",
@@ -318,7 +331,8 @@ export default class MusicStaff {
         totalWidth: fullWidth,
         originXOffset,
         yOffset,
-        isTopStaff
+        isTopStaff,
+        yPos
       };
     }
 
@@ -387,37 +401,64 @@ export default class MusicStaff {
 
   public changeTimeSignature(top: number, bottom: number) {
     const newStartX = this.staffFrame.changeTimeSignature(top, bottom);
-    this.updateNotesLayerTransform(newStartX);
+    this.updateLayersX(newStartX);
   };
 
   public removeTimeSignature() {
     const newStartX = this.staffFrame.removeTimeSignature();
-    this.updateNotesLayerTransform(newStartX);
+    this.updateLayersX(newStartX);
   }
 
   public changeKeySignature(key: KeySignatures) {
     const newStartX = this.staffFrame.changeKeySignature(key);
-    this.updateNotesLayerTransform(newStartX);
+    this.updateLayersX(newStartX);
   };
 
   public removeKeySignature() {
     const newStartX = this.staffFrame.removeKeySignature();
-    this.updateNotesLayerTransform(newStartX);
+    this.updateLayersX(newStartX);
   }
 
-  /** - Adds a class to the note by the index provided. */
-  public addClassToNoteByIndex(className: string, noteIndex: number) {
-    // REFACTOR / IMPLEMENT
-  }
+  /** X coord relative to start of the notes layer */
+  public getCoordsFromEntryIndex(index: number) {
+    if (index >= this.noteEntries.length || index < 0) throw new Error("MusicStaff Error: Index out of bounds.");
 
-  /** - Removes a class to the note by the index provided. */
-  public removeClassToNoteByIndex(className: string, noteIndex: number) {
-    // REFACTOR / IMPLEMENT
+    const noteEntry = this.noteEntries[index];
+    let y = 0;
+    if (noteEntry.type === "note") y = noteEntry.yPos;
+    if (noteEntry.type === "chord") y = noteEntry.yPosArray[0];
+    if (noteEntry.type === "rest") y = noteEntry.yPos;
+    if (noteEntry.type === "beam") y = noteEntry.yPosArray[0];
+    y += noteEntry.yOffset;
+
+    let x = noteEntry.xPos + (noteEntry.totalWidth / 2);
+    if (noteEntry.type === "beam") x = noteEntry.xPos + NOTEHEAD_BLACK.glyphWidth;
+
+    return {
+      x: x,
+      y: y
+    };
   };
+
+  /**  - Returns the exact absolute Y-coordinate for a specific pitch (e.g., "C4"). Accounts for staff offsets (top vs bottom) and clef differences. */
+  public getYFromPitch(pitch: string, options?: DrawOptions): number {
+    // This parser doesn't consider durations
+    const noteObj = parseChordNoteString(pitch);
+
+    const { targetClef, yOffset } = this.resolveStaffTarget(options?.staff);
+
+    // Calculate the physical staff steps and convert to a pixel coordinate
+    const pitchStep = getPitchStepClefDifference(noteObj.letter, noteObj.octave, targetClef);
+    const localYPos = convertPitchStepToYPos(pitchStep);
+
+    return localYPos + yOffset;
+  }
 
   /** - Removes the root svg element and cleans up arrays. */
   public destroy() {
     this.noteEntries = [];
     this.svgRendererInstance.destroy();
+    this.notesLayer.replaceChildren();
+    this.uiLayer.replaceChildren();
   };
 }

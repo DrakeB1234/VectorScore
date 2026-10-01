@@ -23,6 +23,8 @@
     restValue: "q",
     keySig: "",
     timeSig: "",
+    uiIndex: 0,
+    uiNote: "",
   });
 
   let currentDrawOptions: DrawOptions = $derived({
@@ -47,6 +49,23 @@
       staff = staffMap["grand"];
       staff.drawNote("C4q");
       staff.drawChord(["A3", "C4", "E4"], "q");
+
+      // Create the UI element for wrong notes
+      uiGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      let uiElement = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path",
+      );
+      uiElement.setAttribute(
+        "d",
+        "M7 18c-3.9 0-7-2.2-7-6C0 5.8 6.3 0 14.3 0c4 0 7 2.3 7 6 0 6.1-8 12-14.3 12",
+      );
+      uiElement.setAttribute("transform", "translate(-10, -9)");
+      uiElement.setAttribute("fill", "#FF000077");
+
+      uiGroup.appendChild(uiElement);
+      uiGroup.classList.add("ui-error-note", "hide");
+      staff.uiLayer.appendChild(uiGroup);
     }
   }
 
@@ -132,6 +151,46 @@
 
     staff?.changeTimeSignature(valueParts[0], valueParts[1]);
   }
+
+  // UI Helpers
+
+  let uiGroup: SVGGElement;
+  let uiInterval: ReturnType<typeof setInterval> | null = null;
+
+  function setErrorNoteToIndex() {
+    if (
+      !staff ||
+      currentStaffType !== "grand" ||
+      inputState.uiIndex === -1 ||
+      uiInterval !== null
+    )
+      return clearErrorNote();
+
+    uiGroup.classList.remove("hide");
+
+    const { x, y } = staff.getCoordsFromEntryIndex(inputState.uiIndex);
+    let finalY = y;
+    let finalX = x;
+
+    if (inputState.uiNote !== "") {
+      // Considers isTopStaff, which affects the vertical positioning of the note for grand staff.
+      finalY = staff.getYFromPitch(inputState.uiNote, currentDrawOptions);
+    }
+
+    uiGroup.setAttribute("transform", `translate(${finalX}, ${finalY})`);
+
+    uiInterval = setInterval(() => {
+      clearErrorNote();
+    }, 1000);
+  }
+
+  function clearErrorNote() {
+    if (uiInterval) {
+      clearInterval(uiInterval);
+      uiInterval = null;
+    }
+    uiGroup.classList.add("hide");
+  }
 </script>
 
 <div class="staff-container">
@@ -207,6 +266,29 @@
   />
 
   <BeamCard bind:musicStaffInstance={staff} />
+
+  <div class="card">
+    <p class="card-title">Error UI Actions</p>
+    <div class="card-section">
+      <div class="card-input-group">
+        <label for="ui-index">Index</label>
+        <input
+          id="ui-index"
+          type="number"
+          bind:value={inputState.uiIndex}
+          placeholder="0"
+        />
+      </div>
+      <div class="card-input-group">
+        <label for="ui-note">Note</label>
+        <input id="ui-note" bind:value={inputState.uiNote} placeholder="C4" />
+      </div>
+      <div class="card-buttons">
+        <button onclick={clearErrorNote}>Clear</button>
+        <button class="primary" onclick={setErrorNoteToIndex}>Set</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -214,6 +296,16 @@
     .vs-staff-layer,
     .vs-notes-layer {
       color: var(--color-on-surface);
+    }
+
+    .ui-error-note {
+      opacity: 1;
+
+      transition: opacity 0.3s ease;
+    }
+
+    .ui-error-note.hide {
+      opacity: 0;
     }
   }
 

@@ -4,7 +4,7 @@ export { default as ScrollingStaff } from './core/ScrollingStaff';
 export { default as GuitarChord } from './core/GuitarChord';
 
 export type { MusicStaffUserOptions } from './core/MusicStaff';
-export type { RhythmStaffOptions } from './core/RhythmStaff';
+export type { RhythmStaffUserOptions } from './core/RhythmStaff';
 export type { ScrollingStaffUserOptions } from './core/ScrollingStaff';
 export type { GuitarChordOptions } from './core/GuitarChord';
 

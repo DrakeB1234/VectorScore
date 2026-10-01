@@ -1,8 +1,8 @@
 import type SVGRenderer from "./SVGRenderer";
 import type NoteRenderer from "./NoteRenderer";
 import type { ClefTypes } from "../types";
-import { convertPitchStepToYPos, getPitchStep, getPitchStepClefDifference, getStemSteps, MIDDLE_LINE_STEP, type BeamableConfig, type NoteDurations, type VSNoteObj } from "../helpers/noteHelpers";
-import { getNoteheadGlyphByDuration, NOTEHEAD_BLACK } from "../glyphs";
+import { convertPitchStepToYPos, getPitchStepClefDifference, getStemSteps, MIDDLE_LINE_STEP, type BeamableConfig, type NoteDurations } from "../helpers/noteHelpers";
+import { getNoteheadGlyphByDuration } from "../glyphs";
 import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 
 const BEAM_INTERNAL_SPACING = 8;
@@ -10,7 +10,6 @@ const STEM_X_OFFSET = 0.5;
 const BEAM_THICKNESS = 5; // Standard beam thickness is usually around half a staff space
 const BEAM_SPACING = BEAM_THICKNESS + 2; // Vertical space between stacked beams
 const STUB_LENGTH = 10; // Length of a fractional (IE single 16th note in beam) beam stub
-const MAX_BEAM_SLOPE_ANGLE = 0.12;
 
 type BeamDuration = "e" | "s" | "t";
 
@@ -189,6 +188,7 @@ export default class BeamRenderer {
     const isStemDown = this.getGroupStemDirection(configs, clef);
 
     const stemCoordinates: StemCoord[] = [];
+    let yPosArray: number[] = [];
 
     // Loop through and draw the noteheads (skipping stems)
     configs.forEach(config => {
@@ -212,6 +212,7 @@ export default class BeamRenderer {
         const result = this.noteRendererInstance.drawNote(config.note, clef, wrapperGroup, { skipStem: true });
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
+        yPosArray.push(result.yPos);
 
       } else if (config.type === "chord") {
 
@@ -222,6 +223,7 @@ export default class BeamRenderer {
         const result = this.noteRendererInstance.drawChord(config.notes, resolvedDuration, config.isDotted, clef, wrapperGroup, { skipStem: true });
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
+        yPosArray.push(result.yPosArray[isStemDown ? -1 : 0]);
       }
 
       wrapperGroup.setAttribute("transform", `translate(${internalCursorX + originXOffset}, 0)`);
@@ -255,7 +257,8 @@ export default class BeamRenderer {
 
     return {
       fullWidth: internalCursorX - BEAM_INTERNAL_SPACING,
-      originXOffset: 0
+      originXOffset: 0,
+      yPosArray
     };
   }
 
