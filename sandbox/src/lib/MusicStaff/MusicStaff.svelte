@@ -59,20 +59,8 @@
       staff.drawNote("C4q");
       staff.drawChord(["A3", "C4", "E4"], "q");
 
-      // Create the UI element for wrong notes
+      // Create the UI group element to hold noteheads
       uiGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      let uiElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path",
-      );
-      uiElement.setAttribute(
-        "d",
-        "M7 18c-3.9 0-7-2.2-7-6C0 5.8 6.3 0 14.3 0c4 0 7 2.3 7 6 0 6.1-8 12-14.3 12",
-      );
-      uiElement.setAttribute("transform", "translate(-10, -9)");
-      uiElement.setAttribute("fill", "#FF000077");
-
-      uiGroup.appendChild(uiElement);
       uiGroup.classList.add("ui-error-note", "hide");
       staff.uiLayer.appendChild(uiGroup);
     }
@@ -168,33 +156,65 @@
   // UI Helpers
 
   let uiGroup: SVGGElement;
+  let uiHeads: SVGPathElement[] = [];
   let uiInterval: ReturnType<typeof setInterval> | null = null;
 
+  const uiHeadXOffset = -10;
+  const uiHeadYOffset = -9;
+
   function setErrorNoteToIndex() {
+    if (!staff) return;
+
     if (
-      !staff ||
       currentStaffType !== "grand" ||
       inputState.uiIndex === -1 ||
       uiInterval !== null
     )
-      return clearErrorNote();
+      clearErrorNote();
 
     uiGroup.classList.remove("hide");
 
     const { x, y } = staff.getCoordsFromEntryIndex(inputState.uiIndex);
-    let finalY = y;
+    let finalY = [y]; // Defaults to a single position from coords method
     let finalX = x;
 
     if (inputState.uiNote !== "") {
+      const noteParts = inputState.uiNote.split("/");
+
       // Considers isTopStaff, which affects the vertical positioning of the note for grand staff.
-      finalY = staff.getYFromPitch(inputState.uiNote, currentDrawOptions);
+      finalY = staff.getYFromPitches(noteParts, currentDrawOptions);
     }
 
-    uiGroup.setAttribute("transform", `translate(${finalX}, ${finalY})`);
+    finalY.forEach((yPos) => {
+      const ele = createErrorHead();
+      ele.setAttribute(
+        "transform",
+        `translate(${uiHeadXOffset}, ${yPos + uiHeadYOffset})`,
+      );
+      uiHeads.push(ele);
+    });
+
+    uiGroup.setAttribute("transform", `translate(${finalX}, 0)`);
+    uiGroup.replaceChildren(...uiHeads);
 
     uiInterval = setInterval(() => {
       clearErrorNote();
     }, 1000);
+  }
+
+  function createErrorHead() {
+    // Create the UI element for wrong notes
+    let uiElement = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
+    uiElement.setAttribute(
+      "d",
+      "M7 18c-3.9 0-7-2.2-7-6C0 5.8 6.3 0 14.3 0c4 0 7 2.3 7 6 0 6.1-8 12-14.3 12",
+    );
+    uiElement.setAttribute("fill", "#FF000077");
+
+    return uiElement;
   }
 
   function clearErrorNote() {
@@ -202,6 +222,7 @@
       clearInterval(uiInterval);
       uiInterval = null;
     }
+    uiHeads = [];
     uiGroup.classList.add("hide");
   }
 </script>

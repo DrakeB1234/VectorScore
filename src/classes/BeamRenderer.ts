@@ -166,9 +166,10 @@ export default class BeamRenderer {
 
     const stemCoordinates: StemCoord[] = [];
     let yPosArray: number[] = [];
+    let firstOriginXOffset = 0; // Only considers the first entries xOffset, if it exists.
 
     // Loop through and draw the noteheads (skipping stems)
-    configs.forEach(config => {
+    configs.forEach((config, i) => {
 
       let entryWidth = 0;
       let originXOffset = 0;
@@ -224,6 +225,10 @@ export default class BeamRenderer {
       });
 
       internalCursorX += entryWidth + BEAM_INTERNAL_SPACING;
+
+      if (i === 0) {
+        firstOriginXOffset = originXOffset;
+      }
     });
 
     // Build the beam line, then draw stems and beams against it
@@ -234,7 +239,7 @@ export default class BeamRenderer {
 
     return {
       fullWidth: internalCursorX - BEAM_INTERNAL_SPACING,
-      originXOffset: 0,
+      originXOffset: firstOriginXOffset,
       yPosArray
     };
   }

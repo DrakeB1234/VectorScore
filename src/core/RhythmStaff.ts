@@ -78,7 +78,7 @@ export default class RhythmStaff {
   private staffLayer: SVGGElement;
   private notesLayer: SVGGElement;
   private barlinesGroup: SVGGElement;
-  public uiLayer: SVGGElement;
+  public readonly uiLayer: SVGGElement;
   private timeSigGroup: SVGGElement;
 
   private noteLayerStartX: number;

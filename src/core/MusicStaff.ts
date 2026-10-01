@@ -1,5 +1,5 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, AUGMENTATION_DOT, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, type BeamableConfig, getPitchStepClefDifference, getPitchStep, convertPitchStepToYPos } from "../helpers/noteHelpers";
+import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, type BeamableConfig, getPitchStepClefDifference, convertPitchStepToYPos } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
@@ -39,6 +39,7 @@ const USE_GLPYHS: GlyphDef[] = [
 const NOTE_LAYER_START_X = 16;
 const NOTE_SPACING = 14;
 const BARLINE_WIDTH = 14; // Roughly size of notehead
+const NOTEHEAD_WIDTH = NOTEHEAD_BLACK.glyphWidth;
 
 const DEFAULT_STAFF_OPTIONS: Required<Omit<MusicStaffUserOptions, "keySignature" | "timeSignature">> = {
   width: 300,
@@ -106,7 +107,7 @@ export default class MusicStaff {
   private staffFrame: StaffFrame;
 
   private notesLayer: SVGGElement;
-  public uiLayer: SVGGElement;
+  public readonly uiLayer: SVGGElement;
 
   private noteEntries: StaffEntry[] = [];
   private noteCursorX: number = 0;
@@ -183,7 +184,7 @@ export default class MusicStaff {
     this.uiLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
   };
 
-  /** - Draws a note on the staff.  */
+  /** - Draws a note on the staff. Returns the index of the drawn element */
   public drawNote(note: string, options?: DrawOptions) {
     const noteObj = parseNoteString(note);
     const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
@@ -211,9 +212,11 @@ export default class MusicStaff {
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
+
+    return this.noteEntries.length - 1;
   }
 
-  /** - Draws a chord on the staff. */
+  /** - Draws a chord on the staff. Returns the index of the drawn element */
   public drawChord(noteStrings: string[], duration: string, options?: DrawOptions) {
     const noteObjs = noteStrings.map(str => parseChordNoteString(str));
     const { duration: _duration, isDotted } = parseDurationString(duration);
@@ -244,9 +247,11 @@ export default class MusicStaff {
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
+
+    return this.noteEntries.length - 1;
   }
 
-  /** - Draws a rest on the staff. */
+  /** - Draws a rest on the staff. Returns the index of the drawn element */
   public drawRest(duration: string, options?: DrawOptions) {
     const { duration: _duration, isDotted } = parseDurationString(duration);
     const { targetClef: _, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
@@ -275,9 +280,11 @@ export default class MusicStaff {
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
+
+    return this.noteEntries.length - 1;
   };
 
-  /** - Draws a beam on the staff. */
+  /** - Draws a beam on the staff. Returns the index of the drawn element */
   public drawBeam(entries: BeamableConfig[], options?: DrawOptions) {
 
     const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
@@ -304,14 +311,17 @@ export default class MusicStaff {
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
+
+    return this.noteEntries.length - 1;
   };
 
-  public drawBarline(options?: DrawOptions) {
+  /** - Draws a barline on the staff. Returns the index of the drawn element */
+  public drawBarline(options?: Pick<DrawOptions, "classes">) {
 
     const group = this.svgRendererInstance.createGroup("bar-line");
 
     this.staffFrame.staffRenderer.drawStaffBarLine(0, this.options.staffType, group);
-    group.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
+    group.setAttribute("transform", `translate(${this.noteCursorX + BARLINE_WIDTH}, 0)`);
     this.notesLayer.append(group);
 
     const resolvedClasses = this.resolveDrawClasses(options?.classes);
@@ -327,7 +337,9 @@ export default class MusicStaff {
       isTopStaff: true,
     });
 
-    this.noteCursorX += NOTE_SPACING;
+    this.noteCursorX += NOTE_SPACING + BARLINE_WIDTH * 2;
+
+    return this.noteEntries.length - 1;
   }
 
   /** - Replaces a entry on staff by, only accepts notes, chords, and rests are possible replace values. */
@@ -480,8 +492,8 @@ export default class MusicStaff {
     else if (noteEntry.type === "barline") y = 0;
     y += noteEntry.yOffset;
 
-    let x = noteEntry.xPos + (noteEntry.totalWidth / 2);
-    if (noteEntry.type === "beam") x = noteEntry.xPos + NOTEHEAD_BLACK.glyphWidth;
+    let x = noteEntry.xPos + noteEntry.originXOffset + (NOTEHEAD_WIDTH / 2);
+    if (noteEntry.type === "beam") x = noteEntry.xPos + noteEntry.originXOffset + (NOTEHEAD_WIDTH / 2);
 
     return {
       x: x,
@@ -489,18 +501,20 @@ export default class MusicStaff {
     };
   };
 
-  /**  - Returns the exact absolute Y-coordinate for a specific pitch (e.g., "C4"). Accounts for staff offsets (top vs bottom) and clef differences. */
-  public getYFromPitch(pitch: string, options?: DrawOptions): number {
-    // This parser doesn't consider durations
-    const noteObj = parseChordNoteString(pitch);
+  /**  - Returns the exact absolute Y-coordinate for a list of pitches (e.g., ["C4", "E4"]). Accounts for staff offsets (top vs bottom) and clef differences. */
+  public getYFromPitches(pitches: string[], options?: DrawOptions): number[] {
 
     const { targetClef, yOffset } = this.resolveStaffTarget(options?.staff);
 
-    // Calculate the physical staff steps and convert to a pixel coordinate
-    const pitchStep = getPitchStepClefDifference(noteObj.letter, noteObj.octave, targetClef);
-    const localYPos = convertPitchStepToYPos(pitchStep);
+    const res: number[] = [];
+    pitches.forEach(pitch => {
+      const noteObj = parseChordNoteString(pitch);
 
-    return localYPos + yOffset;
+      const pitchStep = getPitchStepClefDifference(noteObj.letter, noteObj.octave, targetClef);
+      res.push(convertPitchStepToYPos(pitchStep) + yOffset);
+    });
+
+    return res;
   };
 
   /**  - Returns the group element that contains a entry (note, chord, rest, beam, or barline) */
@@ -516,8 +530,7 @@ export default class MusicStaff {
   public clearAllNotes() {
     this.noteCursorX = 0;
 
-    const notesLayer = this.svgRendererInstance.getLayer("notes");
-    notesLayer?.replaceChildren();
+    this.notesLayer?.replaceChildren();
     this.noteEntries = [];
   }
 
