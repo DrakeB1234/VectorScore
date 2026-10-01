@@ -15,7 +15,7 @@ export type RhythmStaffUserOptions = {
 };
 
 const DEFAULT_STAFF_OPTIONS: Required<RhythmStaffUserOptions> = {
-  width: 400,
+  width: 450,
   scale: 1,
   maxMeasures: 2,
   topNumber: 4,
@@ -58,9 +58,6 @@ const PRIMARY_BEAM_Y = -35;
 const BEAM_SPACING = 6;
 const BEAM_THICKNESS = 3;
 
-const allowedDurationValues = ["w", "h", "q", "e", "s"];
-const allowedBeamDurationValues = ["e", "s"];
-
 const WHOLE_NOTE_SPACE = 100;
 
 const NOTE_SPACING_MAP: Record<string, number> = {
@@ -80,7 +77,8 @@ export default class RhythmStaff {
 
   private staffLayer: SVGGElement;
   private notesLayer: SVGGElement;
-  private uiLayer: SVGGElement;
+  private barlinesGroup: SVGGElement;
+  public uiLayer: SVGGElement;
   private timeSigGroup: SVGGElement;
 
   private noteLayerStartX: number;
@@ -126,6 +124,9 @@ export default class RhythmStaff {
     const staffGroup = this.svgRendererInstance.createGroup("staff");
     this.svgRendererInstance.drawLine(0, staffLineY, this.options.width, staffLineY, staffGroup);
     this.staffLayer.appendChild(staffGroup);
+
+    this.barlinesGroup = this.svgRendererInstance.createGroup("barlines");
+    this.staffLayer.appendChild(this.barlinesGroup);
 
     this.noteLayerStartX = timeSigWidth + TIME_SIG_START_X + NOTES_LAYER_START_X;
     this.notesLayer.setAttribute("transform", `translate(${this.noteLayerStartX}, ${staffLineY + this.options.padding})`);
@@ -182,36 +183,51 @@ export default class RhythmStaff {
     }
   }
 
-  private handleBeamRendering(durations: NoteDurations[], group: SVGGElement) {
-    const baseSpacing = NOTE_SPACING_MAP["e"];
-    let internalX = 0;
+  private prepareBeamRendering(durations: NoteDurations[]) {
+    // A beam group width is the combined width of all its noteheads
+    const fullWidth = NOTEHEAD_BLACK.glyphWidth * durations.length;
 
-    // Array to track the absolute X coordinate of every stem in this group
-    const stemCoords: number[] = [];
+    // The base spacing is the sum of every note's individual spacing map value
+    const baseSpacing = durations.reduce((sum, dur) => sum + NOTE_SPACING_MAP[dur], 0);
 
-    // Render all notes and record their stem X positions
-    durations.forEach((duration) => {
-      const noteGroup = this.svgRendererInstance.createGroup("note");
+    //  Return a blueprint function to be executed during the Layout Pass
+    const renderBeamGroup = (group: SVGGElement, stretchFactor: number) => {
+      let internalX = 0;
+      const stemCoords: number[] = [];
 
-      this.noteRendererInstance.drawRhythmNote("q", false, noteGroup);
-      noteGroup.setAttribute("transform", `translate(${internalX}, 0)`);
-      group.appendChild(noteGroup);
+      durations.forEach((duration, index) => {
+        const noteGroup = this.svgRendererInstance.createGroup("note");
 
-      const stemX = internalX + NOTEHEAD_BLACK.glyphWidth - STEM_UP_X_OFFSET;
-      stemCoords.push(stemX);
+        this.noteRendererInstance.drawRhythmNote("q", false, noteGroup);
+        noteGroup.setAttribute("transform", `translate(${internalX}, 0)`);
+        group.appendChild(noteGroup);
 
-      internalX += baseSpacing;
-    });
+        const stemX = internalX + NOTEHEAD_BLACK.glyphWidth - STEM_UP_X_OFFSET;
+        stemCoords.push(stemX);
 
-    if (stemCoords.length > 0) {
-      this.drawBeams(stemCoords, durations, baseSpacing, group);
-    }
+        // Advance to the next note's position inside the beam group.
+        // We must add BOTH the physical notehead width and the proportionally stretched space!
+        if (index < durations.length - 1) {
+          const baseStepSpacing = NOTE_SPACING_MAP[duration];
+          const stretchedSpacing = baseStepSpacing + (baseStepSpacing * stretchFactor);
+          internalX += NOTEHEAD_BLACK.glyphWidth + stretchedSpacing;
+        }
+      });
+
+      if (stemCoords.length > 0) {
+        // Use the stretched spacing of the first note to calculate fractional stub lengths
+        const firstNoteSpacing = NOTE_SPACING_MAP[durations[0]];
+        const stretchedFirstSpacing = firstNoteSpacing + (firstNoteSpacing * stretchFactor);
+        this.drawBeams(stemCoords, durations, stretchedFirstSpacing, group);
+      }
+    };
 
     return {
-      fullWidth: (internalX - baseSpacing) + NOTEHEAD_BLACK.glyphWidth,
-      originXOffset: 0
+      fullWidth,
+      baseSpacing,
+      renderBeamGroup
     };
-  };
+  }
 
   private justifyMeasure(renderedItems: RenderedItem[], targetWidth: number): number {
     const totalGlyphWidth = renderedItems.reduce((sum, i) => sum + i.fullWidth, 0);
@@ -224,48 +240,6 @@ export default class RhythmStaff {
     return remainingSpace > 0 ? remainingSpace / totalBaseSpacing : 0;
   }
 
-  public drawRyhthmNote(duration: string) {
-    const res = parseDurationString(duration);
-    if (!allowedDurationValues.includes(res.duration)) throw new Error("RhythmStaff drawBeam Error: Invalid duration provided, use [w|h|q|e|s].");
-
-    const group = this.svgRendererInstance.createGroup("note");
-
-    const { fullWidth, originXOffset } = this.noteRendererInstance.drawRhythmNote(res.duration, res.isDotted, group);
-    group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, 0)`);
-    this.notesLayer.appendChild(group);
-
-    this.noteCursorX += fullWidth + NOTES_SPACING;
-  };
-
-  public drawRest(duration: string) {
-    const res = parseDurationString(duration);
-    if (!allowedDurationValues.includes(res.duration)) throw new Error("RhythmStaff drawBeam Error: Invalid duration provided, use [w|h|q|e|s].");
-
-    const group = this.svgRendererInstance.createGroup("rest");
-    const startY = -(this.options.padding / 2);
-
-    const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(res.duration, res.isDotted, group);
-    group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, ${startY})`);
-    this.notesLayer.appendChild(group);
-
-    this.noteCursorX += fullWidth + NOTES_SPACING;
-  }
-
-  public drawBeam(durations: string) {
-    const durationsArr = durations.split("");
-
-    durationsArr.forEach(e => {
-      if (!allowedBeamDurationValues.includes(e)) throw new Error("RhythmStaff drawBeam Error: Invalid duration provided, use [e|s].")
-    });
-
-    const group = this.svgRendererInstance.createGroup("beam");
-    const { fullWidth, originXOffset } = this.handleBeamRendering(durationsArr as NoteDurations[], group);
-    group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, ${0})`);
-    this.notesLayer.appendChild(group);
-
-    this.noteCursorX += fullWidth + NOTES_SPACING;
-  };
-
   public drawMeasure(items: RhythmItem[]) {
     if (this.measuresDrawn >= this.options.maxMeasures) {
       throw new Error(`RhythmStaff Error: Cannot draw more than ${this.options.maxMeasures} measures per line.`);
@@ -273,39 +247,51 @@ export default class RhythmStaff {
 
     const measureStartX = this.noteCursorX;
 
-    // Pre render Pass
+    // Pre-Render Pass
     const renderedItems = items.map(item => {
       let group: SVGGElement;
       let fullWidth = 0;
       let baseSpacing = 0;
+      let renderFn: ((group: SVGGElement, stretchFactor: number) => void) | null = null;
 
       if (item.type === "note") {
         group = this.svgRendererInstance.createGroup("note");
         const res = parseDurationString(item.duration);
-        const drawRes = this.noteRendererInstance.drawRhythmNote(res.duration, res.isDotted, group);
 
-        fullWidth = drawRes.fullWidth;
+        renderFn = (g: SVGGElement) => {
+          this.noteRendererInstance.drawRhythmNote(res.duration, res.isDotted, g);
+        };
+
+        fullWidth = NOTEHEAD_BLACK.glyphWidth;
         baseSpacing = NOTE_SPACING_MAP[res.duration];
+        if (res.isDotted) baseSpacing += NOTE_SPACING_MAP[res.duration] * 0.5;
       }
       else if (item.type === "rest") {
         group = this.svgRendererInstance.createGroup("rest");
         const res = parseDurationString(item.duration);
-        const drawRes = this.noteRendererInstance.drawRest(res.duration, res.isDotted, group);
 
-        group.setAttribute("y-offset", (-(this.options.padding / 2)).toString());
-        fullWidth = drawRes.fullWidth;
+        renderFn = (g: SVGGElement) => {
+          this.noteRendererInstance.drawRest(res.duration, res.isDotted, g);
+        };
+
+        group.setAttribute("y-offset", (-(this.options.padding * 0.8)).toString());
+
+        // Use the notehead width so rests participate evenly in the grid layout
+        fullWidth = NOTEHEAD_BLACK.glyphWidth;
         baseSpacing = NOTE_SPACING_MAP[res.duration];
+        if (res.isDotted) baseSpacing += NOTE_SPACING_MAP[res.duration] * 0.5;
       }
       else {
         group = this.svgRendererInstance.createGroup("beam");
         const durationsArr = item.durations.split("") as NoteDurations[];
-        const drawRes = this.handleBeamRendering(durationsArr, group);
+        const blueprint = this.prepareBeamRendering(durationsArr);
 
-        fullWidth = drawRes.fullWidth;
-        baseSpacing = NOTE_SPACING_MAP[durationsArr[durationsArr.length - 1]];
+        fullWidth = blueprint.fullWidth;
+        baseSpacing = blueprint.baseSpacing;
+        renderFn = blueprint.renderBeamGroup;
       }
 
-      return { group, fullWidth, baseSpacing };
+      return { group, fullWidth, baseSpacing, renderFn };
     });
 
     // Justification Pass
@@ -316,22 +302,73 @@ export default class RhythmStaff {
     let currentX = measureStartX + MEASURE_LEFT_PADDING;
 
     renderedItems.forEach(item => {
+      // Calculate stretched space trailing this specific top-level item
       const finalSpacing = item.baseSpacing + (item.baseSpacing * stretchFactor);
 
       const yOffset = item.group.getAttribute("y-offset") || "0";
       item.group.setAttribute("transform", `translate(${currentX}, ${yOffset})`);
       this.notesLayer.appendChild(item.group);
 
+      // Execute deferred rendering to apply the stretch factor internally to beams
+      if (item.renderFn) {
+        item.renderFn(item.group, stretchFactor);
+      }
+
+      // Advance the layout cursor identically for all items: 
+      // Add the total physical glyph width + the stretched trailing space.
       currentX += item.fullWidth + finalSpacing;
     });
 
     // Draw Barline and Advance Cursor
-    // Barlines are drawn in the staffLayer (x=0), so we must add the noteLayer's start offset
     const absoluteBarlineX = this.noteLayerStartX + measureStartX + this.dynamicMeasureWidth;
-    this.staffRendererInstance.drawStaffBarLine(absoluteBarlineX, "treble", this.staffLayer);
+    this.staffRendererInstance.drawStaffBarLine(absoluteBarlineX, "treble", this.barlinesGroup);
 
-    // The cursor jumps by exactly the dynamic width, ensuring the next measure starts cleanly on the barline
     this.noteCursorX = measureStartX + this.dynamicMeasureWidth;
     this.measuresDrawn++;
-  };
+  }
+
+  public clear() {
+    this.notesLayer.innerHTML = "";
+    this.barlinesGroup.innerHTML = "";
+    this.noteCursorX = 0;
+    this.measuresDrawn = 0;
+  }
+
+  public setMaxMeasures(count: number) {
+    this.options.maxMeasures = count;
+
+    // Recalculate exact width per measure based on the new count
+    const availableWidth = this.options.width - this.noteLayerStartX - STAFF_RIGHT_SPACING;
+    this.dynamicMeasureWidth = availableWidth / this.options.maxMeasures;
+
+    if (this.dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH) {
+      throw new Error(`RhythmStaff Layout Error: Not enough space to support '${this.options.maxMeasures}' measures with a staff width of '${this.options.width}'.`);
+    }
+
+    this.clear();
+  }
+
+  public getBeatCoordinateX(index: number, dividend: number = this.options.bottomNumber): number {
+    // Calculate exactly how many of the requested note values fit into a single measure
+    const stepsPerMeasure = (this.options.topNumber * dividend) / this.options.bottomNumber;
+    const totalSteps = this.options.maxMeasures * stepsPerMeasure;
+
+    if (index < 0 || index >= totalSteps) return -1;
+
+    // Determine exactly which measure and which step we are on
+    const measureIndex = Math.floor(index / stepsPerMeasure);
+    const stepIndex = index % stepsPerMeasure;
+
+    // Find the absolute starting pixel of that measure within the notes layer
+    const measureStartX = measureIndex * this.dynamicMeasureWidth;
+
+    // Calculate the workable width inside the measure
+    const workableWidth = this.dynamicMeasureWidth - MEASURE_LEFT_PADDING - NOTES_SPACING;
+    const spacingPerStep = workableWidth / stepsPerMeasure;
+
+    // Calculate final X position (internal to the notesLayer/uiLayer coordinate space)
+    const internalX = measureStartX + MEASURE_LEFT_PADDING + (stepIndex * spacingPerStep);
+
+    return internalX;
+  }
 }
