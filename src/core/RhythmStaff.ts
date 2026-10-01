@@ -1,537 +1,337 @@
-import { durationBeatValueMap, HALF_NOTEHEAD_WIDTH, NOTEHEAD_STEM_HEIGHT, STAFF_LINE_SPACING } from "../constants";
-import { NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, TIMESIG_3, TIMESIG_4, type GlyphDef } from "../glyphs";
-import type { NoteDurations } from "../types";
+import { AUGMENTATION_DOT, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_WHOLE, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
 import SVGRenderer from "../classes/SVGRenderer";
+import NoteRenderer, { STEM_UP_X_OFFSET } from "../classes/NoteRenderer";
+import StaffRenderer from "../classes/StaffRenderer";
+import { parseDurationString, type NoteDurations } from "../helpers/noteHelpers";
 
-export type RhythmStaffOptions = {
+export type RhythmStaffUserOptions = {
   width?: number;
   scale?: number;
-  barsCount?: number;
+  maxMeasures?: number;
+  topNumber?: number;
+  bottomNumber?: number;
   padding?: number;
   svgAutoFill?: boolean;
-  topNumber?: number;
-
-  /** @deprecated Use `padding` instead. */
-  spaceAbove?: number;
-  /** @deprecated Use `padding` instead. */
-  spaceBelow?: number;
 };
 
-// Applies to top and bottom
-const STAFF_SPACING = 30;
-const TIME_SIGNATURE_HEIGHT = 19;
-const BAR_SPACING = 12;
+const DEFAULT_STAFF_OPTIONS: Required<RhythmStaffUserOptions> = {
+  width: 400,
+  scale: 1,
+  maxMeasures: 2,
+  topNumber: 4,
+  bottomNumber: 4,
+  padding: 24,
+  svgAutoFill: true,
+};
 
-const BEAM_LINE_HEIGHT = 4;
-const BEAM_LINE_Y_OFFSET = 6;
-
-// STAFF RIGHT SPACING TO PREVENT EIGTH NOTES FROM OVERFLOWING
-const STAFF_RIGHT_PADDING = 1;
-
-const CURRENT_BEAT_UI_START_X_POS = 16;
+type ResolvedStaffOptions =
+  Required<RhythmStaffUserOptions>;
 
 const USE_GLPYHS: GlyphDef[] = [
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
-  TIMESIG_3, TIMESIG_4
-]
+  TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9,
+  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP,
+  REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH,
+  AUGMENTATION_DOT
+];
+
+export type RhythmItem =
+  | { type: "note"; duration: string }
+  | { type: "rest"; duration: string }
+  | { type: "beam"; durations: string };
+
+type RenderedItem = {
+  group: SVGGElement;
+  fullWidth: number;
+  baseSpacing: number;
+};
+
+const TIME_SIG_START_X = 8;
+const NOTES_LAYER_START_X = 16;
+const NOTES_SPACING = 10;
+const STAFF_RIGHT_SPACING = 1;
+const MEASURE_LEFT_PADDING = 16;
+
+const MIN_PER_MEASURE_WIDTH = 100;
+
+const PRIMARY_BEAM_Y = -35;
+const BEAM_SPACING = 6;
+const BEAM_THICKNESS = 3;
+
+const allowedDurationValues = ["w", "h", "q", "e", "s"];
+const allowedBeamDurationValues = ["e", "s"];
+
+const WHOLE_NOTE_SPACE = 100;
+
+const NOTE_SPACING_MAP: Record<string, number> = {
+  "w": WHOLE_NOTE_SPACE,
+  "h": WHOLE_NOTE_SPACE / 2,
+  "q": WHOLE_NOTE_SPACE / 4,
+  "e": WHOLE_NOTE_SPACE / 8,
+  "s": WHOLE_NOTE_SPACE / 16,
+};
 
 export default class RhythmStaff {
+  private options: ResolvedStaffOptions;
+
   private svgRendererInstance: SVGRenderer;
-  private options: Required<RhythmStaffOptions>;
+  private staffRendererInstance: StaffRenderer;
+  private noteRendererInstance: NoteRenderer;
 
-  private barSpacing: number;
-  private quarterNoteSpacing: number;
+  private staffLayer: SVGGElement;
+  private notesLayer: SVGGElement;
+  private uiLayer: SVGGElement;
+  private timeSigGroup: SVGGElement;
+
+  private noteLayerStartX: number;
   private noteCursorX: number = 0;
-  private noteEntries: SVGGElement[] = [];
-
-  private maxBeatCount: number;
-  private currentBeatCount: number = 0;
-
-  private currentBeatUICount: number = 0;
-  private currentBeatUIElement: SVGRectElement | null = null;
-  private currentBeatUIXPos: number = CURRENT_BEAT_UI_START_X_POS;
+  private dynamicMeasureWidth: number = 0;
+  private measuresDrawn: number = 0;
 
   /**
    * Creates an instance of a RhythmStaff, A single staff that will automatically apply positioning of elements based on the duration of a note.
    *
    * @param rootElementCtx - The element (div) reference that will append the music staff elements to.
-   * @param options - Optional configuration settings. All config options are in the type RhythmStaffOptions
+   * @param userOptions - Optional configuration settings. All config options are in the type RhythmStaffOptions
    * @throws {Error} - If top number is not 3 or 4 OR if bars count is not between 1 - 3. These are the currently only supported values.
   */
-  constructor(rootElementCtx: HTMLElement, options?: RhythmStaffOptions) {
-    this.options = {
-      width: 300,
-      scale: 1,
-      topNumber: 4,
-      barsCount: 2,
-      padding: 10,
-      svgAutoFill: true,
-
-      /** @deprecated Use `padding` instead. */
-      spaceAbove: 0,
-      /** @deprecated Use `padding` instead. */
-      spaceBelow: 0,
-      ...options
-    } as Required<RhythmStaffOptions>;
+  constructor(rootElementCtx: HTMLElement, userOptions?: RhythmStaffUserOptions) {
+    this.options = { ...DEFAULT_STAFF_OPTIONS, ...userOptions };
 
     this.svgRendererInstance = new SVGRenderer(rootElementCtx, USE_GLPYHS);
-    const rootSvgElement = this.svgRendererInstance.svgElementRef;
+    this.staffRendererInstance = new StaffRenderer(this.svgRendererInstance);
+    this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance);
 
-    const staffLayer = this.svgRendererInstance.createLayer("staff");
-    const notesLayer = this.svgRendererInstance.createLayer("notes");
-    this.svgRendererInstance.createLayer("ui");
+    this.staffLayer = this.svgRendererInstance.createLayer("staff");
+    this.notesLayer = this.svgRendererInstance.createLayer("notes");
+    this.uiLayer = this.svgRendererInstance.createLayer("rhythm-ui");
+    this.staffLayer.setAttribute("transform", `translate(0, ${this.options.padding})`);
 
-    // Determine the time signature, if top number isn't supported throw early
-    let topNumberGlyphName = "TIMESIG_4";
-    switch (this.options.topNumber) {
-      case 3: topNumberGlyphName = "TIMESIG_3"; break;
-      case 4: topNumberGlyphName = "TIMESIG_4"; break;
-      default:
-        throw new Error(`Time signature ${this.options.topNumber} not supported. Please use either 3 or 4.`);
-    };
+    // Draw time sig
+    this.timeSigGroup = this.svgRendererInstance.createGroup("time-sig");
+    const timeSigTotalHeight = TIMESIG_4.glyphHeight * 2;
 
-    if (this.options.barsCount < 1 || this.options.barsCount > 3) throw new Error(`Bars count ${this.options.barsCount} not supported. Please use 1 - 3`);
+    const timeSigWidth = this.staffRendererInstance.drawTimeSignature({
+      topNumber: this.options.topNumber,
+      bottomNumber: this.options.bottomNumber,
+      startYPos: 0,
+      staffGroup: this.timeSigGroup,
+    });
+    this.timeSigGroup.setAttribute("transform", `translate(${TIME_SIG_START_X}, 0)`);
+    this.staffLayer.appendChild(this.timeSigGroup);
 
-    // Determine spacing positioning
-    if (this.options.spaceAbove) {
-      this.options.padding += this.options.spaceAbove * STAFF_LINE_SPACING;
-    }
-    if (this.options.spaceBelow) {
-      this.options.padding += this.options.spaceBelow * STAFF_LINE_SPACING;
-    };
+    // Draw single line staff
+    const staffLineY = timeSigTotalHeight / 2;
 
-    // Draw time signature in its own group
-    const timeSignatureGroup = this.svgRendererInstance.createGroup("time-signature");
-    staffLayer.appendChild(timeSignatureGroup);
-    const groupYPos = STAFF_SPACING - TIME_SIGNATURE_HEIGHT;
-    this.svgRendererInstance.drawGlyph(topNumberGlyphName, timeSignatureGroup);
-    this.svgRendererInstance.drawGlyph("TIMESIG_4", timeSignatureGroup, { y: TIME_SIGNATURE_HEIGHT });
-    timeSignatureGroup.setAttribute("transform", `translate(0, ${groupYPos})`);
+    const staffGroup = this.svgRendererInstance.createGroup("staff");
+    this.svgRendererInstance.drawLine(0, staffLineY, this.options.width, staffLineY, staffGroup);
+    this.staffLayer.appendChild(staffGroup);
 
-    // Total width minus starting size of the notes (distance from time signature)
-    let notesLayerWidth = this.options.width - NOTE_LAYER_START_X;
-    // For each bar, remove the padding they take up from the overall width of the staff.
-    if (this.options.barsCount > 1) notesLayerWidth -= (this.options.barsCount - 1) * BAR_SPACING;
-    // Add padding to the right of the staff
-    notesLayerWidth -= STAFF_RIGHT_PADDING;
+    this.noteLayerStartX = timeSigWidth + TIME_SIG_START_X + NOTES_LAYER_START_X;
+    this.notesLayer.setAttribute("transform", `translate(${this.noteLayerStartX}, ${staffLineY + this.options.padding})`);
+    this.uiLayer.setAttribute("transform", `translate(${this.noteLayerStartX}, ${staffLineY + this.options.padding})`);
 
-    // Draw single staff line and time signature
-    this.svgRendererInstance.drawLine(0, STAFF_SPACING, this.options.width - STAFF_RIGHT_PADDING, STAFF_SPACING, staffLayer);
+    // Calculate exact width per measure. 
+    const availableWidth = this.options.width - this.noteLayerStartX - STAFF_RIGHT_SPACING;
+    this.dynamicMeasureWidth = availableWidth / this.options.maxMeasures;
 
-    // Calculates internal positioning props for ensuring correctly spaced notes based on duration
-    this.barSpacing = notesLayerWidth / this.options.barsCount;
-    this.quarterNoteSpacing = Math.round(this.barSpacing / this.options.topNumber);
-    this.maxBeatCount = this.options.barsCount * this.options.topNumber;
+    if (this.dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH) throw new Error(`RhythmStaff init Error: Not enough space to support '${this.options.maxMeasures}' measures with a staff width of '${this.options.width}'.`);
 
-    // Draw bar lines
-    let barLineX = this.barSpacing + NOTE_LAYER_START_X;
-    const barLineStartY = STAFF_SPACING / 2;
-    const barLineEndY = STAFF_SPACING + barLineStartY;
-    for (let i = 0; i < this.options.barsCount - 1; i++) {
-      this.svgRendererInstance.drawLine(barLineX, barLineStartY, barLineX, barLineEndY, staffLayer);
-      barLineX += this.barSpacing;
-    };
-
-    // Applying sizing to root SVG
-    const totalHeight = (STAFF_SPACING * 2) + (this.options.padding * 2);
-    staffLayer.setAttribute("transform", `translate(0, ${this.options.padding})`);
-    notesLayer.setAttribute("transform", `translate(${NOTE_LAYER_START_X}, ${STAFF_SPACING})`);
-
+    const totalHeight = timeSigTotalHeight + this.options.padding * 2;
     this.svgRendererInstance.setRootSVGSizing(this.options.width, totalHeight, this.options.scale);
     this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
-
-    this.svgRendererInstance.commitElementsToDOM(rootSvgElement);
+    this.svgRendererInstance.commitElementsToDOM(this.svgRendererInstance.svgElementRef);
   };
 
-  private createBeatUIElement() {
-    const uiLayer = this.svgRendererInstance.getLayer("ui");
-    if (!uiLayer) throw new Error("BeatUI Error: Failed to retrieve ui layer");
+  private drawBeamSegment(x1: number, y1: number, x2: number, y2: number, group: SVGGElement) {
+    this.svgRendererInstance.drawPolygon([
+      [x1, y1],
+      [x2, y2],
+      [x2, y2 + BEAM_THICKNESS],
+      [x1, y1 + BEAM_THICKNESS]
+    ], group);
+  };
 
-    this.currentBeatUIElement = this.svgRendererInstance.drawRect(
-      this.quarterNoteSpacing / 2,
-      STAFF_SPACING * 2,
-      uiLayer,
-      {
-        x: CURRENT_BEAT_UI_START_X_POS,
-        fill: "rgba(0,255,40,0.4)",
-        classes: "rhythm-current-beat"
+  private drawBeams(stemCoords: number[], durations: NoteDurations[], baseSpacing: number, group: SVGGElement) {
+    const STUB_LENGTH = baseSpacing / 2;
+
+    // Draw the continuous Primary Beam (8th note level)
+    const firstStemX = stemCoords[0];
+    const lastStemX = stemCoords[stemCoords.length - 1];
+    this.drawBeamSegment(firstStemX, PRIMARY_BEAM_Y, lastStemX, PRIMARY_BEAM_Y, group);
+
+    //  Draw the Secondary Beams (16th note level)
+    const secondaryBeamY = PRIMARY_BEAM_Y + BEAM_SPACING;
+
+    for (let i = 0; i < durations.length; i++) {
+      if (durations[i] === "s") {
+        const hasNext16th = i < durations.length - 1 && durations[i + 1] === "s";
+        const hasPrev16th = i > 0 && durations[i - 1] === "s";
+
+        if (hasNext16th) {
+          this.drawBeamSegment(stemCoords[i], secondaryBeamY, stemCoords[i + 1], secondaryBeamY, group);
+        }
+        else if (!hasPrev16th) {
+          // It doesn't connect forward or backward, so it's a fractional stub.
+          const directionMultiplier = i === 0 ? 1 : -1;
+          const stubEndX = stemCoords[i] + (STUB_LENGTH * directionMultiplier);
+
+          this.drawBeamSegment(stemCoords[i], secondaryBeamY, stubEndX, secondaryBeamY, group);
+        }
       }
-    );
-  }
-
-  private handleNewBar() {
-    this.noteCursorX += BAR_SPACING;
-  }
-
-  // Translates group, returns cursor increment amount
-  private translateGroupByDuration(beatValue: number, noteGroup: SVGGElement): number {
-    noteGroup.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
-
-    return this.quarterNoteSpacing * beatValue;
-  }
-
-  private drawStem(noteGroup: SVGGElement, xOffset?: number) {
-    this.svgRendererInstance.drawLine(HALF_NOTEHEAD_WIDTH + (xOffset ?? 0), 0, HALF_NOTEHEAD_WIDTH + (xOffset ?? 0), -NOTEHEAD_STEM_HEIGHT, noteGroup);
-  }
-
-  private renderNote(duration: NoteDurations, noteGroup: SVGGElement) {
-    switch (duration) {
-      case "w":
-        this.svgRendererInstance.drawGlyph("NOTE_HEAD_WHOLE", noteGroup);
-        break;
-      case "h":
-        this.svgRendererInstance.drawGlyph("NOTE_HEAD_HALF", noteGroup);
-        this.drawStem(noteGroup);
-        break;
-      case "q":
-        this.svgRendererInstance.drawGlyph("NOTE_HEAD_QUARTER", noteGroup);
-        this.drawStem(noteGroup);
-        break;
-      case "e":
-        this.svgRendererInstance.drawGlyph("EIGHTH_NOTE", noteGroup);
-        this.drawStem(noteGroup);
-        break;
     }
   }
 
-  private renderRest(duration: NoteDurations, restGroup: SVGGElement) {
-    switch (duration) {
-      case "w":
-        this.svgRendererInstance.drawGlyph("REST_WHOLE", restGroup);
-        break;
-      case "h":
-        this.svgRendererInstance.drawGlyph("REST_HALF", restGroup);
-        break;
-      case "q":
-        this.svgRendererInstance.drawGlyph("REST_QUARTER", restGroup);
-        break;
-      case "e":
-        this.svgRendererInstance.drawGlyph("REST_EIGHTH", restGroup);
-        break;
-    };
-  }
+  private handleBeamRendering(durations: NoteDurations[], group: SVGGElement) {
+    const baseSpacing = NOTE_SPACING_MAP["e"];
+    let internalX = 0;
 
-  private checkAndCreateNewBar() {
-    const isBarFull = this.currentBeatCount > 0 && (this.currentBeatCount % this.options.topNumber === 0);
-    const isNotLastBar = this.currentBeatCount < this.maxBeatCount;
+    // Array to track the absolute X coordinate of every stem in this group
+    const stemCoords: number[] = [];
 
-    if (isBarFull && isNotLastBar) {
-      this.handleNewBar();
-    };
-  }
+    // Render all notes and record their stem X positions
+    durations.forEach((duration) => {
+      const noteGroup = this.svgRendererInstance.createGroup("note");
 
-  private checkAndFillBarWithRests(beatValue: number): SVGGElement[] | null {
-    const remainingBeatsInBar = this.options.topNumber - (this.currentBeatCount % this.options.topNumber);
-    if (beatValue > remainingBeatsInBar) {
-      const restGroups = this.createRemainingRests(remainingBeatsInBar);
-      this.handleNewBar();
-      return restGroups;
+      this.noteRendererInstance.drawRhythmNote("q", false, noteGroup);
+      noteGroup.setAttribute("transform", `translate(${internalX}, 0)`);
+      group.appendChild(noteGroup);
+
+      const stemX = internalX + NOTEHEAD_BLACK.glyphWidth - STEM_UP_X_OFFSET;
+      stemCoords.push(stemX);
+
+      internalX += baseSpacing;
+    });
+
+    if (stemCoords.length > 0) {
+      this.drawBeams(stemCoords, durations, baseSpacing, group);
+    }
+
+    return {
+      fullWidth: (internalX - baseSpacing) + NOTEHEAD_BLACK.glyphWidth,
+      originXOffset: 0
     };
-    return null;
   };
 
-  // If the last beat exceeded the remaining value in bar, fill the space with approiate rests
-  private createRemainingRests(remainingBeatsInBar: number): SVGGElement[] {
-    const restGroups: SVGGElement[] = [];
-    let beatsLeft = remainingBeatsInBar;
+  private justifyMeasure(renderedItems: RenderedItem[], targetWidth: number): number {
+    const totalGlyphWidth = renderedItems.reduce((sum, i) => sum + i.fullWidth, 0);
+    const totalBaseSpacing = renderedItems.reduce((sum, i) => sum + i.baseSpacing, 0);
 
-    while (beatsLeft > 0) {
-      const newGroup = this.svgRendererInstance.createGroup("rest");
-      let beatValue = 0;
+    // Remaining space that needs to be distributed to fill the measure
+    const remainingSpace = targetWidth - totalGlyphWidth - totalBaseSpacing;
 
-      // Try adding the biggest rest first
-      if (beatsLeft - durationBeatValueMap["h"] >= 0) {
-        this.svgRendererInstance.drawGlyph("REST_HALF", newGroup);
-        beatValue = durationBeatValueMap["h"];
+    // Distribute remaining space proportionally based on base spacing footprint
+    return remainingSpace > 0 ? remainingSpace / totalBaseSpacing : 0;
+  }
+
+  public drawRyhthmNote(duration: string) {
+    const res = parseDurationString(duration);
+    if (!allowedDurationValues.includes(res.duration)) throw new Error("RhythmStaff drawBeam Error: Invalid duration provided, use [w|h|q|e|s].");
+
+    const group = this.svgRendererInstance.createGroup("note");
+
+    const { fullWidth, originXOffset } = this.noteRendererInstance.drawRhythmNote(res.duration, res.isDotted, group);
+    group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, 0)`);
+    this.notesLayer.appendChild(group);
+
+    this.noteCursorX += fullWidth + NOTES_SPACING;
+  };
+
+  public drawRest(duration: string) {
+    const res = parseDurationString(duration);
+    if (!allowedDurationValues.includes(res.duration)) throw new Error("RhythmStaff drawBeam Error: Invalid duration provided, use [w|h|q|e|s].");
+
+    const group = this.svgRendererInstance.createGroup("rest");
+    const startY = -(this.options.padding / 2);
+
+    const { fullWidth, originXOffset } = this.noteRendererInstance.drawRest(res.duration, res.isDotted, group);
+    group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, ${startY})`);
+    this.notesLayer.appendChild(group);
+
+    this.noteCursorX += fullWidth + NOTES_SPACING;
+  }
+
+  public drawBeam(durations: string) {
+    const durationsArr = durations.split("");
+
+    durationsArr.forEach(e => {
+      if (!allowedBeamDurationValues.includes(e)) throw new Error("RhythmStaff drawBeam Error: Invalid duration provided, use [e|s].")
+    });
+
+    const group = this.svgRendererInstance.createGroup("beam");
+    const { fullWidth, originXOffset } = this.handleBeamRendering(durationsArr as NoteDurations[], group);
+    group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, ${0})`);
+    this.notesLayer.appendChild(group);
+
+    this.noteCursorX += fullWidth + NOTES_SPACING;
+  };
+
+  public drawMeasure(items: RhythmItem[]) {
+    if (this.measuresDrawn >= this.options.maxMeasures) {
+      throw new Error(`RhythmStaff Error: Cannot draw more than ${this.options.maxMeasures} measures per line.`);
+    }
+
+    const measureStartX = this.noteCursorX;
+
+    // Pre render Pass
+    const renderedItems = items.map(item => {
+      let group: SVGGElement;
+      let fullWidth = 0;
+      let baseSpacing = 0;
+
+      if (item.type === "note") {
+        group = this.svgRendererInstance.createGroup("note");
+        const res = parseDurationString(item.duration);
+        const drawRes = this.noteRendererInstance.drawRhythmNote(res.duration, res.isDotted, group);
+
+        fullWidth = drawRes.fullWidth;
+        baseSpacing = NOTE_SPACING_MAP[res.duration];
       }
-      else if (beatsLeft - durationBeatValueMap["q"] >= 0) {
-        this.svgRendererInstance.drawGlyph("REST_QUARTER", newGroup);
-        beatValue = durationBeatValueMap["q"];
+      else if (item.type === "rest") {
+        group = this.svgRendererInstance.createGroup("rest");
+        const res = parseDurationString(item.duration);
+        const drawRes = this.noteRendererInstance.drawRest(res.duration, res.isDotted, group);
+
+        group.setAttribute("y-offset", (-(this.options.padding / 2)).toString());
+        fullWidth = drawRes.fullWidth;
+        baseSpacing = NOTE_SPACING_MAP[res.duration];
       }
       else {
-        this.svgRendererInstance.drawGlyph("REST_EIGHTH", newGroup);
-        beatValue = durationBeatValueMap["e"];
-      }
-      beatsLeft -= beatValue;
-      this.currentBeatCount += beatValue;
-      newGroup.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
+        group = this.svgRendererInstance.createGroup("beam");
+        const durationsArr = item.durations.split("") as NoteDurations[];
+        const drawRes = this.handleBeamRendering(durationsArr, group);
 
-      this.noteCursorX += beatValue * this.quarterNoteSpacing;
-      restGroups.push(newGroup);
-    }
-
-    return restGroups;
-  }
-
-  private renderBeamRect(localX: number, spacingAmount: number, parentGroup: SVGGElement, yOffset?: number) {
-    this.svgRendererInstance.drawRect(
-      localX - spacingAmount,
-      BEAM_LINE_HEIGHT,
-      parentGroup,
-      {
-        x: HALF_NOTEHEAD_WIDTH,
-        y: -NOTEHEAD_STEM_HEIGHT + (yOffset ?? 0),
-      }
-    );
-  }
-
-  /**
-   * Draws a note duration on the staff.
-   * @param notes - A single string OR array of note strings in the format `[Duration]`.
-   * If an array is passed, it will draw each individual note duration on the staff.
-   * If a duration exceeds the remaining value on the bar, rests will fill the empty space.
-   *
-   * * **Duration**: `w` (whole) `h` (half) `q` (quarter) `e` (eighth)
-   * @returns void
-   * @throws {Error} If a note string is not correct format. If an array was passed, it will still draw whatever correctly formatted notes before it. 
-   * 
-   * * @example
-   * // Draws the specified note durations individually on the staff
-   * drawNote(["q", "q", "q", "q", "w"]);
-   * 
-   * * @example
-   * // Draws the specified single note duration on the staff
-   * drawNote("w");
-  */
-  drawNote(notes: string | string[]) {
-    const normalizedNotesArray = Array.isArray(notes) ? notes : [notes];
-    const notesLayer = this.svgRendererInstance.getLayer("notes");
-    if (!notesLayer) throw new Error("DrawNote Error: Failed to retrieve notes layer");
-
-    const noteGroups: SVGGElement[] = [];
-    for (const noteString of normalizedNotesArray) {
-      let durationString: NoteDurations = "w";
-      try {
-        durationString = parseDurationNoteString(noteString);
-      }
-      catch (error) {
-        if (noteGroups.length > 0) this.svgRendererInstance.commitElementsToDOM(noteGroups, notesLayer);
-        throw error;
-      }
-      const beatValue = durationBeatValueMap[durationString];
-
-      if (this.currentBeatCount >= this.maxBeatCount) {
-        if (noteGroups.length > 0) this.svgRendererInstance.commitElementsToDOM(noteGroups, notesLayer);
-        throw new Error("Max beat count reached. Can't add additional notes.");
-      };
-
-      this.checkAndCreateNewBar();
-
-      const restGroups = this.checkAndFillBarWithRests(beatValue);
-      if (restGroups) restGroups.forEach(e => {
-        noteGroups.push(e);
-        this.noteEntries.push(e);
-      });
-
-      const noteGroup = this.svgRendererInstance.createGroup("note");
-      const cursorXIncrement = this.translateGroupByDuration(beatValue, noteGroup);
-
-      // Apply cursor increment
-      this.noteCursorX += cursorXIncrement;
-      this.currentBeatCount += beatValue;
-
-      this.renderNote(durationString, noteGroup);
-
-      noteGroups.push(noteGroup);
-      this.noteEntries.push(noteGroup);
-    }
-
-    // Commit the newly created note/notes element to the 'notes' layer
-    this.svgRendererInstance.commitElementsToDOM(noteGroups, notesLayer);
-  }
-
-  /**
-   * Draws a rest duration on the staff.
-   * @param rests - A single string OR array of rest strings in the format `[Duration]`.
-   * If an array is passed, it will draw each individual rest duration on the staff.
-   * If a duration exceeds the remaining value on the bar, rests will fill the empty space.
-   *
-   * * **Duration**: `w` (whole) `h` (half) `q` (quarter) `e` (eighth)
-   * @returns void
-   * @throws {Error} If a rest string is not correct format. If an array was passed, it will still draw whatever correctly formatted rests before it. 
-   * 
-   * * @example
-   * // Draws the specified rest durations individually on the staff
-   * drawRest(["q", "q", "q", "q", "w"]);
-   * 
-   * * @example
-   * // Draws the specified single rest duration on the staff
-   * drawRest("w");
-  */
-  drawRest(rests: string | string[]) {
-    const normalizedNotesArray = Array.isArray(rests) ? rests : [rests];
-    const notesLayer = this.svgRendererInstance.getLayer("notes");
-    if (!notesLayer) throw new Error("DrawRest Error: Failed to retrieve notes layer");
-
-    const restGroups: SVGGElement[] = [];
-    for (const restString of normalizedNotesArray) {
-      let durationString: NoteDurations = "w";
-      try {
-        durationString = parseDurationNoteString(restString);
-      }
-      catch (error) {
-        if (restGroups.length > 0) this.svgRendererInstance.commitElementsToDOM(restGroups, notesLayer);
-        throw error;
+        fullWidth = drawRes.fullWidth;
+        baseSpacing = NOTE_SPACING_MAP[durationsArr[durationsArr.length - 1]];
       }
 
-      const restGroup = this.svgRendererInstance.createGroup("rest");
-      const beatValue = durationBeatValueMap[durationString];
-      const spacing = beatValue * this.quarterNoteSpacing;
+      return { group, fullWidth, baseSpacing };
+    });
 
-      if (this.currentBeatCount >= this.maxBeatCount) {
-        if (restGroups.length > 0) this.svgRendererInstance.commitElementsToDOM(restGroups, notesLayer);
-        throw new Error("Max beat count reached. Can't add additional notes.");
-      };
+    // Justification Pass
+    const targetWidth = this.dynamicMeasureWidth - MEASURE_LEFT_PADDING - NOTES_SPACING;
+    const stretchFactor = this.justifyMeasure(renderedItems, targetWidth);
 
-      this.checkAndCreateNewBar();
+    // Layout Pass
+    let currentX = measureStartX + MEASURE_LEFT_PADDING;
 
-      const remainingGroups = this.checkAndFillBarWithRests(beatValue);
-      if (remainingGroups) remainingGroups.forEach(e => {
-        restGroups.push(e);
-        this.noteEntries.push(e);
-      });
+    renderedItems.forEach(item => {
+      const finalSpacing = item.baseSpacing + (item.baseSpacing * stretchFactor);
 
-      this.renderRest(durationString, restGroup);
-      restGroup.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
+      const yOffset = item.group.getAttribute("y-offset") || "0";
+      item.group.setAttribute("transform", `translate(${currentX}, ${yOffset})`);
+      this.notesLayer.appendChild(item.group);
 
-      this.noteCursorX += spacing;
-      this.currentBeatCount += beatValue;
-      restGroups.push(restGroup);
-      this.noteEntries.push(restGroup);
-    }
+      currentX += item.fullWidth + finalSpacing;
+    });
 
-    this.svgRendererInstance.commitElementsToDOM(restGroups, notesLayer);
-  }
+    // Draw Barline and Advance Cursor
+    // Barlines are drawn in the staffLayer (x=0), so we must add the noteLayer's start offset
+    const absoluteBarlineX = this.noteLayerStartX + measureStartX + this.dynamicMeasureWidth;
+    this.staffRendererInstance.drawStaffBarLine(absoluteBarlineX, "treble", this.staffLayer);
 
-  /**
-   * Draws a beamed note of specified duration/count on the staff.
-   * Will stop beam early if bar line is reached / if beat count is over max limit
-   * @param note - A duration string of either 'e' (eighth) or 's' (sixth).
-   * @param noteCount - The amount of notes in the beam
-   *
-   * @returns void
-   * @throws {Error} If a rest string is not correct format. If an array was passed, it will still draw whatever correctly formatted rests before it. 
-   * 
-   * * @example
-   * // Draws a 4 beamed eighth note
-   * drawBeamedNotes("e", 4);
-   * 
-   * * @example
-   * // Draws a 8 beamed sixth note
-   * drawBeamedNotes("s", 8);
-  */
-  drawBeamedNotes(note: "e" | "s", noteCount: number) {
-    if (noteCount < 2) {
-      throw new Error("Must provide a value greater than 2 for beamed note.");
-    }
-
-    if (this.currentBeatCount >= this.maxBeatCount) {
-      throw new Error("Max beat count reached. Can't add additional beamed note.");
-    }
-    let durationString: NoteDurations = "s";
-    if (note === "s") {
-      durationString = "s";
-    }
-    else {
-      durationString = parseDurationNoteString(note);
-    }
-
-    this.checkAndCreateNewBar();
-
-    const notesLayer = this.svgRendererInstance.getLayer("notes");
-    if (!notesLayer) throw new Error("drawBeamedNotes Error: Failed to retrieve notes layer");
-    const beatValue = durationBeatValueMap[durationString];
-    const spacingAmount = beatValue * this.quarterNoteSpacing;
-
-    // Forces number to be less if it reaches the bar line
-    const remainingBeatsInBar = this.options.topNumber - (this.currentBeatCount % this.options.topNumber);
-    const fixedNoteCount = Math.min(noteCount, remainingBeatsInBar / beatValue);
-
-    const beamedGroup = this.svgRendererInstance.createGroup("beamed-note");
-    beamedGroup.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
-    let localX = 0;
-
-    for (let i = 0; i < fixedNoteCount; i++) {
-      this.svgRendererInstance.drawGlyph("NOTE_HEAD_QUARTER", beamedGroup, { x: localX });
-      this.drawStem(beamedGroup, localX);
-
-      localX += spacingAmount;
-      this.currentBeatCount += beatValue;
-    };
-
-    // Render beam line
-    this.renderBeamRect(localX, spacingAmount, beamedGroup);
-
-    // If sixteenth notes, add a second beam line
-    if (note === "s") {
-      this.renderBeamRect(localX, spacingAmount, beamedGroup, BEAM_LINE_Y_OFFSET);
-    }
-
-    this.noteCursorX += localX;
-    this.noteEntries.push(beamedGroup);
-
-    this.svgRendererInstance.commitElementsToDOM(beamedGroup, notesLayer);
-  }
-
-  /**
-   * Will increment the UI showing the current beat in quarters. Once exceeded, must be reset with `resetCurrentBeatUI()`
-   * @returns void
-  */
-  incrementCurrentBeatUI() {
-    if (!this.currentBeatUIElement) this.createBeatUIElement();
-
-    if (this.currentBeatUICount >= this.maxBeatCount) {
-      this.currentBeatUIElement!.setAttribute("display", "none");
-      return;
-    };
-
-    if (this.currentBeatUIElement?.getAttribute("display") === "none") this.currentBeatUIElement.removeAttribute("display");
-
-    this.currentBeatUICount++;
-
-    // Calls per bar, ignores first occurence
-    if (this.currentBeatUICount > this.options.topNumber && this.currentBeatUICount % this.options.topNumber === 1) {
-      this.currentBeatUIXPos += BAR_SPACING;
-    };
-
-    if (this.currentBeatUICount > 1) this.currentBeatUIXPos += this.quarterNoteSpacing;
-
-    this.currentBeatUIElement!.setAttribute("x", this.currentBeatUIXPos.toString());
-  }
-
-  /**
-   * Resets the ui showing the current beat value.
-   * @returns void
-  */
-  resetCurrentBeatUI() {
-    this.currentBeatUICount = 0;
-    this.currentBeatUIXPos = CURRENT_BEAT_UI_START_X_POS;
-
-    if (this.currentBeatUIElement) {
-      this.currentBeatUIElement.setAttribute("display", "none");
-      this.currentBeatUIElement.setAttribute("x", this.currentBeatUIXPos.toString());
-    }
+    // The cursor jumps by exactly the dynamic width, ensuring the next measure starts cleanly on the barline
+    this.noteCursorX = measureStartX + this.dynamicMeasureWidth;
+    this.measuresDrawn++;
   };
-
-  /**
-   * Clears staff of notes and resets internal positioning.
-   * @returns void
-  */
-  clearAllNotes() {
-    this.noteCursorX = 0;
-    this.currentBeatCount = 0;
-
-    const notesLayer = this.svgRendererInstance.getLayer("notes");
-    notesLayer?.replaceChildren();
-    this.noteEntries = [];
-  }
-
-  /**
-   * Removes the root svg element and cleans up arrays.
-   * @returns void
-  */
-  destroy() {
-    this.noteEntries = [];
-    this.svgRendererInstance.destroy();
-  }
 }

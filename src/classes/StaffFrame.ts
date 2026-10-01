@@ -1,4 +1,4 @@
-import { CLEF_X_OFFSET, COMPONENT_GAP } from "./StaffRenderer";
+import { COMPONENT_GAP } from "./StaffRenderer";
 import StaffRenderer from "./StaffRenderer";
 import type SVGRenderer from "./SVGRenderer";
 import type { ClefTypes, SystemTypes } from "../types";

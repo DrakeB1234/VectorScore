@@ -1,5 +1,6 @@
 import { AUGMENTATION_DOT, getAccidentalGlyph, getFlagGlyph, getNoteheadGlyphByDuration, getRestGlyphByDuration } from "../glyphs";
 import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj, assignAccidentalColumns, type BeamableConfig, snapPitchStepToStaffSpace, isSecondInterval } from "../helpers/noteHelpers";
+import { STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 import type { ClefTypes } from "../types";
 import BeamRenderer from "./BeamRenderer";
 import type SVGRenderer from "./SVGRenderer";
@@ -17,7 +18,7 @@ type RenderOptions = {
 }
 
 const ACCIDENTAL_X_OFFSET = 3;
-const STEM_UP_X_OFFSET = 0.7;
+export const STEM_UP_X_OFFSET = 0.7;
 const STEM_DOWN_X_OFFSET = 0.5;
 const STEM_Y_OFFSET = 1;
 const LEDGER_LINE_PADDING = 4;
@@ -351,5 +352,48 @@ export default class NoteRenderer {
 
   public drawBeam(configs: BeamableConfig[], clef: ClefTypes, group: SVGGElement) {
     return this.beamRendererInstance.drawBeamGroup(configs, clef, group);
-  }
+  };
+
+  /**  Bypasses all clef, ledger, and accidental logic. */
+  public drawRhythmNote(duration: NoteDurations, isDotted: boolean, noteGroup: SVGGElement, options?: RenderOptions) {
+    const isStemDown = false; // Rhythm staves typically default to stem UP
+
+    // Render notehead at Y: 0
+    const noteHeadDef = getNoteheadGlyphByDuration(duration);
+    this.svgRendererInstance.drawGlyph(noteHeadDef.name, noteGroup, { y: 0 });
+
+    // Draw stem and flag
+    let flagMaxX = 0;
+    if (!options?.skipStem) {
+      flagMaxX = this.drawStemAndFlag(noteGroup, {
+        duration: duration,
+        isStemDown: isStemDown,
+        highStep: 0,
+        lowStep: 0,
+        noteHeadWidth: noteHeadDef.glyphWidth
+      });
+    }
+
+    // Render dot
+    let dotMaxX = 0;
+    if (isDotted && duration !== "w") {
+      const def = AUGMENTATION_DOT;
+      const baseRightEdge = Math.max(noteHeadDef.glyphWidth, flagMaxX - NOTE_DOT_WITH_FLAG_X_OFFSET);
+      const startX = baseRightEdge + def.glyphWidth;
+
+      dotMaxX = startX + def.glyphWidth;
+
+      this.svgRendererInstance.drawGlyph(def.name, noteGroup, {
+        y: -STAFF_LINE_SPACING_HALVED,
+        x: startX
+      });
+    }
+
+    const maxX = Math.max(noteHeadDef.glyphWidth, flagMaxX, dotMaxX);
+
+    return {
+      fullWidth: maxX,
+      originXOffset: 0
+    };
+  };
 }

@@ -35,14 +35,19 @@
   <div class="links">
     <button
       class="text"
-      class:active={activeComponent === "musicstaff"}
-      onclick={() => handleButtonClick("musicstaff")}>Music Staff</button
+      class:active={activeComponent === "music-staff"}
+      onclick={() => handleButtonClick("music-staff")}>Music Staff</button
     >
     <button
       class="text"
       class:active={activeComponent === "scrolling-staff"}
       onclick={() => handleButtonClick("scrolling-staff")}
       >Scrolling Staff</button
+    >
+    <button
+      class="text"
+      class:active={activeComponent === "rhythm-staff"}
+      onclick={() => handleButtonClick("rhythm-staff")}>Rhythm Staff</button
     >
     <button
       class="text"
@@ -71,11 +76,17 @@
     background-color: var(--color-surface);
 
     border-bottom: 1px solid var(--color-border);
+
+    overflow-x: auto;
   }
 
   .links {
     display: flex;
     gap: var(--space-4);
+  }
+
+  button {
+    min-width: fit-content;
   }
 
   button.active {
