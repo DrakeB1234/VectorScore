@@ -21,14 +21,22 @@
     chordValue: "C4/E4/G4",
     chordDuration: "q",
     restValue: "q",
+    drawClasses: "",
     keySig: "",
     timeSig: "",
     uiIndex: 0,
     uiNote: "",
   });
 
+  function parseDrawClasses(classesString: string) {
+    if (classesString === "") return undefined;
+
+    return classesString.split("/");
+  }
+
   let currentDrawOptions: DrawOptions = $derived({
     staff: inputState.isTop ? "top" : "bottom",
+    classes: parseDrawClasses(inputState.drawClasses),
   });
 
   function setupStaff(element: HTMLDivElement, staffType: SystemTypes) {
@@ -38,6 +46,7 @@
       staffType: staffType,
       paddingTop: 40,
       paddingBottom: 40,
+      noteStartX: 40,
       keySignature: "G",
       timeSignature: {
         topNumber: 4,
@@ -152,6 +161,10 @@
     staff?.changeTimeSignature(valueParts[0], valueParts[1]);
   }
 
+  function drawBarline() {
+    staff?.drawBarline();
+  }
+
   // UI Helpers
 
   let uiGroup: SVGGElement;
@@ -223,6 +236,7 @@
       <div class="card-buttons">
         <button onclick={clearAllNotes}>Clear All Notes</button>
         <button onclick={justifyNotes}>Justify Notes</button>
+        <button onclick={drawBarline}>Draw barline</button>
       </div>
     </div>
   </div>
@@ -306,6 +320,14 @@
 
     .ui-error-note.hide {
       opacity: 0;
+    }
+
+    .wrong-note {
+      color: red;
+    }
+
+    .correct-note {
+      color: rgb(0, 179, 15);
     }
   }
 

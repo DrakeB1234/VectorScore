@@ -5,6 +5,7 @@ import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import SVGRenderer from "../classes/SVGRenderer";
+import { VALID_CLASS_ATTR_REGEX } from "../constants";
 
 export type MusicStaffUserOptions = {
   width?: number;
@@ -37,6 +38,7 @@ const USE_GLPYHS: GlyphDef[] = [
 
 const NOTE_LAYER_START_X = 16;
 const NOTE_SPACING = 14;
+const BARLINE_WIDTH = 14; // Roughly size of notehead
 
 const DEFAULT_STAFF_OPTIONS: Required<Omit<MusicStaffUserOptions, "keySignature" | "timeSignature">> = {
   width: 300,
@@ -81,11 +83,15 @@ type BeamEntry = BaseEntry & {
   yPosArray: number[];
 };
 
-type StaffEntry = NoteEntry | ChordEntry | RestEntry | BeamEntry;
+type BarlineEntry = BaseEntry & {
+  type: "barline",
+}
+
+type StaffEntry = NoteEntry | ChordEntry | RestEntry | BeamEntry | BarlineEntry;
 
 export type DrawOptions = {
   staff?: "top" | "bottom";
-  // className?: string;
+  classes?: string[];
 };
 
 // Config types for use in replaceByIndex
@@ -159,14 +165,25 @@ export default class MusicStaff {
     return { targetClef, yOffset, isTopStaff };
   };
 
+  private resolveDrawClasses(classes?: string[]) {
+    if (!classes) return []
+
+    const res: string[] = [];
+
+    classes.forEach(_class => {
+      if (VALID_CLASS_ATTR_REGEX.test(_class)) res.push(_class);
+      else console.warn(`Invalid class name '${_class}' provided in DrawOptions.`)
+    });
+
+    return res;
+  }
+
   private updateLayersX(startX: number) {
     this.notesLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
     this.uiLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
   };
 
-  /** 
-   * - Draws a note on the staff. 
-   */
+  /** - Draws a note on the staff.  */
   public drawNote(note: string, options?: DrawOptions) {
     const noteObj = parseNoteString(note);
     const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
@@ -177,6 +194,9 @@ export default class MusicStaff {
 
     noteGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(noteGroup);
+
+    const resolvedClasses = this.resolveDrawClasses(options?.classes);
+    resolvedClasses.forEach(_class => noteGroup.classList.add(_class));
 
     this.noteEntries.push({
       type: "note",
@@ -207,6 +227,9 @@ export default class MusicStaff {
     chordGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(chordGroup);
 
+    const resolvedClasses = this.resolveDrawClasses(options?.classes);
+    resolvedClasses.forEach(_class => chordGroup.classList.add(_class));
+
     this.noteEntries.push({
       type: "chord",
       gElement: chordGroup,
@@ -236,6 +259,9 @@ export default class MusicStaff {
     restGroup.setAttribute("transform", `translate(${this.noteCursorX}, ${yOffset})`);
     this.notesLayer.appendChild(restGroup);
 
+    const resolvedClasses = this.resolveDrawClasses(options?.classes);
+    resolvedClasses.forEach(_class => restGroup.classList.add(_class));
+
     this.noteEntries.push({
       type: "rest",
       gElement: restGroup,
@@ -251,6 +277,7 @@ export default class MusicStaff {
     this.noteCursorX += NOTE_SPACING + fullWidth;
   };
 
+  /** - Draws a beam on the staff. */
   public drawBeam(entries: BeamableConfig[], options?: DrawOptions) {
 
     const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
@@ -261,6 +288,9 @@ export default class MusicStaff {
 
     group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, ${yOffset})`);
     this.notesLayer.appendChild(group);
+
+    const resolvedClasses = this.resolveDrawClasses(options?.classes);
+    resolvedClasses.forEach(_class => group.classList.add(_class));
 
     this.noteEntries.push({
       type: "beam",
@@ -274,6 +304,30 @@ export default class MusicStaff {
     });
 
     this.noteCursorX += NOTE_SPACING + fullWidth;
+  };
+
+  public drawBarline(options?: DrawOptions) {
+
+    const group = this.svgRendererInstance.createGroup("bar-line");
+
+    this.staffFrame.staffRenderer.drawStaffBarLine(0, this.options.staffType, group);
+    group.setAttribute("transform", `translate(${this.noteCursorX}, 0)`);
+    this.notesLayer.append(group);
+
+    const resolvedClasses = this.resolveDrawClasses(options?.classes);
+    resolvedClasses.forEach(_class => group.classList.add(_class));
+
+    this.noteEntries.push({
+      type: "barline",
+      gElement: group,
+      xPos: this.noteCursorX,
+      totalWidth: BARLINE_WIDTH * 2,
+      yOffset: 0,
+      originXOffset: BARLINE_WIDTH,
+      isTopStaff: true,
+    });
+
+    this.noteCursorX += NOTE_SPACING;
   }
 
   /** - Replaces a entry on staff by, only accepts notes, chords, and rests are possible replace values. */
@@ -288,6 +342,9 @@ export default class MusicStaff {
 
     const newGroup = this.svgRendererInstance.createGroup(config.type);
     let newEntry: StaffEntry;
+
+    const resolvedClasses = this.resolveDrawClasses(options?.classes);
+    resolvedClasses.forEach(_class => newGroup.classList.add(_class));
 
     if (config.type === "note") {
       const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawNote(config.note, targetClef, newGroup);
@@ -334,7 +391,7 @@ export default class MusicStaff {
         isTopStaff,
         yPos
       };
-    }
+    };
 
     this.notesLayer.replaceChild(newGroup, oldEntry.gElement);
     this.noteEntries[index] = newEntry;
@@ -390,15 +447,6 @@ export default class MusicStaff {
     this.noteCursorX = currentX;
   }
 
-  /** - Clears staff of notes and resets internal positioning. */
-  public clearAllNotes() {
-    this.noteCursorX = 0;
-
-    const notesLayer = this.svgRendererInstance.getLayer("notes");
-    notesLayer?.replaceChildren();
-    this.noteEntries = [];
-  }
-
   public changeTimeSignature(top: number, bottom: number) {
     const newStartX = this.staffFrame.changeTimeSignature(top, bottom);
     this.updateLayersX(newStartX);
@@ -426,9 +474,10 @@ export default class MusicStaff {
     const noteEntry = this.noteEntries[index];
     let y = 0;
     if (noteEntry.type === "note") y = noteEntry.yPos;
-    if (noteEntry.type === "chord") y = noteEntry.yPosArray[0];
-    if (noteEntry.type === "rest") y = noteEntry.yPos;
-    if (noteEntry.type === "beam") y = noteEntry.yPosArray[0];
+    else if (noteEntry.type === "chord") y = noteEntry.yPosArray[0];
+    else if (noteEntry.type === "rest") y = noteEntry.yPos;
+    else if (noteEntry.type === "beam") y = noteEntry.yPosArray[0];
+    else if (noteEntry.type === "barline") y = 0;
     y += noteEntry.yOffset;
 
     let x = noteEntry.xPos + (noteEntry.totalWidth / 2);
@@ -452,6 +501,24 @@ export default class MusicStaff {
     const localYPos = convertPitchStepToYPos(pitchStep);
 
     return localYPos + yOffset;
+  };
+
+  /**  - Returns the group element that contains a entry (note, chord, rest, beam, or barline) */
+  public getElementByIndex(index: number): SVGGElement {
+    if (index < 0 || index >= this.noteEntries.length) {
+      throw new Error(`MusicStaff Error: Index ${index} is out of bounds.`);
+    }
+
+    return this.noteEntries[index].gElement;
+  }
+
+  /** - Clears staff of notes and resets internal positioning. */
+  public clearAllNotes() {
+    this.noteCursorX = 0;
+
+    const notesLayer = this.svgRendererInstance.getLayer("notes");
+    notesLayer?.replaceChildren();
+    this.noteEntries = [];
   }
 
   /** - Removes the root svg element and cleans up arrays. */

@@ -17,7 +17,7 @@ export default class StaffFrame {
   private options: StaffLayoutOptions;
 
   private svgRendererInstance: SVGRenderer;
-  private staffRenderer: StaffRenderer;
+  public staffRenderer: StaffRenderer;
 
   private staffLayer: SVGGElement;
   private staffGroup: SVGGElement;

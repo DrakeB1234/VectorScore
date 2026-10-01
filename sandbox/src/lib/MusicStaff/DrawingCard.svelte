@@ -26,6 +26,15 @@
       Draw on top staff?
       <input type="checkbox" bind:checked={inputState.isTop} />
     </label>
+
+    <div class="card-input-group space-above-base">
+      <label for="draw-classes">Classes?</label>
+      <input
+        id="draw-classes"
+        bind:value={inputState.drawClasses}
+        placeholder="class/class..."
+      />
+    </div>
   </div>
 
   {#if currentDrawType === "note"}

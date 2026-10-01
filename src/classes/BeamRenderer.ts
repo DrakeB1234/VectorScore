@@ -7,9 +7,15 @@ import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "../helpers/staffH
 
 const BEAM_INTERNAL_SPACING = 8;
 const STEM_X_OFFSET = 0.5;
-const BEAM_THICKNESS = 5; // Standard beam thickness is usually around half a staff space
+const BEAM_THICKNESS = STAFF_LINE_SPACING / 2;
 const BEAM_SPACING = BEAM_THICKNESS + 2; // Vertical space between stacked beams
 const STUB_LENGTH = 10; // Length of a fractional (IE single 16th note in beam) beam stub
+
+const QUARTER_SPACE = STAFF_LINE_SPACING / 4;
+
+// Staff lines sit at multiples of 4 quarter-spaces. A beam center is valid on a line (straddle) or one quarter either side.
+// Only the middle of a space (2 mod 4) is invalid, because the beam would float.
+const isValidQuarter = (q: number) => ((q % 4) + 4) % 4 !== 2;
 
 type BeamDuration = "e" | "s" | "t";
 
@@ -92,27 +98,20 @@ export default class BeamRenderer {
     return duration;
   };
 
-  private snapBeamY(y: number, isStemDown: boolean): number {
-    const halfSpace = STAFF_LINE_SPACING / 2;
+  private snapBeamY0(rawY0: number, slant: number, isStemDown: boolean): number {
+    const EPS = 1e-6;
     const centerShift = isStemDown ? -BEAM_THICKNESS / 2 : BEAM_THICKNESS / 2;
+    const rawQuarter = (rawY0 + centerShift) / QUARTER_SPACE;
 
-    // Find the conceptual center of the beam in terms of pitch steps
-    const centerY = y + centerShift;
-    const step = centerY / halfSpace;
+    // Start at the first quarter-space at or beyond the minimum-length position, then walk outward
+    let quarter = isStemDown ? Math.ceil(rawQuarter - EPS) : Math.floor(rawQuarter + EPS);
+    const slantQuarters = Math.round(slant / QUARTER_SPACE);
 
-    const isNegative = step < 4;
-    const distFromMiddle = Math.abs(step - 4);
-
-    let snappedDist;
-    if (distFromMiddle < 0.25) snappedDist = 0; // 4.0
-    else if (distFromMiddle < 1.0) snappedDist = 0.5; // 3.5 or 4.5
-    else {
-      // Enforce whole step jumps for outer steps
-      snappedDist = Math.round(distFromMiddle - 0.5) + 0.5;
+    while (!isValidQuarter(quarter) || !isValidQuarter(quarter + slantQuarters)) {
+      quarter += isStemDown ? 1 : -1;
     }
 
-    const snappedStep = isNegative ? 4 - snappedDist : 4 + snappedDist;
-    return (snappedStep * halfSpace) - centerShift;
+    return quarter * QUARTER_SPACE - centerShift;
   }
 
   /** Calculates the ideal musical slope based on set interval rules. */
@@ -140,28 +139,6 @@ export default class BeamRenderer {
     return slantY / dx;
   }
 
-  /** Snaps the beam to staff lines and pushes it outward if stems collide. */
-  private validateAndSnapY0(stems: StemCoord[], x0: number, rawY0: number, slope: number, isStemDown: boolean): number {
-    let snappedY0 = this.snapBeamY(rawY0, isStemDown);
-
-    const pushIncrement = STAFF_LINE_SPACING / 4;
-    const pushDir = isStemDown ? pushIncrement : -pushIncrement;
-
-    // Helper checks if ALL stems safely clear the beam line at the current y0
-    const stemsAreValid = (y0: number) => stems.every(s => {
-      const beamY = y0 + slope * (s.x - x0);
-      return isStemDown ? beamY >= s.endY - 0.01 : beamY <= s.endY + 0.01;
-    });
-
-    // If the snapped line clipped a stem, push outward and try the next valid snap
-    while (!stemsAreValid(snappedY0)) {
-      rawY0 += pushDir;
-      snappedY0 = this.snapBeamY(rawY0, isStemDown);
-    }
-
-    return snappedY0;
-  }
-
   private computeBeamLine(stems: StemCoord[], isStemDown: boolean): BeamLine {
     if (stems.length === 0) return { x0: 0, y0: 0, slope: 0 };
 
@@ -176,7 +153,7 @@ export default class BeamRenderer {
     const rawY0 = isStemDown ? Math.max(...requiredY0s) : Math.min(...requiredY0s);
 
     // Next: Apply staff snapping and collision resolutions
-    const finalY0 = this.validateAndSnapY0(stems, x0, rawY0, slope, isStemDown);
+    const finalY0 = this.snapBeamY0(rawY0, slope * dx, isStemDown)
 
     return { x0, y0: finalY0, slope };
   }
@@ -223,7 +200,7 @@ export default class BeamRenderer {
         const result = this.noteRendererInstance.drawChord(config.notes, resolvedDuration, config.isDotted, clef, wrapperGroup, { skipStem: true });
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
-        yPosArray.push(result.yPosArray[isStemDown ? -1 : 0]);
+        yPosArray.push(isStemDown ? result.yPosArray[yPosArray.length - 1] : result.yPosArray[0]);
       }
 
       wrapperGroup.setAttribute("transform", `translate(${internalCursorX + originXOffset}, 0)`);
@@ -236,7 +213,7 @@ export default class BeamRenderer {
       const absoluteStemX = internalCursorX + originXOffset + localStemX;
 
       // Determine where the stem starts (at the notehead)
-      const { startStep, endStep } = getStemSteps(highStep, lowStep, isStemDown, duration, 6);
+      const { startStep, endStep } = getStemSteps(highStep, lowStep, isStemDown, duration, 6.5);
 
       stemCoordinates.push({
         x: absoluteStemX,
