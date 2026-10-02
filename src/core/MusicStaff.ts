@@ -1,5 +1,5 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, AUGMENTATION_DOT, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, type BeamableConfig, getPitchStepClefDifference, convertPitchStepToYPos } from "../helpers/noteHelpers";
+import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, type BeamableConfig, getPitchStepClefDifference, convertPitchStepToYPos, type DrawBeamConfig } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
@@ -95,9 +95,7 @@ export type DrawOptions = {
   classes?: string[];
 };
 
-// Config types for use in replaceByIndex
-
-export type ReplaceConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig;
+export type MusicStaffDrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig | { type: "barline" };
 
 export default class MusicStaff {
   private options: ResolvedStaffOptions;
@@ -184,232 +182,149 @@ export default class MusicStaff {
     this.uiLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
   };
 
+  // General helper to create staff entries and call relative draw method on note renderer
+  private handleDrawEntry(config: MusicStaffDrawConfig, options?: DrawOptions): StaffEntry {
+
+    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
+
+    const group = this.svgRendererInstance.createGroup(config.type);
+    const resolvedClasses = this.resolveDrawClasses(options?.classes);
+    resolvedClasses.forEach(_class => group.classList.add(_class));
+
+    let newEntry: Partial<StaffEntry> = {
+      gElement: group,
+      xPos: this.noteCursorX,
+      yOffset,
+      isTopStaff
+    };
+
+    if (config.type === "note") {
+      const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawNote(config.note, targetClef, group);
+      newEntry = {
+        ...newEntry,
+        type: "note",
+        noteData: config.note,
+        originXOffset,
+        totalWidth: fullWidth,
+        yPos: yPos
+      } as NoteEntry;
+    }
+    else if (config.type === "chord") {
+      const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(config.notes, config.duration, config.isDotted, targetClef, group);
+      newEntry = {
+        ...newEntry,
+        type: "chord",
+        noteData: config.notes,
+        duration: config.duration,
+        originXOffset,
+        totalWidth: fullWidth,
+        yPosArray
+      } as ChordEntry;
+    }
+    else if (config.type === "rest") {
+      const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawRest(config.duration, config.isDotted, group);
+      newEntry = {
+        ...newEntry,
+        type: "rest",
+        duration: config.duration,
+        originXOffset,
+        totalWidth: fullWidth,
+        yPos: yPos
+      } as RestEntry;
+    }
+    else if (config.type === "beam") {
+      const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawBeam(config.entries, targetClef, group);
+      newEntry = {
+        ...newEntry,
+        type: "beam",
+        originXOffset,
+        totalWidth: fullWidth,
+        yPosArray,
+      } as BeamEntry;
+    }
+    else if (config.type === "barline") {
+      this.staffFrame.staffRenderer.drawStaffBarLine(0, this.options.staffType, group);
+      newEntry = {
+        ...newEntry,
+        type: "barline",
+        totalWidth: BARLINE_WIDTH * 2,
+        originXOffset: BARLINE_WIDTH,
+      };
+    }
+
+    return newEntry as StaffEntry;
+  };
+
+  // General helper to add new entry and append element onto staff visually (handles positioning)
+  private appendEntry(config: MusicStaffDrawConfig, options?: DrawOptions): number {
+    const newEntry = this.handleDrawEntry(config, options);
+
+    const x = newEntry.type === "barline"
+      ? this.noteCursorX + BARLINE_WIDTH
+      : this.noteCursorX + newEntry.originXOffset;
+
+    newEntry.gElement.setAttribute("transform", `translate(${x}, ${newEntry.yOffset})`);
+    this.notesLayer.appendChild(newEntry.gElement);
+
+    this.noteEntries.push(newEntry);
+    this.noteCursorX += NOTE_SPACING + newEntry.totalWidth;
+
+    return this.noteEntries.length - 1;
+  }
+
   /** - Draws a note on the staff. Returns the index of the drawn element */
   public drawNote(note: string, options?: DrawOptions) {
     const noteObj = parseNoteString(note);
-    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
-
-    const noteGroup = this.svgRendererInstance.createGroup("note");
-
-    const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawNote(noteObj, targetClef, noteGroup);
-
-    noteGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
-    this.notesLayer.appendChild(noteGroup);
-
-    const resolvedClasses = this.resolveDrawClasses(options?.classes);
-    resolvedClasses.forEach(_class => noteGroup.classList.add(_class));
-
-    this.noteEntries.push({
-      type: "note",
-      gElement: noteGroup,
-      noteData: noteObj,
-      xPos: this.noteCursorX,
-      totalWidth: fullWidth,
-      originXOffset,
-      yOffset,
-      isTopStaff,
-      yPos: yPos
-    });
-
-    this.noteCursorX += NOTE_SPACING + fullWidth;
-
-    return this.noteEntries.length - 1;
+    return this.appendEntry({ type: "note", note: noteObj }, options);
   }
 
   /** - Draws a chord on the staff. Returns the index of the drawn element */
   public drawChord(noteStrings: string[], duration: string, options?: DrawOptions) {
     const noteObjs = noteStrings.map(str => parseChordNoteString(str));
     const { duration: _duration, isDotted } = parseDurationString(duration);
-
-    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
-
-    const chordGroup = this.svgRendererInstance.createGroup("chord");
-
-    const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(noteObjs, _duration, isDotted, targetClef, chordGroup);
-
-    chordGroup.setAttribute("transform", `translate(${originXOffset + this.noteCursorX}, ${yOffset})`);
-    this.notesLayer.appendChild(chordGroup);
-
-    const resolvedClasses = this.resolveDrawClasses(options?.classes);
-    resolvedClasses.forEach(_class => chordGroup.classList.add(_class));
-
-    this.noteEntries.push({
-      type: "chord",
-      gElement: chordGroup,
-      noteData: noteObjs,
-      duration: _duration,
-      xPos: this.noteCursorX,
-      totalWidth: fullWidth,
-      originXOffset,
-      yOffset,
-      isTopStaff,
-      yPosArray
-    });
-
-    this.noteCursorX += NOTE_SPACING + fullWidth;
-
-    return this.noteEntries.length - 1;
+    return this.appendEntry({ type: "chord", notes: noteObjs, duration: _duration, isDotted }, options);
   }
 
   /** - Draws a rest on the staff. Returns the index of the drawn element */
   public drawRest(duration: string, options?: DrawOptions) {
     const { duration: _duration, isDotted } = parseDurationString(duration);
-    const { targetClef: _, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
-
-    const restGroup = this.svgRendererInstance.createGroup("rest");
-
-    // originXOffset will be 0, due to rest not shifting into negative space.
-    const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawRest(_duration, isDotted, restGroup);
-
-    restGroup.setAttribute("transform", `translate(${this.noteCursorX}, ${yOffset})`);
-    this.notesLayer.appendChild(restGroup);
-
-    const resolvedClasses = this.resolveDrawClasses(options?.classes);
-    resolvedClasses.forEach(_class => restGroup.classList.add(_class));
-
-    this.noteEntries.push({
-      type: "rest",
-      gElement: restGroup,
-      duration: _duration,
-      xPos: this.noteCursorX,
-      totalWidth: fullWidth,
-      yOffset,
-      originXOffset: originXOffset,
-      isTopStaff,
-      yPos
-    });
-
-    this.noteCursorX += NOTE_SPACING + fullWidth;
-
-    return this.noteEntries.length - 1;
-  };
+    return this.appendEntry({ type: "rest", duration: _duration, isDotted }, options);
+  }
 
   /** - Draws a beam on the staff. Returns the index of the drawn element */
   public drawBeam(entries: BeamableConfig[], options?: DrawOptions) {
-
-    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
-
-    const group = this.svgRendererInstance.createGroup("beam");
-
-    const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawBeam(entries, targetClef, group);
-
-    group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, ${yOffset})`);
-    this.notesLayer.appendChild(group);
-
-    const resolvedClasses = this.resolveDrawClasses(options?.classes);
-    resolvedClasses.forEach(_class => group.classList.add(_class));
-
-    this.noteEntries.push({
-      type: "beam",
-      gElement: group,
-      xPos: this.noteCursorX,
-      totalWidth: fullWidth,
-      yOffset,
-      originXOffset: originXOffset,
-      isTopStaff,
-      yPosArray
-    });
-
-    this.noteCursorX += NOTE_SPACING + fullWidth;
-
-    return this.noteEntries.length - 1;
-  };
+    return this.appendEntry({ type: "beam", entries }, options);
+  }
 
   /** - Draws a barline on the staff. Returns the index of the drawn element */
   public drawBarline(options?: Pick<DrawOptions, "classes">) {
+    return this.appendEntry({ type: "barline" }, { ...options, staff: "top" });
+  }
 
-    const group = this.svgRendererInstance.createGroup("bar-line");
-
-    this.staffFrame.staffRenderer.drawStaffBarLine(0, this.options.staffType, group);
-    group.setAttribute("transform", `translate(${this.noteCursorX + BARLINE_WIDTH}, 0)`);
-    this.notesLayer.append(group);
-
-    const resolvedClasses = this.resolveDrawClasses(options?.classes);
-    resolvedClasses.forEach(_class => group.classList.add(_class));
-
-    this.noteEntries.push({
-      type: "barline",
-      gElement: group,
-      xPos: this.noteCursorX,
-      totalWidth: BARLINE_WIDTH * 2,
-      yOffset: 0,
-      originXOffset: BARLINE_WIDTH,
-      isTopStaff: true,
-    });
-
-    this.noteCursorX += NOTE_SPACING + BARLINE_WIDTH * 2;
-
-    return this.noteEntries.length - 1;
+  /** - Draw multiple elements in one operation. Uses config objects as its parameter */
+  public drawBatchElements(
+    items: { config: MusicStaffDrawConfig; options?: DrawOptions }[]
+  ): number[] {
+    return items.map(({ config, options }) => this.appendEntry(config, options));
   }
 
   /** - Replaces a entry on staff by, only accepts notes, chords, and rests are possible replace values. */
-  public replaceByIndex(index: number, config: ReplaceConfig, options?: DrawOptions) {
+  public replaceByIndex(index: number, config: MusicStaffDrawConfig, options?: DrawOptions) {
     if (index < 0 || index >= this.noteEntries.length) throw new Error(`MusicStaff replaceByIndex: Index ${index} is out of bounds.`);
-    if (!config.type) throw new Error(`MusicStaff replaceByIndex: Incorrect replace config provided.`);
 
     const oldEntry = this.noteEntries[index];
+    const staffArg = options?.staff ?? (oldEntry.isTopStaff ? "top" : "bottom");
 
-    const staffArg = options?.staff ?? (oldEntry.isTopStaff ? "top" : "bottom"); // Ensures if staff not in options, use old entries type
-    const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(staffArg);
+    const newEntry = this.handleDrawEntry(config, { ...options, staff: staffArg });
 
-    const newGroup = this.svgRendererInstance.createGroup(config.type);
-    let newEntry: StaffEntry;
+    // Reset xPos to 0, applySpacing will recalculate it
+    newEntry.xPos = 0;
 
-    const resolvedClasses = this.resolveDrawClasses(options?.classes);
-    resolvedClasses.forEach(_class => newGroup.classList.add(_class));
-
-    if (config.type === "note") {
-      const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawNote(config.note, targetClef, newGroup);
-
-      newEntry = {
-        type: "note",
-        gElement: newGroup,
-        noteData: config.note,
-        xPos: 0,
-        totalWidth: fullWidth,
-        originXOffset,
-        yOffset,
-        isTopStaff,
-        yPos
-      };
-    }
-    else if (config.type === "chord") {
-      const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(config.notes, config.duration, config.isDotted, targetClef, newGroup);
-
-      newEntry = {
-        type: "chord",
-        gElement: newGroup,
-        noteData: config.notes,
-        duration: config.duration,
-        xPos: 0,
-        totalWidth: fullWidth,
-        originXOffset,
-        yOffset,
-        isTopStaff,
-        yPosArray
-      };
-    }
-    else {
-      const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawRest(config.duration, config.isDotted, newGroup);
-
-      newEntry = {
-        type: "rest",
-        gElement: newGroup,
-        duration: config.duration,
-        xPos: 0,
-        totalWidth: fullWidth,
-        originXOffset,
-        yOffset,
-        isTopStaff,
-        yPos
-      };
-    };
-
-    this.notesLayer.replaceChild(newGroup, oldEntry.gElement);
+    this.notesLayer.replaceChild(newEntry.gElement, oldEntry.gElement);
     this.noteEntries[index] = newEntry;
 
     this.applySpacing();
-  };
+  }
 
   /** - Evenly spaces out the notes on the staff. */
   public justifyNotes() {
@@ -524,6 +439,23 @@ export default class MusicStaff {
     }
 
     return this.noteEntries[index].gElement;
+  }
+
+  /** - Removed element on staff (note,chord,rest,beam,barline) by relative index */
+  public removeElementByIndex(index: number): void {
+    if (index < 0 || index >= this.noteEntries.length) {
+      throw new Error(`MusicStaff Error: Index ${index} is out of bounds.`);
+    }
+
+    console.log(this.noteEntries);
+
+    const entry = this.noteEntries[index];
+    entry.gElement.replaceWith();
+    this.noteEntries.splice(index, 1);
+
+    console.log(this.noteEntries);
+
+    this.applySpacing();
   }
 
   /** - Clears staff of notes and resets internal positioning. */

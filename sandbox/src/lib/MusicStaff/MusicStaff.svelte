@@ -1,9 +1,15 @@
 <script lang="ts">
   import MusicStaff, { type DrawOptions } from "@VS/core/MusicStaff";
-  import { chordConfig, noteConfig, restConfig } from "@VS/helpers/noteHelpers";
+  import {
+    beamConfig,
+    chordConfig,
+    noteConfig,
+    restConfig,
+  } from "@VS/helpers/noteHelpers";
   import type { SystemTypes } from "@VS/types";
   import BeamCard from "./BeamCard.svelte";
   import DrawingCard from "./DrawingCard.svelte";
+  import { STAFF_LINE_COUNT } from "@VS/helpers/staffHelpers";
 
   let staff: MusicStaff | null = $state(null);
   let staffMap: Record<string, MusicStaff> = $state({});
@@ -26,6 +32,7 @@
     timeSig: "",
     uiIndex: 0,
     uiNote: "",
+    removeIndex: 0,
   });
 
   function parseDrawClasses(classesString: string) {
@@ -55,8 +62,17 @@
 
     if (staffType === "grand") {
       staff = staffMap["grand"];
-      staff.drawNote("C4e");
-      staff.drawChord(["A3", "C4", "E4"], "t");
+
+      staff.drawBatchElements([
+        { config: noteConfig("C4q"), options: currentDrawOptions },
+        { config: noteConfig("D4q"), options: currentDrawOptions },
+        { config: noteConfig("E4q"), options: currentDrawOptions },
+        { config: noteConfig("F4q"), options: currentDrawOptions },
+        { config: { type: "barline" }, options: currentDrawOptions },
+        { config: noteConfig("G4q"), options: currentDrawOptions },
+        { config: noteConfig("A4q"), options: currentDrawOptions },
+        { config: noteConfig("B4q"), options: currentDrawOptions },
+      ]);
 
       // Create the UI group element to hold noteheads
       uiGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -224,6 +240,11 @@
     uiHeads = [];
     uiGroup.classList.add("hide");
   }
+
+  function removeElement() {
+    if (!staff) return;
+    staff.removeElementByIndex(inputState.removeIndex);
+  }
 </script>
 
 <div class="staff-container">
@@ -300,6 +321,24 @@
   />
 
   <BeamCard bind:musicStaffInstance={staff} />
+
+  <div class="card">
+    <p class="card-title">Remove Note</p>
+    <div class="card-section">
+      <div class="card-input-group">
+        <label for="remove-index">Index</label>
+        <input
+          id="remove-index"
+          type="number"
+          bind:value={inputState.removeIndex}
+          placeholder="0"
+        />
+      </div>
+      <div class="card-buttons">
+        <button class="primary" onclick={removeElement}>Remove</button>
+      </div>
+    </div>
+  </div>
 
   <div class="card">
     <p class="card-title">Error UI Actions</p>
