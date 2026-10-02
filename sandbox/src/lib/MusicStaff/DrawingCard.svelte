@@ -1,12 +1,78 @@
-<script>
-  let {
-    currentDrawType = $bindable(),
-    inputState = $bindable(),
-    handleDrawNote,
-    handleDrawRest,
-    handleDrawChord,
-    handleReplaceByIndex,
-  } = $props();
+<script lang="ts">
+  import type { DrawOptions } from "@VS/core/MusicStaff";
+  import { chordConfig, noteConfig, restConfig } from "@VS/helpers/noteHelpers";
+
+  let { musicStaffInstance = $bindable() } = $props();
+
+  let inputState = $state({
+    isTop: true,
+    replaceIndex: 0,
+    noteValue: "C4q",
+    chordValue: "C4/E4/G4",
+    chordDuration: "q",
+    restValue: "q",
+    drawClasses: "",
+  });
+
+  type DrawType = "note" | "chord" | "rest";
+  let currentDrawType: DrawType = $state("note");
+
+  let currentDrawOptions: DrawOptions = $derived({
+    staff: inputState.isTop ? "top" : "bottom",
+    classes: parseDrawClasses(inputState.drawClasses),
+  });
+
+  function parseDrawClasses(classesString: string) {
+    if (classesString === "") return undefined;
+
+    return classesString.split("/");
+  }
+
+  function drawNote() {
+    musicStaffInstance?.drawNote(inputState.noteValue, currentDrawOptions);
+  }
+
+  function drawChord() {
+    const noteParts = inputState.chordValue.split("/");
+
+    musicStaffInstance?.drawChord(
+      noteParts,
+      inputState.chordDuration as any,
+      currentDrawOptions,
+    );
+  }
+
+  function drawRest() {
+    musicStaffInstance?.drawRest(inputState.restValue, currentDrawOptions);
+  }
+
+  function replaceByIndex(type: DrawType) {
+    const index = inputState.replaceIndex;
+
+    if (type === "note") {
+      musicStaffInstance?.replaceByIndex(
+        index,
+        noteConfig(inputState.noteValue),
+        currentDrawOptions,
+      );
+    }
+    if (type === "chord") {
+      const noteParts = inputState.chordValue.split("/");
+
+      musicStaffInstance?.replaceByIndex(
+        index,
+        chordConfig(noteParts, inputState.chordDuration),
+        currentDrawOptions,
+      );
+    }
+    if (type === "rest") {
+      musicStaffInstance?.replaceByIndex(
+        index,
+        restConfig(inputState.restValue),
+        currentDrawOptions,
+      );
+    }
+  }
 </script>
 
 <div class="card">
@@ -49,7 +115,7 @@
         />
       </div>
       <div class="card-buttons">
-        <button class="primary" onclick={handleDrawNote}>Draw Note</button>
+        <button class="primary" onclick={drawNote}>Draw Note</button>
       </div>
 
       <div class="card-divider-text">
@@ -67,7 +133,7 @@
         />
       </div>
       <div class="card-buttons">
-        <button onclick={() => handleReplaceByIndex("note")}>Replace</button>
+        <button onclick={() => replaceByIndex("note")}>Replace</button>
       </div>
     </div>
   {:else if currentDrawType === "chord"}
@@ -90,7 +156,7 @@
         />
       </div>
       <div class="card-buttons">
-        <button class="primary" onclick={handleDrawChord}>Draw Chord</button>
+        <button class="primary" onclick={drawChord}>Draw Chord</button>
       </div>
 
       <div class="card-divider-text">
@@ -108,7 +174,7 @@
         />
       </div>
       <div class="card-buttons">
-        <button onclick={() => handleReplaceByIndex("chord")}>Replace</button>
+        <button onclick={() => replaceByIndex("chord")}>Replace</button>
       </div>
     </div>
   {:else if currentDrawType === "rest"}
@@ -123,7 +189,7 @@
         />
       </div>
       <div class="card-buttons">
-        <button class="primary" onclick={handleDrawRest}>Draw Rest</button>
+        <button class="primary" onclick={drawRest}>Draw Rest</button>
       </div>
 
       <div class="card-divider-text">
@@ -141,7 +207,7 @@
         />
       </div>
       <div class="card-buttons">
-        <button onclick={() => handleReplaceByIndex("rest")}>Replace</button>
+        <button onclick={() => replaceByIndex("rest")}>Replace</button>
       </div>
     </div>
   {/if}

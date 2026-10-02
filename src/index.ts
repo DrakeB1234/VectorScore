@@ -12,6 +12,11 @@ export type { ClefTypes as StaffTypes } from './types';
 export type { GuitarChordDrawOptions, GuitarBarreDef } from './types';
 
 // NEW IMPORTS WITH MAJOR RELEASE
-export type { DrawOptions } from './core/MusicStaff';
 
+// Music Staff Exports
+export type { DrawOptions } from './core/MusicStaff';
+export type { MusicStaffDrawConfig } from './core/MusicStaff';
+
+
+// General config constructors, for use in drawing methods
 export { noteConfig, chordConfig, restConfig, beamConfig } from './helpers/noteHelpers';

@@ -183,7 +183,7 @@ export default class MusicStaff {
   };
 
   // General helper to create staff entries and call relative draw method on note renderer
-  private handleDrawEntry(config: MusicStaffDrawConfig, options?: DrawOptions): StaffEntry {
+  private createEntry(config: MusicStaffDrawConfig, options?: DrawOptions): StaffEntry {
 
     const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
 
@@ -207,7 +207,7 @@ export default class MusicStaff {
         originXOffset,
         totalWidth: fullWidth,
         yPos: yPos
-      } as NoteEntry;
+      };
     }
     else if (config.type === "chord") {
       const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(config.notes, config.duration, config.isDotted, targetClef, group);
@@ -219,7 +219,7 @@ export default class MusicStaff {
         originXOffset,
         totalWidth: fullWidth,
         yPosArray
-      } as ChordEntry;
+      };
     }
     else if (config.type === "rest") {
       const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawRest(config.duration, config.isDotted, group);
@@ -230,7 +230,7 @@ export default class MusicStaff {
         originXOffset,
         totalWidth: fullWidth,
         yPos: yPos
-      } as RestEntry;
+      };
     }
     else if (config.type === "beam") {
       const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawBeam(config.entries, targetClef, group);
@@ -240,7 +240,7 @@ export default class MusicStaff {
         originXOffset,
         totalWidth: fullWidth,
         yPosArray,
-      } as BeamEntry;
+      };
     }
     else if (config.type === "barline") {
       this.staffFrame.staffRenderer.drawStaffBarLine(0, this.options.staffType, group);
@@ -257,7 +257,7 @@ export default class MusicStaff {
 
   // General helper to add new entry and append element onto staff visually (handles positioning)
   private appendEntry(config: MusicStaffDrawConfig, options?: DrawOptions): number {
-    const newEntry = this.handleDrawEntry(config, options);
+    const newEntry = this.createEntry(config, options);
 
     const x = newEntry.type === "barline"
       ? this.noteCursorX + BARLINE_WIDTH
@@ -267,9 +267,14 @@ export default class MusicStaff {
     this.notesLayer.appendChild(newEntry.gElement);
 
     this.noteEntries.push(newEntry);
-    this.noteCursorX += NOTE_SPACING + newEntry.totalWidth;
+    this.noteCursorX += this.currentNoteSpacing + newEntry.totalWidth;
 
     return this.noteEntries.length - 1;
+  }
+
+  private validateEntriesIndex(index: number) {
+    if (index < 0 || index >= this.noteEntries.length) throw new Error(`MusicStaff Error: Index provided '${index}' is out of bounds of entries.`);
+    return true;
   }
 
   /** - Draws a note on the staff. Returns the index of the drawn element */
@@ -308,14 +313,14 @@ export default class MusicStaff {
     return items.map(({ config, options }) => this.appendEntry(config, options));
   }
 
-  /** - Replaces a entry on staff by, only accepts notes, chords, and rests are possible replace values. */
+  /** - Replaces a entry on staff by index, uses config object as parameter */
   public replaceByIndex(index: number, config: MusicStaffDrawConfig, options?: DrawOptions) {
-    if (index < 0 || index >= this.noteEntries.length) throw new Error(`MusicStaff replaceByIndex: Index ${index} is out of bounds.`);
+    this.validateEntriesIndex(index);
 
     const oldEntry = this.noteEntries[index];
     const staffArg = options?.staff ?? (oldEntry.isTopStaff ? "top" : "bottom");
 
-    const newEntry = this.handleDrawEntry(config, { ...options, staff: staffArg });
+    const newEntry = this.createEntry(config, { ...options, staff: staffArg });
 
     // Reset xPos to 0, applySpacing will recalculate it
     newEntry.xPos = 0;
@@ -394,9 +399,9 @@ export default class MusicStaff {
     this.updateLayersX(newStartX);
   }
 
-  /** X coord relative to start of the notes layer */
-  public getCoordsFromEntryIndex(index: number) {
-    if (index >= this.noteEntries.length || index < 0) throw new Error("MusicStaff Error: Index out of bounds.");
+  /** - Gets coordinate data and staff options from entry on staff by index*/
+  public getDataFromEntryIndex(index: number) {
+    this.validateEntriesIndex(index);
 
     const noteEntry = this.noteEntries[index];
     let y = 0;
@@ -407,24 +412,23 @@ export default class MusicStaff {
     else if (noteEntry.type === "barline") y = 0;
     y += noteEntry.yOffset;
 
-    let x = noteEntry.xPos + noteEntry.originXOffset + (NOTEHEAD_WIDTH / 2);
-    if (noteEntry.type === "beam") x = noteEntry.xPos + noteEntry.originXOffset + (NOTEHEAD_WIDTH / 2);
+    const x = noteEntry.xPos + noteEntry.originXOffset + (NOTEHEAD_WIDTH / 2);
 
     return {
       x: x,
-      y: y
+      y: y,
+      isTopStaff: noteEntry.isTopStaff
     };
   };
 
   /**  - Returns the exact absolute Y-coordinate for a list of pitches (e.g., ["C4", "E4"]). Accounts for staff offsets (top vs bottom) and clef differences. */
-  public getYFromPitches(pitches: string[], options?: DrawOptions): number[] {
+  public getYFromPitches(pitches: string[], isTopStaff = true): number[] {
 
-    const { targetClef, yOffset } = this.resolveStaffTarget(options?.staff);
+    const { targetClef, yOffset } = this.resolveStaffTarget(isTopStaff ? "top" : "bottom");
 
     const res: number[] = [];
     pitches.forEach(pitch => {
       const noteObj = parseChordNoteString(pitch);
-
       const pitchStep = getPitchStepClefDifference(noteObj.letter, noteObj.octave, targetClef);
       res.push(convertPitchStepToYPos(pitchStep) + yOffset);
     });
@@ -434,26 +438,18 @@ export default class MusicStaff {
 
   /**  - Returns the group element that contains a entry (note, chord, rest, beam, or barline) */
   public getElementByIndex(index: number): SVGGElement {
-    if (index < 0 || index >= this.noteEntries.length) {
-      throw new Error(`MusicStaff Error: Index ${index} is out of bounds.`);
-    }
+    this.validateEntriesIndex(index);
 
     return this.noteEntries[index].gElement;
   }
 
   /** - Removed element on staff (note,chord,rest,beam,barline) by relative index */
   public removeElementByIndex(index: number): void {
-    if (index < 0 || index >= this.noteEntries.length) {
-      throw new Error(`MusicStaff Error: Index ${index} is out of bounds.`);
-    }
-
-    console.log(this.noteEntries);
+    this.validateEntriesIndex(index);
 
     const entry = this.noteEntries[index];
-    entry.gElement.replaceWith();
+    entry.gElement.remove();
     this.noteEntries.splice(index, 1);
-
-    console.log(this.noteEntries);
 
     this.applySpacing();
   }
@@ -461,6 +457,7 @@ export default class MusicStaff {
   /** - Clears staff of notes and resets internal positioning. */
   public clearAllNotes() {
     this.noteCursorX = 0;
+    this.currentNoteSpacing = NOTE_SPACING;
 
     this.notesLayer?.replaceChildren();
     this.noteEntries = [];
