@@ -7,7 +7,7 @@ import StaffFrame from "../classes/StaffFrame";
 import SVGRenderer from "../classes/SVGRenderer";
 import { VALID_CLASS_ATTR_REGEX } from "../constants";
 
-export type MusicStaffUserOptions = {
+export type StandardStaffUserOptions = {
   width?: number;
   scale?: number;
   /** - Overrides constant that defaults this value to '16'. */
@@ -23,8 +23,8 @@ export type MusicStaffUserOptions = {
 };
 
 type ResolvedStaffOptions =
-  Required<Omit<MusicStaffUserOptions, "keySignature" | "timeSignature">> &
-  Pick<MusicStaffUserOptions, "keySignature" | "timeSignature">;
+  Required<Omit<StandardStaffUserOptions, "keySignature" | "timeSignature">> &
+  Pick<StandardStaffUserOptions, "keySignature" | "timeSignature">;
 
 const USE_GLPYHS: GlyphDef[] = [
   CLEF_TREBLE, CLEF_BASS, CLEF_ALTO,
@@ -38,10 +38,10 @@ const USE_GLPYHS: GlyphDef[] = [
 
 const NOTE_LAYER_START_X = 16;
 const NOTE_SPACING = 14;
-const BARLINE_WIDTH = 14; // Roughly size of notehead
 const NOTEHEAD_WIDTH = NOTEHEAD_BLACK.glyphWidth;
+const BARLINE_WIDTH = NOTEHEAD_WIDTH;
 
-const DEFAULT_STAFF_OPTIONS: Required<Omit<MusicStaffUserOptions, "keySignature" | "timeSignature">> = {
+const DEFAULT_STAFF_OPTIONS: Required<Omit<StandardStaffUserOptions, "keySignature" | "timeSignature">> = {
   width: 300,
   scale: 1,
   noteStartX: NOTE_LAYER_START_X,
@@ -95,9 +95,9 @@ export type DrawOptions = {
   classes?: string[];
 };
 
-export type MusicStaffDrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig | { type: "barline" };
+export type StandardStaffDrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig | { type: "barline" };
 
-export default class MusicStaff {
+export default class StandardStaff {
   private options: ResolvedStaffOptions;
 
   private svgRendererInstance: SVGRenderer;
@@ -113,12 +113,10 @@ export default class MusicStaff {
   private currentNoteSpacing: number = NOTE_SPACING;
 
   /**
-   * Creates an instance of a MusicStaff, A single staff.
-   *
    * @param rootElementCtx - The element (div) reference that will append the music staff elements to.
-   * @param userOptions - Optional configuration settings, will default to preset ones. All config options are in the type MusicStaffUserOptions
+   * @param userOptions - Optional configuration settings, will default to preset ones. All config options are in the type StandardStaffUserOptions
   */
-  constructor(rootElementCtx: HTMLElement, userOptions?: MusicStaffUserOptions) {
+  constructor(rootElementCtx: HTMLElement, userOptions?: StandardStaffUserOptions) {
     this.options = { ...DEFAULT_STAFF_OPTIONS, ...userOptions };
 
     if (this.options.keySignature) validateKeySignature(this.options.keySignature);
@@ -145,7 +143,7 @@ export default class MusicStaff {
     let targetStaff = rawStaff || "top";
 
     if (targetStaff === "bottom" && this.options.staffType !== "grand") {
-      console.warn("MusicStaff: Options stated 'staff: bottom', but staff configuration type is not 'grand'. Using default 'staff: top'.");
+      console.warn("StandardStaff: Options stated 'staff: bottom', but staff configuration type is not 'grand'. Using default 'staff: top'.");
       targetStaff = "top";
     }
 
@@ -183,7 +181,7 @@ export default class MusicStaff {
   };
 
   // General helper to create staff entries and call relative draw method on note renderer
-  private createEntry(config: MusicStaffDrawConfig, options?: DrawOptions): StaffEntry {
+  private createEntry(config: StandardStaffDrawConfig, options?: DrawOptions): StaffEntry {
 
     const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
 
@@ -256,7 +254,7 @@ export default class MusicStaff {
   };
 
   // General helper to add new entry and append element onto staff visually (handles positioning)
-  private appendEntry(config: MusicStaffDrawConfig, options?: DrawOptions): number {
+  private appendEntry(config: StandardStaffDrawConfig, options?: DrawOptions): number {
     const newEntry = this.createEntry(config, options);
 
     const x = newEntry.type === "barline"
@@ -273,7 +271,7 @@ export default class MusicStaff {
   }
 
   private validateEntriesIndex(index: number) {
-    if (index < 0 || index >= this.noteEntries.length) throw new Error(`MusicStaff Error: Index provided '${index}' is out of bounds of entries.`);
+    if (index < 0 || index >= this.noteEntries.length) throw new Error(`StandardStaff Error: Index provided '${index}' is out of bounds of entries.`);
     return true;
   }
 
@@ -308,13 +306,13 @@ export default class MusicStaff {
 
   /** - Draw multiple elements in one operation. Uses config objects as its parameter */
   public drawBatchElements(
-    items: { config: MusicStaffDrawConfig; options?: DrawOptions }[]
+    items: { config: StandardStaffDrawConfig; options?: DrawOptions }[]
   ): number[] {
     return items.map(({ config, options }) => this.appendEntry(config, options));
   }
 
   /** - Replaces a entry on staff by index, uses config object as parameter */
-  public replaceByIndex(index: number, config: MusicStaffDrawConfig, options?: DrawOptions) {
+  public replaceByIndex(index: number, config: StandardStaffDrawConfig, options?: DrawOptions) {
     this.validateEntriesIndex(index);
 
     const oldEntry = this.noteEntries[index];

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { DrawOptions } from "@VS/core/MusicStaff";
-  import type MusicStaff from "@VS/core/MusicStaff";
+  import type { DrawOptions } from "@VS/core/StandardStaff";
+  import type MusicStaff from "@VS/core/StandardStaff";
   import {
     chordConfig,
     noteConfig,

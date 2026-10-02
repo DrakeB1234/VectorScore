@@ -344,7 +344,7 @@ export default class GuitarChord {
     let currentRow: ChordEntry[] = [];
     let tempX = GUITAR_DOT_RADIUS;
 
-    // 1. Group chords into rows based on width capacity (by default, width determined by inlineChords arg)
+    // Group chords into rows based on width capacity (by default, width determined by inlineChords arg)
     this.chordEntries.forEach((entry, i) => {
       if (i > 0 && (tempX + this.diagramWidth) > this.options.width) {
         rows.push(currentRow);
@@ -360,7 +360,7 @@ export default class GuitarChord {
       rows.push(currentRow);
     }
 
-    // 2. Position the chords row by row
+    // Position the chords row by row
     this.cursorY = GUITAR_DIAGRAM_TOP_PADDING;
 
     rows.forEach((row, rowIndex) => {

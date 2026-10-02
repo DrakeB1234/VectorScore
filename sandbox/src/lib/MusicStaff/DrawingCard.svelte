@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { DrawOptions } from "@VS/core/MusicStaff";
+  import type { DrawOptions } from "@VS/core/StandardStaff";
   import { chordConfig, noteConfig, restConfig } from "@VS/helpers/noteHelpers";
 
   let { musicStaffInstance = $bindable() } = $props();

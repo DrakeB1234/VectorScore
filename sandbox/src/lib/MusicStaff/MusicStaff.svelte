@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MusicStaff from "@VS/core/MusicStaff";
+  import MusicStaff from "@VS/core/StandardStaff";
   import { chordConfig, noteConfig, restConfig } from "@VS/helpers/noteHelpers";
   import type { SystemTypes } from "@VS/types";
   import BeamCard from "./BeamCard.svelte";

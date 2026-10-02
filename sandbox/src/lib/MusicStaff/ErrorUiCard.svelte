@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type MusicStaff from "@VS/core/MusicStaff";
+  import type MusicStaff from "@VS/core/StandardStaff";
 
   type Props = {
     musicStaffInstance: MusicStaff | null;
@@ -36,15 +36,18 @@
   }
 
   function createErrorHead(yPos: number) {
-    const head = document.createElementNS(SVG_NS, "path");
-    head.setAttribute("d", HEAD_PATH);
-    head.setAttribute("fill", "#FF000077");
-    head.setAttribute(
+    const wrapper = document.createElementNS(SVG_NS, "g");
+    wrapper.setAttribute(
       "transform",
       `translate(${HEAD_X_OFFSET}, ${yPos + HEAD_Y_OFFSET})`,
     );
 
-    return head;
+    const head = document.createElementNS(SVG_NS, "path");
+    head.setAttribute("d", HEAD_PATH);
+    head.setAttribute("fill", "#FF0000AA");
+
+    wrapper.appendChild(head);
+    return wrapper;
   }
 
   function clearErrorNote() {
@@ -115,11 +118,41 @@
     .ui-error-note {
       opacity: 1;
 
-      transition: opacity 0.3s ease;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .ui-error-note path {
+      animation: headShake 0.7s ease-in 1 forwards;
     }
 
     .ui-error-note.hide {
       opacity: 0;
+    }
+
+    @keyframes headShake {
+      0% {
+        transform: translateX(0);
+      }
+
+      6.5% {
+        transform: translateX(-6px) rotateY(-9deg);
+      }
+
+      18.5% {
+        transform: translateX(5px) rotateY(7deg);
+      }
+
+      31.5% {
+        transform: translateX(-3px) rotateY(-5deg);
+      }
+
+      43.5% {
+        transform: translateX(2px) rotateY(3deg);
+      }
+
+      50% {
+        transform: translateX(0);
+      }
     }
   }
 </style>
