@@ -21,14 +21,14 @@ const ACCIDENTAL_X_OFFSET = 3;
 export const STEM_UP_X_OFFSET = 0.7;
 const STEM_DOWN_X_OFFSET = 0.5;
 const STEM_Y_OFFSET = 1;
-const LEDGER_LINE_PADDING = 4;
+const LEDGER_LINE_PADDING = 3;
 const FLAG_X_OFFSET = 1;
 const ACCIDENTAL_COLUMN_GAP = 3;
 
 const REST_DOT_STEP = 3; // Dots on each rest lay on 2nd space from top of staff
 const NOTE_DOT_WITH_FLAG_X_OFFSET = 2;
 
-const LEDGER_LINE_STROKE_WIDTH = 2;
+const LEDGER_LINE_STROKE_WIDTH = 1.5;
 
 export default class NoteRenderer {
   private svgRendererInstance: SVGRenderer;

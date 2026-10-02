@@ -46,8 +46,7 @@
       staffType: staffType,
       paddingTop: 40,
       paddingBottom: 40,
-      noteStartX: 40,
-      keySignature: "G",
+      // keySignature: "G",
       timeSignature: {
         topNumber: 4,
         bottomNumber: 4,
@@ -56,8 +55,8 @@
 
     if (staffType === "grand") {
       staff = staffMap["grand"];
-      staff.drawNote("C4q");
-      staff.drawChord(["A3", "C4", "E4"], "q");
+      staff.drawNote("C4e");
+      staff.drawChord(["A3", "C4", "E4"], "t");
 
       // Create the UI group element to hold noteheads
       uiGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
