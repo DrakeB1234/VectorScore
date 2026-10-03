@@ -94,7 +94,7 @@ export default class BeamRenderer {
   }
 
   private resolveDuration(duration: NoteDurations): BeamDuration {
-    if (duration === "w" || duration === "h" || duration === "q") return "e"
+    if (duration === "w" || duration === "h" || duration === "q") throw new Error("BeamRenderer Error: Please only use duration values 'e|s|t'.");
     return duration;
   };
 
@@ -165,7 +165,7 @@ export default class BeamRenderer {
     const isStemDown = this.getGroupStemDirection(configs, clef);
 
     const stemCoordinates: StemCoord[] = [];
-    let yPosArray: number[] = [];
+    const yPosArray: number[] = [];
     let firstOriginXOffset = 0; // Only considers the first entries xOffset, if it exists.
 
     // Loop through and draw the noteheads (skipping stems)
@@ -201,7 +201,7 @@ export default class BeamRenderer {
         const result = this.noteRendererInstance.drawChord(config.notes, resolvedDuration, config.isDotted, clef, wrapperGroup, { skipStem: true });
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
-        yPosArray.push(isStemDown ? result.yPosArray[yPosArray.length - 1] : result.yPosArray[0]);
+        yPosArray.push(isStemDown ? result.yPosArray[result.yPosArray.length - 1] : result.yPosArray[0]);
       }
 
       wrapperGroup.setAttribute("transform", `translate(${internalCursorX + originXOffset}, 0)`);

@@ -20,7 +20,7 @@ import {
   GUITAR_STRING_SPACING,
 } from "../helpers/guitarHelpers";
 import { calculateStartFret, createStateStrings, parseFingersEntry, parseFretsEntry } from "../helpers/guitarHelpers";
-import type { GuitarBarreDef, GuitarChordDrawOptions, GuitarStringState } from "../types";
+import type { GuitarBarreDef, GuitarChordDrawOptions, GuitarStringState } from "../helpers/guitarHelpers";
 import SVGRenderer from "../classes/SVGRenderer";
 import { NAMESPACE } from "../constants";
 
@@ -76,6 +76,8 @@ export default class GuitarChord {
    * All config options are in the type GuitarChordOptions.
   */
   constructor(rootElementCtx: HTMLElement, options?: GuitarChordOptions) {
+    if (rootElementCtx === null) throw new Error("GuitarChords Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.");
+
     this.options = {
       stringCount: GUITAR_STRING_COUNT_DEFAULT,
       fretCount: GUITAR_FRET_COUNT_DEFAULT,
@@ -123,7 +125,7 @@ export default class GuitarChord {
 
     barres.forEach(barre => {
       const startIdx = barre.fromString - 1;
-      const endIdx = barre.toString - 1;
+      const endIdx = barre.endString - 1;
 
       for (let i = startIdx; i <= endIdx; i++) {
         hiddenDots.add(`${i}-${barre.fret}`);
@@ -315,7 +317,7 @@ export default class GuitarChord {
       // Index values subtract one, as user input is not zero-indexed
       this.drawBarre(fretDotsGroup, {
         fromIndex: barre.fromString - 1,
-        toIndex: barre.toString - 1,
+        toIndex: barre.endString - 1,
         fret: barre.fret,
         finger: barre.finger,
         startingFret: startFret
@@ -394,26 +396,7 @@ export default class GuitarChord {
 
   /**
    * Adds a new chord diagram. Diagrams are placed left-to-right in the order added, wrapping to a
-   * new row automatically once the configured width is exceeded.
-   *
-   * @param frets - A string, with each value being ordered low-to-high (e.g. first position in string 0 is the low E string)
-   * * `x` - muted string
-   * * `0` - open string
-   * * `1...n` - fretted at the given absolute fret number (e.g. `3`)
-   * @param fingers - A string, with each value being ordered low-to-high (e.g. first position in string 0 is the low E string)
-   * * `0` - No finger labeled
-   * * `1...n` - Finger labeled as number provided
-   * 
-   * @param options - Optional per-chord settings: `startFret` (default `1`, for diagrams higher up the neck)
-   * and `label` (a chord name drawn above the diagram).
-   * 
-   * @returns The index of the newly added chord, for later use with the CRUD-by-index methods.
-   * 
-   * @throws {Error} If fret or finger's string length doesn't match the configured string count.
-   *
-   * @example
-   * // Draw an open C major chord
-   * guitarChord.addChord("x32010", "032010", { label: "C" });
+   * new row automatically once the configured width is exceeded
   */
   addChord(frets: string, fingers: string, options?: GuitarChordDrawOptions): number {
     const fretParts = parseFretsEntry(frets);
@@ -528,65 +511,6 @@ export default class GuitarChord {
     this.cursorY = 0;
 
     this.svgRendererInstance.setRootSVGHeight(0);
-  }
-
-  /**
-   * * Used to automatically determine options for creating barre lines.
-   * * The returned value then can be used in addChord and modifyChord methods.
-   * @returns GuitarBarreDef[]
-  */
-  determineBarreOptions(frets: string, fingers: string, barreFrets: number[]): GuitarBarreDef[] {
-    const fretParts = parseFretsEntry(frets);
-    const fingerParts = parseFingersEntry(fingers);
-
-    const barres: GuitarBarreDef[] = [];
-
-    barreFrets.forEach(targetFret => {
-      if (targetFret === 0) return;
-
-      let highestFinger = 0;
-      const fretIndexes: number[] = [];
-      const fingerOccurrences: Record<number, number> = {};
-
-      for (let i = 0; i < fretParts.length; i++) {
-        if (fretParts[i].toLowerCase() === 'x') continue;
-
-        // Use base-36 parsing to convert 'a' to 10, 'b' to 11, etc.
-        const currentFret = parseInt(fretParts[i], 36);
-        const finger = Number(fingerParts[i]);
-
-        if (currentFret === targetFret) {
-          if (!fingerOccurrences[finger]) fingerOccurrences[finger] = 1;
-          else fingerOccurrences[finger] += 1;
-
-          highestFinger = Math.max(finger, highestFinger);
-          fretIndexes.push(i + 1);
-        }
-      }
-      fretIndexes.sort();
-
-      let mostOccurringFinger = 0;
-      let maxCount = 0;
-      for (const [fingerStr, count] of Object.entries(fingerOccurrences)) {
-        if (count > maxCount) {
-          maxCount = count;
-          mostOccurringFinger = Number(fingerStr);
-        }
-      }
-      const fromString = fretIndexes[0];
-      const toString = fretIndexes.at(-1);
-
-      if (fretIndexes.length > 1 && toString) {
-        barres.push({
-          fret: targetFret,
-          fromString: fromString,
-          toString: toString,
-          finger: mostOccurringFinger
-        });
-      }
-    });
-
-    return barres;
   }
 
   /**

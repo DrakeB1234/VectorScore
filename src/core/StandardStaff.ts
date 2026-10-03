@@ -37,7 +37,6 @@ const USE_GLPYHS: GlyphDef[] = [
 const NOTE_LAYER_START_X = 16;
 const NOTE_SPACING = 14;
 const NOTEHEAD_WIDTH = NOTEHEAD_BLACK.glyphWidth;
-const BARLINE_WIDTH = NOTEHEAD_WIDTH;
 
 const DEFAULT_STAFF_OPTIONS: Required<Omit<StandardStaffUserOptions, "keySignature" | "timeSignature">> = {
   width: 300,
@@ -88,7 +87,7 @@ type BarlineEntry = BaseEntry & {
 
 type StaffEntry = NoteEntry | ChordEntry | RestEntry | BeamEntry | BarlineEntry;
 
-export type DrawOptions = {
+export type StandardStaffDrawOptions = {
   staff?: "top" | "bottom";
   classes?: string[];
 };
@@ -115,6 +114,8 @@ export default class StandardStaff {
    * @param userOptions - Optional configuration settings, will default to preset ones. All config options are in the type StandardStaffUserOptions
   */
   constructor(rootElementCtx: HTMLElement, userOptions?: StandardStaffUserOptions) {
+    if (rootElementCtx === null) throw new Error("StandardStaff Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.");
+
     this.options = { ...DEFAULT_STAFF_OPTIONS, ...userOptions };
 
     if (this.options.keySignature) validateKeySignature(this.options.keySignature);
@@ -179,7 +180,7 @@ export default class StandardStaff {
   };
 
   // General helper to create staff entries and call relative draw method on note renderer
-  private createEntry(config: StandardStaffDrawConfig, options?: DrawOptions): StaffEntry {
+  private createEntry(config: StandardStaffDrawConfig, options?: StandardStaffDrawOptions): StaffEntry {
 
     const { targetClef, yOffset, isTopStaff } = this.resolveStaffTarget(options?.staff);
 
@@ -206,6 +207,8 @@ export default class StandardStaff {
       };
     }
     else if (config.type === "chord") {
+      if (config.notes.length < 1 || config.notes.length > 10) throw new Error("Invalid amount of notes provided in chord config. Please provide 1-10 notes.");
+
       const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(config.notes, config.duration, config.isDotted, targetClef, group);
       newEntry = {
         ...newEntry,
@@ -243,8 +246,8 @@ export default class StandardStaff {
       newEntry = {
         ...newEntry,
         type: "barline",
-        totalWidth: BARLINE_WIDTH * 2,
-        originXOffset: BARLINE_WIDTH,
+        totalWidth: 0,
+        originXOffset: 0,
       };
     }
 
@@ -252,11 +255,11 @@ export default class StandardStaff {
   };
 
   // General helper to add new entry and append element onto staff visually (handles positioning)
-  private appendEntry(config: StandardStaffDrawConfig, options?: DrawOptions): number {
+  private appendEntry(config: StandardStaffDrawConfig, options?: StandardStaffDrawOptions): number {
     const newEntry = this.createEntry(config, options);
 
     const x = newEntry.type === "barline"
-      ? this.noteCursorX + BARLINE_WIDTH
+      ? this.noteCursorX + 0
       : this.noteCursorX + newEntry.originXOffset;
 
     newEntry.gElement.setAttribute("transform", `translate(${x}, ${newEntry.yOffset})`);
@@ -274,43 +277,43 @@ export default class StandardStaff {
   }
 
   /** - Draws a note on the staff. Returns the index of the drawn element */
-  public drawNote(note: string, options?: DrawOptions) {
+  public drawNote(note: string, options?: StandardStaffDrawOptions) {
     const noteObj = parseNoteString(note);
     return this.appendEntry({ type: "note", note: noteObj }, options);
   }
 
   /** - Draws a chord on the staff. Returns the index of the drawn element */
-  public drawChord(noteStrings: string[], duration: string, options?: DrawOptions) {
+  public drawChord(noteStrings: string[], duration: string, options?: StandardStaffDrawOptions) {
     const noteObjs = noteStrings.map(str => parseChordNoteString(str));
     const { duration: _duration, isDotted } = parseDurationString(duration);
     return this.appendEntry({ type: "chord", notes: noteObjs, duration: _duration, isDotted }, options);
   }
 
   /** - Draws a rest on the staff. Returns the index of the drawn element */
-  public drawRest(duration: string, options?: DrawOptions) {
+  public drawRest(duration: string, options?: StandardStaffDrawOptions) {
     const { duration: _duration, isDotted } = parseDurationString(duration);
     return this.appendEntry({ type: "rest", duration: _duration, isDotted }, options);
   }
 
   /** - Draws a beam on the staff. Returns the index of the drawn element */
-  public drawBeam(entries: BeamableConfig[], options?: DrawOptions) {
+  public drawBeam(entries: BeamableConfig[], options?: StandardStaffDrawOptions) {
     return this.appendEntry({ type: "beam", entries }, options);
   }
 
   /** - Draws a barline on the staff. Returns the index of the drawn element */
-  public drawBarline(options?: Pick<DrawOptions, "classes">) {
+  public drawBarline(options?: Pick<StandardStaffDrawOptions, "classes">) {
     return this.appendEntry({ type: "barline" }, { ...options, staff: "top" });
   }
 
   /** - Draw multiple elements in one operation. Uses config objects as its parameter */
   public drawBatchElements(
-    items: { config: StandardStaffDrawConfig; options?: DrawOptions }[]
+    items: { config: StandardStaffDrawConfig; options?: StandardStaffDrawOptions }[]
   ): number[] {
     return items.map(({ config, options }) => this.appendEntry(config, options));
   }
 
   /** - Replaces a entry on staff by index, uses config object as parameter */
-  public replaceByIndex(index: number, config: StandardStaffDrawConfig, options?: DrawOptions) {
+  public replaceByIndex(index: number, config: StandardStaffDrawConfig, options?: StandardStaffDrawOptions) {
     this.validateEntriesIndex(index);
 
     const oldEntry = this.noteEntries[index];
@@ -331,6 +334,7 @@ export default class StandardStaff {
   public justifyNotes() {
     const notesCount = this.noteEntries.length;
     if (notesCount <= 0) return;
+    let fixedNotesCount = Math.max(1, notesCount - 1);
 
     const startX = this.staffFrame.getNoteStartX();
     const rightPadding = NOTE_SPACING;
@@ -343,7 +347,7 @@ export default class StandardStaff {
 
     // If notes overflow the staff, fallback to the standard minimum spacing
     const dynamicGap = remainingSpace > 0
-      ? remainingSpace / notesCount
+      ? remainingSpace / fixedNotesCount
       : NOTE_SPACING;
 
     this.applySpacing(dynamicGap);

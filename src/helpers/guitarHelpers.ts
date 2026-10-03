@@ -1,4 +1,17 @@
-import type { GuitarStringState } from "../types";
+export type GuitarStringState = { fret: string; finger: string };
+
+export type GuitarBarreDef = {
+  fret: number;
+  fromString: number;
+  endString: number;
+  finger?: number;
+}
+
+export type GuitarChordDrawOptions = {
+  startFret?: number;
+  label?: string;
+  barres?: GuitarBarreDef[];
+}
 
 export const GUITAR_STRING_COUNT_DEFAULT = 6;
 export const GUITAR_FRET_COUNT_DEFAULT = 5;
@@ -72,4 +85,60 @@ export function parseFingersEntry(fingers: string): string[] {
   if (!REGEX_FINGERS_STRING.test(fingers)) throw new Error("Invalid fingers string. Only digits are allowed.");
 
   return fingers.split("");
+}
+
+/**
+ * * Used to automatically determine options for creating barre lines.
+ * * The returned value then can be used in addChord and modifyChord methods.
+ * @returns GuitarBarreDef[]
+*/
+export function determineBarreOptions(frets: string, fingers: string, barreFrets: number[]): GuitarBarreDef[] {
+  const fretParts = parseFretsEntry(frets);
+  const fingerParts = parseFingersEntry(fingers);
+
+  const barres: GuitarBarreDef[] = [];
+
+  barreFrets.forEach(targetFret => {
+    if (targetFret === 0) return;
+
+    const fretIndexes: number[] = [];
+    const fingerOccurrences: Record<number, number> = {};
+
+    for (let i = 0; i < fretParts.length; i++) {
+      if (fretParts[i].toLowerCase() === 'x') continue;
+
+      // Use base-36 parsing to convert 'a' to 10, 'b' to 11, etc.
+      const currentFret = parseInt(fretParts[i], 36);
+      const finger = Number(fingerParts[i]);
+
+      if (currentFret === targetFret) {
+        if (!fingerOccurrences[finger]) fingerOccurrences[finger] = 1;
+        else fingerOccurrences[finger] += 1;
+
+        fretIndexes.push(i + 1);
+      }
+    }
+
+    let mostOccurringFinger = 0;
+    let maxCount = 0;
+    for (const [fingerStr, count] of Object.entries(fingerOccurrences)) {
+      if (count > maxCount) {
+        maxCount = count;
+        mostOccurringFinger = Number(fingerStr);
+      }
+    }
+    const fromString = fretIndexes[0];
+    const toString = fretIndexes.at(-1);
+
+    if (fretIndexes.length > 1 && toString) {
+      barres.push({
+        fret: targetFret,
+        fromString: fromString,
+        endString: toString,
+        finger: mostOccurringFinger
+      });
+    }
+  });
+
+  return barres;
 }

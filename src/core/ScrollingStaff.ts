@@ -38,7 +38,7 @@ type ResolvedScrollingStaffOptions =
   Pick<ScrollingStaffUserOptions, "keySignature" | "timeSignature" | "onNotesOut">;
 
 
-type DrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig;
+export type ScrollingStaffDrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig;
 
 type ActiveEntry = {
   gElement: SVGGElement;
@@ -73,7 +73,7 @@ export default class ScrollingStaff {
   private notesLayer: SVGGElement;
 
   private activeEntries: ActiveEntry[] = [];
-  private noteBuffer: DrawConfig[] = [];
+  private noteBuffer: ScrollingStaffDrawConfig[] = [];
   private noteCursorX: number = 0;
 
   /**
@@ -83,6 +83,8 @@ export default class ScrollingStaff {
    * @param options - Optional configuration settings. All config options are in the type ScrollingStaffOptions
   */
   constructor(rootElementCtx: HTMLElement, userOptions?: ScrollingStaffUserOptions) {
+    if (rootElementCtx === null) throw new Error("ScrollingStaff Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.");
+
     this.options = { ...DEFAULT_STAFF_OPTIONS, ...userOptions };
 
     if (this.options.keySignature) validateKeySignature(this.options.keySignature);
@@ -195,7 +197,7 @@ export default class ScrollingStaff {
   }
 
   /** Adds notes to the queue for scrolling staff. Clears any previously added notes. */
-  queueNotes(notes: DrawConfig[]) {
+  queueNotes(notes: ScrollingStaffDrawConfig[]) {
     this.clearAllNotes();
 
     this.noteBuffer = [...notes];

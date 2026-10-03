@@ -66,6 +66,7 @@ const NOTE_SPACING_MAP: Record<string, number> = {
   "q": WHOLE_NOTE_SPACE / 4,
   "e": WHOLE_NOTE_SPACE / 8,
   "s": WHOLE_NOTE_SPACE / 16,
+  "t": WHOLE_NOTE_SPACE / 32
 };
 
 export default class RhythmStaff {
@@ -94,6 +95,8 @@ export default class RhythmStaff {
    * @throws {Error} - If top number is not 3 or 4 OR if bars count is not between 1 - 3. These are the currently only supported values.
   */
   constructor(rootElementCtx: HTMLElement, userOptions?: RhythmStaffUserOptions) {
+    if (rootElementCtx === null) throw new Error("RhythmStaff Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.");
+
     this.options = { ...DEFAULT_STAFF_OPTIONS, ...userOptions };
 
     this.svgRendererInstance = new SVGRenderer(rootElementCtx, USE_GLPYHS);
@@ -136,7 +139,7 @@ export default class RhythmStaff {
     const availableWidth = this.options.width - this.noteLayerStartX - STAFF_RIGHT_SPACING;
     this.dynamicMeasureWidth = availableWidth / this.options.maxMeasures;
 
-    if (this.dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH) throw new Error(`RhythmStaff init Error: Not enough space to support '${this.options.maxMeasures}' measures with a staff width of '${this.options.width}'.`);
+    if (this.dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH || this.options.maxMeasures < 1) throw new Error(`RhythmStaff init Error: Not enough space to support '${this.options.maxMeasures}' measures with a staff width of '${this.options.width}'.`);
 
     const totalHeight = timeSigTotalHeight + this.options.padding * 2;
     this.svgRendererInstance.setRootSVGSizing(this.options.width, totalHeight, this.options.scale);
@@ -181,6 +184,13 @@ export default class RhythmStaff {
         }
       }
     }
+  }
+
+  private resolveDuration(duration: string) {
+    const res = parseDurationString(duration);
+
+    if (res.duration === "t") throw new Error("RhythmStaff Error: Invalid duration value 't' used, Rhythm staff does not support 32nd notes.");
+    return res;
   }
 
   private prepareBeamRendering(durations: NoteDurations[]) {
@@ -256,7 +266,7 @@ export default class RhythmStaff {
 
       if (item.type === "note") {
         group = this.svgRendererInstance.createGroup("note");
-        const res = parseDurationString(item.duration);
+        const res = this.resolveDuration(item.duration);
 
         renderFn = (g: SVGGElement) => {
           this.noteRendererInstance.drawRhythmNote(res.duration, res.isDotted, g);
@@ -268,7 +278,7 @@ export default class RhythmStaff {
       }
       else if (item.type === "rest") {
         group = this.svgRendererInstance.createGroup("rest");
-        const res = parseDurationString(item.duration);
+        const res = this.resolveDuration(item.duration);
 
         renderFn = (g: SVGGElement) => {
           this.noteRendererInstance.drawRest(res.duration, res.isDotted, g);
@@ -283,7 +293,7 @@ export default class RhythmStaff {
       }
       else {
         group = this.svgRendererInstance.createGroup("beam");
-        const durationsArr = item.durations.split("") as NoteDurations[];
+        const durationsArr = item.durations.split("").map(duration => this.resolveDuration(duration).duration);
         const blueprint = this.prepareBeamRendering(durationsArr);
 
         fullWidth = blueprint.fullWidth;
@@ -340,9 +350,7 @@ export default class RhythmStaff {
     const availableWidth = this.options.width - this.noteLayerStartX - STAFF_RIGHT_SPACING;
     const dynamicMeasureWidth = availableWidth / count;
 
-    if (dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH) {
-      throw new Error(`RhythmStaff Layout Error: Not enough space to support '${count}' measures with a staff width of '${this.options.width}'.`);
-    };
+    if (dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH || this.options.maxMeasures < 1) throw new Error(`RhythmStaff init Error: Not enough space to support '${this.options.maxMeasures}' measures with a staff width of '${this.options.width}'.`);
 
     this.options.maxMeasures = count;
     this.dynamicMeasureWidth = dynamicMeasureWidth;

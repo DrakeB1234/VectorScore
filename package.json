@@ -1,5 +1,17 @@
 {
   "name": "vector-score",
+  "description": "A lightweight, SVG-based TypeScript library for rendering simple musical notation, rhythms, and guitar chords. This project aims to provide a simple to use renderer for web-based musical apps.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DrakeB1234/VectorScore.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DrakeB1234/VectorScore/issues"
+  },
+  "author": {
+    "name": "Drake Buentello"
+  },
+  "homepage": "https://github.com/DrakeB1234/VectorScore",
   "version": "1.3.1",
   "license": "MIT",
   "type": "module",
@@ -10,27 +22,31 @@
     "svg",
     "typescript",
     "staff",
-    "rhythm"
+    "rhythm",
+    "guitar",
+    "chord",
+    "chord diagram"
   ],
   "files": [
     "dist"
   ],
-  "main": "./dist/vector-score.umd.cjs",
+  "main": "./dist/vector-score.js",
   "module": "./dist/vector-score.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/vector-score.js",
-      "require": "./dist/vector-score.umd.cjs"
+      "default": "./dist/vector-score.js"
     }
   },
+  "sideEffects": false,
   "scripts": {
     "dev": "npm run dev --prefix sandbox",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest",
-    "prepare": "npm run build"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm test && npm run build"
   },
   "devDependencies": {
     "@types/node": "^25.0.0",

@@ -8,7 +8,7 @@
 ![NPM Downloads](https://img.shields.io/npm/d18m/vector-score)
 [![Github Repo](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/DrakeB1234/VectorScore)
 
-A lightweight, SVG-based TypeScript library for rendering simple musical notation, rhythms, and guitar chords. This projects aims to provide a simple to use renderer for web-based musical apps.
+A lightweight, SVG-based TypeScript library for rendering simple musical notation, rhythms, and guitar chords. This project aims to provide a simple to use renderer for web-based musical apps.
 
 ## Table of Contents
 
@@ -96,7 +96,7 @@ staff.drawBeam([
   noteConfig("G4e"),
 ], options);
 ```
-<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/StandardStaff.webp" width="400" alt="StandardStaff">
+<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/StandardStaff.webp" width="500" alt="StandardStaff">
 
 ### Scrolling Staff
 ```ts
@@ -139,7 +139,7 @@ staff.drawMeasure([
   { type: "rest", duration: "q." },
 ]);
 ```
-<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/RhythmStaff.webp" width="400" alt="RhythmStaff">
+<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/RhythmStaff.webp" width="500" alt="RhythmStaff">
 
 ### Guitar Chords
 ```ts
@@ -152,14 +152,18 @@ chordsSection.addChord("xx0232", "000132", {
 // Bbmaj7 Barre Chord (Automatically calculates the starting fret and barre positioning)
 const frets = "687766";
 const fingers = "142311";
-const barres = chordsSection.determineBarreOptions(frets, fingers, [6]);
+const barres = determineBarreOptions(frets, fingers, [6]);
 
 chordsSection.addChord(frets, fingers, {
   label: "Bbmaj7",
   barres: barres,
 });
 ```
-<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/GuitarChords.webp" width="400" alt="GuitarChords">
+<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/GuitarChords.webp" width="500" alt="GuitarChords">
+
+## Migrating from 1.3.1
+
+* MusicStaff > StandardStaff
 
 ## CSS Classes & Theming
 All core classes uses CSS classes for styling. All elements that can be targeted for theming are prefixed with `vs`.
@@ -228,7 +232,7 @@ Frets are defined in a few ways: either `x` for a muted string, `0` for open str
 
 Fingers only support numbers `1-9`, with `0` being used to define no finger.
 
-Barres require more specific defintion. Barres are defined in the `barres` property in GuitarChordDrawOptions in the `addChord` method. The `barres` property is typed as BarreDef[]. The recommended way to define barres is to use GuitarChord member method `determineBarreOptions` to automatically create this option.
+Barres require more specific defintion. Barres are defined in the `barres` property in GuitarChordDrawOptions in the `addChord` method. The `barres` property is typed as BarreDef[]. The recommended way to define barres is to use helper `determineBarreOptions` to automatically create this option.
 
 Code example for making a **F Major barre chord**
 ```ts
@@ -238,7 +242,7 @@ const frets = "133211";
 const fingers = "134211";
 
 // the '1' value in the array means that there is one barre on the first fret.
-const barreDef: GuitarBarreDef[] = guitarInstance.determineBarreOptions(frets, fingers, [1]);
+const barreDef: GuitarBarreDef[] = determineBarreOptions(frets, fingers, [1]);
 
 addChord(frets, fingers, {
   label: "F Major",
@@ -317,8 +321,6 @@ Scrolling animation can only be applied via CSS.
   * Draws notes on the diagram using string configurations.
 * `modifyChordByIndex(frets: string, fingers: string, chordIndex: number, options?: GuitarChordDrawOptions)`
   * Modifies the chord at the specified index with new definitions and options.
-* `determineBarreOptions(frets: string, fingers: string, barreFrets: number[])`
-  * Automatically calculates barre line dimensions based on the fingering string and returns an array of *GuitarBarreDef* to be passed into chord options.
 * `removeChordByIndex()`
 * `clearAllChords()`
 * `destroy()`
