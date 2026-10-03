@@ -53,3 +53,10 @@
     </div>
   </div>
 </div>
+
+<style>
+  .card {
+    max-width: 600px;
+    margin: var(--space-8) auto;
+  }
+</style>

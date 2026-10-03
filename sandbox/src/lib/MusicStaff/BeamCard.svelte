@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { DrawOptions } from "@VS/core/StandardStaff";
+  import type { StandardStaffDrawOptions } from "@VS/core/StandardStaff";
   import type MusicStaff from "@VS/core/StandardStaff";
   import {
     chordConfig,
@@ -7,9 +7,8 @@
     type BeamableConfig,
   } from "@VS/helpers/noteHelpers";
 
-  let {
-    musicStaffInstance = $bindable(),
-  }: { musicStaffInstance: MusicStaff | null } = $props();
+  let { staffInstance = $bindable() }: { staffInstance: MusicStaff | null } =
+    $props();
 
   type BeamNote = {
     type: "note";
@@ -29,7 +28,7 @@
 
   let isTop = $state(true);
 
-  let currentDrawOptions: DrawOptions = $derived({
+  let currentDrawOptions: StandardStaffDrawOptions = $derived({
     staff: isTop ? "top" : "bottom",
   });
 
@@ -65,7 +64,7 @@
   }
 
   function handleDraw() {
-    if (!musicStaffInstance) return;
+    if (!staffInstance) return;
 
     try {
       beamEntries = parseBeamString(rawInputString);
@@ -78,7 +77,7 @@
           entries.push(chordConfig(entry.notes, entry.duration));
       });
 
-      musicStaffInstance.drawBeam(entries, currentDrawOptions);
+      staffInstance.drawBeam(entries, currentDrawOptions);
     } catch (e) {
       console.error(e);
     }
@@ -115,5 +114,10 @@
     bottom: 0;
 
     padding-top: var(--space-12);
+  }
+
+  .card {
+    max-width: 600px;
+    margin: var(--space-8) auto;
   }
 </style>

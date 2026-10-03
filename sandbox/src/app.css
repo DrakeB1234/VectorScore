@@ -50,6 +50,7 @@ svg {
 
   --color-primary: oklch(60% 0.22 260);
   --color-primary-active: oklch(52% 0.22 260);
+  --color-on-primary: white;
 
   --color-border: oklch(88% 0.025 250);
 
@@ -250,4 +251,22 @@ input[type="checkbox"] {
   justify-content: end;
   flex-wrap: wrap;
   gap: var(--space-8);
+}
+
+.toggles {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+
+  width: fit-content;
+  margin-inline: auto;
+}
+
+.toggle {
+  padding-inline: var(--space-8);
+}
+
+.toggle.active {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
 }

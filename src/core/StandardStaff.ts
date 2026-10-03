@@ -333,7 +333,6 @@ export default class StandardStaff {
   public justifyNotes() {
     const notesCount = this.noteEntries.length;
     if (notesCount <= 0) return;
-    let fixedNotesCount = Math.max(1, notesCount - 1);
 
     const startX = this.staffFrame.getNoteStartX();
     const rightPadding = NOTE_SPACING;
@@ -346,7 +345,7 @@ export default class StandardStaff {
 
     // If notes overflow the staff, fallback to the standard minimum spacing
     const dynamicGap = remainingSpace > 0
-      ? remainingSpace / fixedNotesCount
+      ? remainingSpace / notesCount
       : NOTE_SPACING;
 
     this.applySpacing(dynamicGap);

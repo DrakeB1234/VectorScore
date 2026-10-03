@@ -393,4 +393,23 @@ export function getArticulationYPos(artic: NoteArticulations, pitchStep: number,
   }
 
   return finalStep * STAFF_LINE_SPACING_HALVED;
+};
+
+export function shiftPitches(pitches: string[], steps: number): string[] {
+  return pitches.map(pitch => {
+    const parsed = parseChordNoteString(pitch);
+
+    const currentAbsStep = getPitchStep(parsed.letter, parsed.octave);
+    const newAbsStep = currentAbsStep + steps;
+    const newOctave = Math.floor(newAbsStep / 7);
+    const newLetterIdx = ((newAbsStep % 7) + 7) % 7;
+
+    const newLetter = Object.keys(DIATONIC_STEPS).find(
+      key => DIATONIC_STEPS[key] === newLetterIdx
+    );
+
+    const accidentalStr = parsed.accidental || "";
+
+    return `${newLetter}${accidentalStr}${newOctave}`;
+  });
 }
