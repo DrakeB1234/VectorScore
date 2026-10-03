@@ -12,9 +12,7 @@ export type StandardStaffUserOptions = {
   scale?: number;
   /** - Overrides constant that defaults this value to '16'. */
   noteStartX?: number;
-  /** - Value refers to pixel amount */
   paddingTop?: number;
-  /** - Value refers to pixel amount */
   paddingBottom?: number;
   staffType?: SystemTypes;
   svgAutoFill?: boolean;

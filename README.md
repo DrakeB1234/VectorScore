@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/vector-score-icon.svg" alt="Vector Score Logo" />
 </div> 
 
-### Vector Score
+## Vector Score
 ![NPM Version](https://img.shields.io/npm/v/vector-score)
 [![Bundlephobia](https://img.shields.io/bundlephobia/minzip/vector-score)](https://bundlephobia.com/package/vector-score)
 ![NPM Downloads](https://img.shields.io/npm/d18m/vector-score)
@@ -10,7 +10,7 @@
 
 A lightweight, SVG-based TypeScript library for rendering simple musical notation, rhythms, and guitar chords. This projects aims to provide a simple to use renderer for web-based musical apps.
 
-# Table of Contents
+## Table of Contents
 
 * [Features](#features)
 * [Usage](#usage)
@@ -21,19 +21,23 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
   * [Guitar Chords](#guitar-chords)
 * [Styling / Theme Guide](#css-classes--theming)
 * [Input String Syntax](#input-string-syntax)
+  * [Note String Syntax](#note-string-syntax)
+  * [Chord String Syntax](#chord-string-syntax)
+  * [Guitar String Syntax](#guitar-string-syntax)
+* [Using Note Config Functions (used in drawNote methods)](#)
 * [API Reference](#api-reference)
-  * [Standard Staff Class](#musicstaff-class)
+  * [Standard Staff Class](#standardstaff-class)
   * [Scrolling Staff Class](#scrollingstaff-class)
   * [Rhythm Staff Class](#rhythmstaff-class)
   * [Guitar Chords Class](#guitarchord-class)
 * [Configuration Options](#configuration-options)
-  * [Standard Staff](#musicstaffoptions)
+  * [Standard Staff](#standardstaffoptions)
   * [Scrolling Staff](#scrollingstaffoptions)
   * [Rhythm Staff](#rhythmstaffoptions)
   * [Guitar Chords](#guitarchordoptions)
 * [Resources](#resources)
 
-# Features
+## Features
 
 **Rendering Standard Musical Notation**
 * Supports grand, treble, bass, and alto clefs.
@@ -42,14 +46,14 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
 
 **Render and Display Guitar Chords**
 * Write explicitly which string, fret, and optionally finger to display on the diagram.
-* Supports explicity barre chords.
+* Supports barre chords.
 * Label each string below diagram, useful for showing tuning of chord.
 
 **Extra Classes**
 * Dedicated staff for rhythm exercises with customizable time signatures and bar handling.
 * Staff made to allow for 'endless' style of notes.
 
-# Usage
+## Usage
 
 ### 1. Setup HTML
 Create a container element in your HTML where the staff will be rendered.
@@ -75,7 +79,7 @@ const staff = new StandardStaff(containerRoot, {
 });
 ```
 
-# Core Classes Examples
+## Core Classes Examples
 
 ### Standard Staff
 ```ts
@@ -83,7 +87,7 @@ const staff = new StandardStaff(containerRoot, options);
 
 staff.drawNote("C4", options);
 
-staff.drawChord(["G3w", "C4w", "E4w"], options);
+staff.drawChord(["G3", "C4", "E4"], "q", options);
 staff.drawRest("q", options);
 
 staff.drawBeam([
@@ -92,7 +96,7 @@ staff.drawBeam([
   noteConfig("G4e"),
 ], options);
 ```
-![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/MusicStaffGrandResult.svg)
+<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/StandardStaff.webp" width="400" alt="StandardStaff">
 
 ### Scrolling Staff
 ```ts
@@ -100,11 +104,14 @@ function handleNotesOut() {
   console.log("All Done!");
 }
 
-const staff = new ScrollingStaff(containerRoot, options);
+const staff = new ScrollingStaff(containerRoot, {
+  ...options,
+  onNotesOut: handleNotesOut()
+});
 
 staff.queueNotes([
   noteConfig("C4q."),
-  chordConfig(["D4", "F#4", "A4"], "q");
+  chordConfig(["D4", "F#4", "A4"], "q"),
   restConfig("s"),
   beamConfig([
     noteConfig("C4e"),
@@ -115,7 +122,6 @@ staff.queueNotes([
 
 staff.advanceNotes();
 ```
-![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/ScrollingStaffResult.webp)
 
 ### Rhythm Staff
 ```ts
@@ -133,7 +139,7 @@ staff.drawMeasure([
   { type: "rest", duration: "q." },
 ]);
 ```
-![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/RhythmStaffResult.svg)
+<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/RhythmStaff.webp" width="400" alt="RhythmStaff">
 
 ### Guitar Chords
 ```ts
@@ -146,17 +152,19 @@ chordsSection.addChord("xx0232", "000132", {
 // Bbmaj7 Barre Chord (Automatically calculates the starting fret and barre positioning)
 const frets = "687766";
 const fingers = "142311";
-const barres = guitarInstance.determineBarreOptions(frets, fingers, [6]);
+const barres = chordsSection.determineBarreOptions(frets, fingers, [6]);
 
-guitarInstance.addChord(frets, fingers, {
+chordsSection.addChord(frets, fingers, {
   label: "Bbmaj7",
   barres: barres,
 });
 ```
-![Alt Text](https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/GuitarChordsResult.svg)
+<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/GuitarChords.webp" width="400" alt="GuitarChords">
 
-# CSS Classes & Theming
-All core classes uses CSS classes for styling. All elements that can be targeted for theming are prefixed with `.vs-`.
+## CSS Classes & Theming
+All core classes uses CSS classes for styling. All elements that can be targeted for theming are prefixed with `vs`.
+
+VectorScore as of the latest release ***does not*** contain pre-made stylesheets, all styling must be done in a custom-made stylesheet using the class selectors below...
 
 ```css
   /* === Root SVG element === */
@@ -200,57 +208,73 @@ All core classes uses CSS classes for styling. All elements that can be targeted
   
 ```
 
-# Input String Syntax
+## Input String Syntax
 
 ### Note String Syntax
-Used by draw methods in StandardStaff.
+Typical note string to draw (i.e. MusicStaff.drawNote). For example `C4q` would be a 'C' note on the fourth octave '4' and of quarter duration 'q'.
 
-* `[Name][Accidental?][Octave][Duration][.]`
-* **Name**: `A` - `G` (Case insensitive)
-* **Accidental**: `#` (Sharp) or `b` (Flat). Optional.
-* **Octave**: `0` - `9`
-* **Duration**:
-    * `w`: Whole
-    * `h`: Half
-    * `q`: Quarter
-    * `e`: Eighth
-    * `.`: Dotted; added after duration value 
+Variations could be `C#4q.`, where the '#' is a sharpened note and the 'q.' reprsents a dotted quarter duration.
 
-**Examples:**
-* `C4w`: C, Octave 4, Whole note
-* `F#5q.`: F Sharp, Octave 5, Dotted Quarter note
-* `Bbb3e`: B Double Flat, Octave 3, Eighth note
+### Chord String Syntax
+Similar to note string syntax, however durations are not defined in the string and instead defined as a separate parameter.
 
+Examples for a eighth beat C major chord would be `C4, E4, G4` and `e`
 
 ### Guitar String Syntax
 
-Chords are defined using two continuous strings: one for **frets** and one for **fingers**. The length of both strings must match the configured string count of the diagram (default is 6). Notes are written in ***string order***, with the first character representing the lowest string (e.g., low E in standard tuning).
+Chords are defined using two strings: one for **frets** and one for **fingers**. The length of both strings must match the configured string count of the diagram (default is 6). Notes are written in ***string order***, with the first character representing the lowest string (e.g. low E in standard tuning).
 
-* Frets String format: `[xX\da-zA-Z]+`
-* `x` or `X`: Muted string.
-* `0`: Open string.
-* `1-9`: Fretted at the specified fret.
-* `a-z` / `A-Z`: Base-36 alphanumeric encoding for double-digit frets (e.g., `a` = 10, `b` = 11, `c` = 12).
+Frets are defined in a few ways: either `x` for a muted string, `0` for open string, `1-9...a-z` for exact fret number. As a note, frets numbers are in Base-36 alphanumeric encoding, meaning numbers past '9' use letters, e.g. `a == 10, b == 11, ...`.
 
-* Fingers String format: `[\d]+`
-* `0`: No finger labeled.
-* `1-9`: Finger number to display on the dot.
+Fingers only support numbers `1-9`, with `0` being used to define no finger.
 
-# API Reference
+Barres require more specific defintion. Barres are defined in the `barres` property in GuitarChordDrawOptions in the `addChord` method. The `barres` property is typed as BarreDef[]. The recommended way to define barres is to use GuitarChord member method `determineBarreOptions` to automatically create this option.
+
+Code example for making a **F Major barre chord**
+```ts
+const guitarInstance = new GuitarChords(element, options);
+
+const frets = "133211";
+const fingers = "134211";
+
+// the '1' value in the array means that there is one barre on the first fret.
+const barreDef: GuitarBarreDef[] = guitarInstance.determineBarreOptions(frets, fingers, [1]);
+
+addChord(frets, fingers, {
+  label: "F Major",
+  barres: barreOptions
+});
+```
+Code example for making a **D Major chord**
+```ts
+const frets = "xx0232";
+const fingers = "000132";
+
+// No barre options needed
+addChord(frets, fingers, {
+  label: "D Major"
+});
+```
+
+## API Reference
 
 ### StandardStaff Class
 
 * `drawNote(note: string, options?: DrawOptions)`
   * Draws a single note `(ex. "C4q")` and advances the layout cursor.
+  * @Returns: The index of the entry.
 * `drawChord(notes: string[], duration: string, options?: DrawOptions)`
   * Draws a chord of provided notes and duration.
+  * @Returns: The index of the entry.
 * `drawBeam(entries: BeamableConfig[], options?: DrawOptions)`
   * Draws a grouped beam of notes.
+  * @Returns: The index of the entry.
 * `drawBarline(options?: DrawOptions)`
   * Draws a barline across the staff on the next staff position.
+  * @Returns: The index of the entry.
 * `drawBatchElements(items: { config: StandardStaffDrawConfig; options?: DrawOptions }[])`
   * Draws multiple elements in one method.
-* `replaceByIndex(index: number, config: ReplaceConfig, options?: StandardStaffDrawConfig)`
+* `replaceByIndex(index: number, config: ReplaceConfig, options?: DrawOptions)`
   * Replaces an element at a specific index with a new configuration and recalculates layout spacing.
 * `removeElementByIndex(index: number)`
   * Removes element at index.
@@ -262,6 +286,7 @@ Chords are defined using two continuous strings: one for **frets** and one for *
   * Returns the group SVG element of the element on staff at index.
 * `getDataFromEntryIndex(index: number)`
   * Helper that returns coords and staff type from note entry on staff. Useful for custom UI features.
+  * @Returns: `{ x: number, y: number, isTopStaff: boolean }`
 * `clearAllNotes()`
 * `destroy()`
 
@@ -298,7 +323,7 @@ Scrolling animation can only be applied via CSS.
 * `clearAllChords()`
 * `destroy()`
 
-# Configuration Options
+## Configuration Options
 
 ### StandardStaffOptions
 * `width`: Total width of the SVG in pixels.
@@ -334,7 +359,7 @@ Scrolling animation can only be applied via CSS.
 * `width`: Total width of the SVG in pixels, overrides inlineChordAmount auto width calculation (default: undefined).
 * `svgAutoFill`: Sets inline styles on root SVG element to allow for screen scaling (default: true).
 
-# Resources
+## Resources
 
 VectorScore utilizes a modified, svg-ified, version of the [**Leland Font**](https://github.com/MuseScoreFonts/Leland/tree/main), A SMuFL-compliant OpenType music font used by Musescore. Previous versions of VectorScore utilized the [Bravura Font](https://github.com/steinbergmedia/bravura).
 

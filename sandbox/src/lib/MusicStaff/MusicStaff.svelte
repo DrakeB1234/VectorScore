@@ -36,13 +36,12 @@
       staff = staffMap["grand"];
 
       staff.drawBatchElements([
-        { config: noteConfig("C4q") },
-        { config: noteConfig("D4q") },
+        { config: noteConfig("C4w") },
+        { config: noteConfig("D4h") },
         { config: noteConfig("E4q") },
-        { config: noteConfig("F4q") },
-        { config: noteConfig("G4q") },
-        { config: noteConfig("A4q") },
-        { config: noteConfig("B4q") },
+        { config: noteConfig("F4e") },
+        { config: noteConfig("G4s") },
+        { config: chordConfig(["F5", "A5", "C6"], "q") },
       ]);
     }
   }
