@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { DrawOptions } from "@VS/core/StandardStaff";
+  import type { StandardStaffDrawOptions } from "@VS/core/StandardStaff";
   import { chordConfig, noteConfig, restConfig } from "@VS/helpers/noteHelpers";
 
   let { musicStaffInstance = $bindable() } = $props();
@@ -12,14 +12,18 @@
     chordDuration: "q",
     restValue: "q",
     drawClasses: "",
+    articulation: "",
   });
 
   type DrawType = "note" | "chord" | "rest";
   let currentDrawType: DrawType = $state("note");
 
-  let currentDrawOptions: DrawOptions = $derived({
+  let currentDrawOptions: StandardStaffDrawOptions = $derived({
     staff: inputState.isTop ? "top" : "bottom",
     classes: parseDrawClasses(inputState.drawClasses),
+    articulation: inputState.articulation
+      ? (inputState.articulation as any)
+      : undefined,
   });
 
   function parseDrawClasses(classesString: string) {
@@ -52,7 +56,7 @@
     if (type === "note") {
       musicStaffInstance?.replaceByIndex(
         index,
-        noteConfig(inputState.noteValue),
+        noteConfig(inputState.noteValue, currentDrawOptions.articulation),
         currentDrawOptions,
       );
     }
@@ -61,7 +65,11 @@
 
       musicStaffInstance?.replaceByIndex(
         index,
-        chordConfig(noteParts, inputState.chordDuration),
+        chordConfig(
+          noteParts,
+          inputState.chordDuration,
+          currentDrawOptions.articulation,
+        ),
         currentDrawOptions,
       );
     }
@@ -114,6 +122,14 @@
           placeholder="C4q"
         />
       </div>
+      <div class="card-input-group">
+        <label for="draw-note-articulation">Articulation?</label>
+        <input
+          id="draw-note-articulation"
+          bind:value={inputState.articulation}
+          placeholder="tenuto/staccato/accent..."
+        />
+      </div>
       <div class="card-buttons">
         <button class="primary" onclick={drawNote}>Draw Note</button>
       </div>
@@ -153,6 +169,14 @@
           id="draw-chord-duration"
           bind:value={inputState.chordDuration}
           placeholder="q"
+        />
+      </div>
+      <div class="card-input-group">
+        <label for="draw-chord-articulation">Articulation?</label>
+        <input
+          id="draw-chord-articulation"
+          bind:value={inputState.articulation}
+          placeholder="tenuto/staccato/accent..."
         />
       </div>
       <div class="card-buttons">

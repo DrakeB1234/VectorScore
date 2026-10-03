@@ -46,7 +46,7 @@
       noteConfig("F4e"),
     ]);
 
-    const chord = chordConfig(["D4", "F#4", "A4"], "q");
+    const chord = chordConfig(["D4", "F#4", "A4"], "q", "marcato");
 
     staff.queueNotes([
       noteConfig("C4q."),

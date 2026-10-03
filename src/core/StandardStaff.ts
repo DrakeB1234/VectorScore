@@ -1,5 +1,5 @@
-import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, AUGMENTATION_DOT, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, type BeamableConfig, getPitchStepClefDifference, convertPitchStepToYPos, type DrawBeamConfig } from "../helpers/noteHelpers";
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, ARTIC_ACCENT, ARTIC_FERMATA, ARTIC_MARCATO, ARTIC_STACCATO, ARTIC_TENUTO, AUGMENTATION_DOT, BRACE, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
+import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, type BeamableConfig, getPitchStepClefDifference, convertPitchStepToYPos, type DrawBeamConfig, type NoteArticulations, type VSChordObj, chordConfig, noteConfig, restConfig, beamConfig } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
@@ -25,18 +25,18 @@ type ResolvedStaffOptions =
   Pick<StandardStaffUserOptions, "keySignature" | "timeSignature">;
 
 const USE_GLPYHS: GlyphDef[] = [
-  CLEF_TREBLE, CLEF_BASS, CLEF_ALTO,
+  CLEF_TREBLE, CLEF_BASS, CLEF_ALTO, BRACE,
   NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
   ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT,
   TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9,
   FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP,
   REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH, REST_THIRTY_SECOND,
-  AUGMENTATION_DOT
+  AUGMENTATION_DOT, ARTIC_ACCENT, ARTIC_MARCATO, ARTIC_TENUTO, ARTIC_STACCATO, ARTIC_FERMATA
 ];
 
-const NOTE_LAYER_START_X = 16;
-const NOTE_SPACING = 14;
 const NOTEHEAD_WIDTH = NOTEHEAD_BLACK.glyphWidth;
+const NOTE_LAYER_START_X = NOTEHEAD_WIDTH;
+const NOTE_SPACING = NOTEHEAD_WIDTH;
 
 const DEFAULT_STAFF_OPTIONS: Required<Omit<StandardStaffUserOptions, "keySignature" | "timeSignature">> = {
   width: 300,
@@ -90,6 +90,7 @@ type StaffEntry = NoteEntry | ChordEntry | RestEntry | BeamEntry | BarlineEntry;
 export type StandardStaffDrawOptions = {
   staff?: "top" | "bottom";
   classes?: string[];
+  articulation?: NoteArticulations;
 };
 
 export type StandardStaffDrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig | { type: "barline" };
@@ -101,7 +102,7 @@ export default class StandardStaff {
   private noteRendererInstance: NoteRenderer;
   private staffFrame: StaffFrame;
 
-  private notesLayer: SVGGElement;
+  public readonly notesLayer: SVGGElement;
   public readonly uiLayer: SVGGElement;
 
   private noteEntries: StaffEntry[] = [];
@@ -207,14 +208,16 @@ export default class StandardStaff {
       };
     }
     else if (config.type === "chord") {
-      if (config.notes.length < 1 || config.notes.length > 10) throw new Error("Invalid amount of notes provided in chord config. Please provide 1-10 notes.");
 
-      const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(config.notes, config.duration, config.isDotted, targetClef, group);
+      const chord = config.chord;
+      if (chord.notes.length < 1 || chord.notes.length > 10) throw new Error("Invalid amount of notes provided in chord config. Please provide 1-10 notes.");
+
+      const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(chord, targetClef, group);
       newEntry = {
         ...newEntry,
         type: "chord",
-        noteData: config.notes,
-        duration: config.duration,
+        noteData: chord.notes,
+        duration: chord.duration,
         originXOffset,
         totalWidth: fullWidth,
         yPosArray
@@ -278,26 +281,22 @@ export default class StandardStaff {
 
   /** - Draws a note on the staff. Returns the index of the drawn element */
   public drawNote(note: string, options?: StandardStaffDrawOptions) {
-    const noteObj = parseNoteString(note);
-    return this.appendEntry({ type: "note", note: noteObj }, options);
+    return this.appendEntry(noteConfig(note, options?.articulation), options);
   }
 
   /** - Draws a chord on the staff. Returns the index of the drawn element */
   public drawChord(noteStrings: string[], duration: string, options?: StandardStaffDrawOptions) {
-    const noteObjs = noteStrings.map(str => parseChordNoteString(str));
-    const { duration: _duration, isDotted } = parseDurationString(duration);
-    return this.appendEntry({ type: "chord", notes: noteObjs, duration: _duration, isDotted }, options);
+    return this.appendEntry(chordConfig(noteStrings, duration, options?.articulation), options);
   }
 
   /** - Draws a rest on the staff. Returns the index of the drawn element */
   public drawRest(duration: string, options?: StandardStaffDrawOptions) {
-    const { duration: _duration, isDotted } = parseDurationString(duration);
-    return this.appendEntry({ type: "rest", duration: _duration, isDotted }, options);
+    return this.appendEntry(restConfig(duration), options);
   }
 
   /** - Draws a beam on the staff. Returns the index of the drawn element */
   public drawBeam(entries: BeamableConfig[], options?: StandardStaffDrawOptions) {
-    return this.appendEntry({ type: "beam", entries }, options);
+    return this.appendEntry(beamConfig(entries), options);
   }
 
   /** - Draws a barline on the staff. Returns the index of the drawn element */

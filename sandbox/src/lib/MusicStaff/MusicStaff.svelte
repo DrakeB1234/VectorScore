@@ -41,7 +41,7 @@
         { config: noteConfig("E4q") },
         { config: noteConfig("F4e") },
         { config: noteConfig("G4s") },
-        { config: chordConfig(["F5", "A5", "C6"], "q") },
+        { config: chordConfig(["C4", "E4", "G4"], "q") },
       ]);
     }
   }

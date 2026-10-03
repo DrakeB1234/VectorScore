@@ -1,4 +1,4 @@
-import type { NoteAccidentals, NoteDurations } from "./helpers/noteHelpers";
+import type { NoteAccidentals, NoteArticulations, NoteDurations } from "./helpers/noteHelpers";
 import type { ClefTypes } from "./types";
 
 export type GlyphDef = {
@@ -46,6 +46,19 @@ export function getAccidentalGlyph(accidental: NoteAccidentals | "sharp" | "flat
     };
   };
 };
+
+export function getArticulationGlyph(artic: NoteArticulations) {
+  switch (artic) {
+    case "accent": return ARTIC_ACCENT;
+    case "marcato": return ARTIC_MARCATO;
+    case "tenuto": return ARTIC_TENUTO;
+    case "staccato": return ARTIC_STACCATO;
+    case "fermata": return ARTIC_FERMATA;
+    default: {
+      throw new Error("Unable to retrieve articulation glpyh for given value " + artic);
+    };
+  }
+}
 
 export function getClefGlyph(clef: ClefTypes) {
   switch (clef) {
@@ -240,6 +253,50 @@ export const FLAG_THIRTY_SECOND_DOWN: GlyphDef = {
   glyphHeight: 41,
   yOffset: -41
 };
+
+export const BRACE: GlyphDef = {
+  name: "BRACE",
+  path: "M.4 19.8A7 7 0 0 1 2.5 25c0 3.6-1.6 7.3-1.6 9.6 0 2.4 1.4 4.7 1.5 4.8v.2h-.2c0-.1-2.2-2.3-2.2-5.6 0-3.5 1.4-6 1.4-10.6A6 6 0 0 0 .1 20v-.2a6 6 0 0 0 1.3-3.5C1.4 11.6 0 9 0 5.6S2.2 0 2.2 0l.2-.1v.2S1 2.6 1 5c0 2.3 1.6 6 1.6 9.6 0 2.9-1.4 4.4-2.1 5.2",
+  glyphWidth: 3,
+  glyphHeight: 40,
+  yOffset: 0
+};
+
+export const ARTIC_ACCENT: GlyphDef = {
+  name: "ARTIC_ACCENT",
+  path: "M.7 0 14 4.2q.4 0 .4.5t-.4.5L.7 9.4H.6a.5.5 0 0 1-.6-.6V8q0-.3.4-.5L9 4.7.4 2Q0 1.9 0 1.5v-1Q0 0 .6 0z",
+  glyphWidth: 15,
+  glyphHeight: 10,
+  yOffset: -5
+}
+export const ARTIC_MARCATO: GlyphDef = {
+  name: "ARTIC_MARCATO",
+  path: "m1 9.8-1-.5 5.4-9q.1-.3.5-.3.3 0 .5.2l5.4 9v.4q0 .5-.5.5H8.8q-.4 0-.6-.3L4.8 3.5z",
+  glyphWidth: 12,
+  glyphHeight: 10,
+  yOffset: -10
+}
+export const ARTIC_TENUTO: GlyphDef = {
+  name: "ARTIC_TENUTO",
+  path: "M.6 0H12q.5 0 .5.6v.7q0 .5-.5.5H.6a.5.5 0 0 1-.6-.5V.6Q0 0 .6 0",
+  glyphWidth: 13,
+  glyphHeight: 2,
+  yOffset: -1
+}
+export const ARTIC_STACCATO: GlyphDef = {
+  name: "ARTIC_STACCATO",
+  path: "M.5 2.7Q-.4 1.5.5.5 1 0 1.5 0a1.6 1.6 0 0 1 1.2 2.7q-.5.4-1.1.4T.4 2.7",
+  glyphWidth: 3,
+  glyphHeight: 3,
+  yOffset: -1
+}
+export const ARTIC_FERMATA: GlyphDef = {
+  name: "ARTIC_FERMATA",
+  path: "M21.6 4.3c2 2.1 3.3 6.5 3.3 8.6q0 1.3-.6 1.3c-1.1 0-.5-3.4-3.9-6.8-3-3-7-3-7.9-3h-.1c-1 0-5 0-8 3-3.3 3.4-2.7 6.8-3.8 6.8q-.6 0-.6-1.3c0-2.1 1.4-6.4 3.3-8.6 3.8-4 7-4.3 9.1-4.3s5.4.2 9.2 4.3M9.6 12a2.8 2.8 0 0 1 5.6 0 2.8 2.8 0 0 1-5.5 0",
+  glyphWidth: 25,
+  glyphHeight: 15,
+  yOffset: -15
+}
 
 export const CLEF_TREBLE: GlyphDef = {
   name: "CLEF_TREBLE",

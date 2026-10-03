@@ -1,36 +1,62 @@
 import type { ClefTypes } from "../types";
-import { STAFF_LINE_SPACING } from "./staffHelpers";
+import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "./staffHelpers";
+
+export type NoteLetters = "A" | "B" | "C" | "D" | "E" | "F" | "G";
+export type NoteDurations = "w" | "h" | "q" | "e" | "s" | "t";
+export type NoteAccidentals = "#" | "b" | "n" | "##" | "bb";
+export type NoteArticulations =
+  | "staccato"
+  | "tenuto"
+  | "accent"
+  | "marcato"
+  | "fermata";
 
 export interface VSNoteObj {
   letter: NoteLetters;
   accidental: NoteAccidentals | null;
   octave: number;
   duration: NoteDurations;
-  isDotted?: boolean;
+  isDotted: boolean;
+  articulation?: NoteArticulations;
 };
 
-export type VSChordNoteObj = Omit<VSNoteObj, "duration" | "isDotted">;
+export interface VSChordObj {
+  notes: VSChordNoteObj[];
+  duration: NoteDurations;
+  isDotted: boolean;
+  articulation?: NoteArticulations;
+}
+
+export type VSChordNoteObj = Omit<VSNoteObj, "duration" | "isDotted" | "articulations">;
 
 // Common types / actions for drawing methods on staff
 
-export type DrawNoteConfig = { type: "note"; note: VSNoteObj; };
-export type DrawChordConfig = { type: "chord"; notes: VSChordNoteObj[]; duration: NoteDurations, isDotted: boolean };
-export type DrawRestConfig = { type: "rest"; duration: NoteDurations, isDotted: boolean };
-export type DrawBeamConfig = { type: "beam"; entries: BeamableConfig[] };
+export type DrawNoteConfig = { type: "note"; note: VSNoteObj };
+export type DrawChordConfig = { type: "chord"; chord: VSChordObj };
+export type DrawRestConfig = { type: "rest"; duration: NoteDurations; isDotted: boolean; };
+export type DrawBeamConfig = { type: "beam"; entries: BeamableConfig[]; };
 
 export type BeamableConfig = DrawNoteConfig | DrawChordConfig;
 
-export function noteConfig(note: string): DrawNoteConfig {
+export function noteConfig(note: string, articulation?: NoteArticulations): DrawNoteConfig {
   const noteObj = parseNoteString(note);
+  if (articulation) noteObj.articulation = articulation;
 
   return { type: "note", note: noteObj };
 };
 
-export function chordConfig(notes: string[], duration: string): DrawChordConfig {
+export function chordConfig(notes: string[], duration: string, articulation?: NoteArticulations): DrawChordConfig {
   const { duration: _duration, isDotted } = parseDurationString(duration);
   const noteObjs = notes.map(note => parseChordNoteString(note));
 
-  return { type: "chord", notes: noteObjs, duration: _duration, isDotted };
+  let chordObj: VSChordObj = {
+    notes: noteObjs,
+    duration: _duration,
+    isDotted,
+    articulation
+  };
+
+  return { type: "chord", chord: chordObj };
 };
 
 export function restConfig(duration: string): DrawRestConfig {
@@ -49,10 +75,6 @@ export type PositionedChordNote = {
   yPos: number;
   xOffset: number;
 };
-
-export type NoteLetters = "A" | "B" | "C" | "D" | "E" | "F" | "G";
-export type NoteDurations = "w" | "h" | "q" | "e" | "s" | "t";
-export type NoteAccidentals = "#" | "b" | "n" | "##" | "bb";
 
 export type LedgerLineSpan = {
   y: number;
@@ -343,4 +365,32 @@ export function assignAccidentalColumns(notes: PositionedChordNote[]): Accidenta
 
 export function snapPitchStepToStaffSpace(pitchStep: number) {
   return pitchStep % 2 === 0 ? pitchStep += -1 : pitchStep;
+};
+
+export function getArticulationYPos(artic: NoteArticulations, pitchStep: number, isStemDown: boolean) {
+  let finalStep = 0;
+
+  // Marcato / Fermata always is on top of staff
+  const placeAbove = (artic === "marcato" || artic === "fermata")
+    ? true
+    : isStemDown;
+
+  if (artic === "tenuto" || artic === "staccato") {
+    // TENUTO: Snaps to spaces so the flat line doesn't blend into staff lines.
+    if (placeAbove) {
+      finalStep = pitchStep > TOP_LINE_STEP ? (pitchStep % 2 === 0 ? pitchStep - 3 : pitchStep - 2) : pitchStep - 2;
+    } else {
+      finalStep = pitchStep < BOTTOM_LINE_STEP ? (pitchStep % 2 === 0 ? pitchStep + 3 : pitchStep + 2) : pitchStep + 2;
+    }
+  } else {
+    const padding = 3;
+
+    if (placeAbove) {
+      finalStep = Math.min(TOP_LINE_STEP - 2, pitchStep - padding);
+    } else {
+      finalStep = Math.max(BOTTOM_LINE_STEP + 2, pitchStep + padding);
+    }
+  }
+
+  return finalStep * STAFF_LINE_SPACING_HALVED;
 }

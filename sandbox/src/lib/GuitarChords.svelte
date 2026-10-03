@@ -1,5 +1,6 @@
 <script lang="ts">
   import GuitarChords from "@VS/core/GuitarChord";
+  import { determineBarreOptions } from "@VS/helpers/guitarHelpers";
 
   let guitarInstance: GuitarChords | null = $state(null);
 
@@ -37,7 +38,7 @@
     // Bbmaj7 Barre Chord (Automatically calculates the starting fret and barre positioning)
     const frets = "687766";
     const fingers = "142311";
-    const barres = guitarInstance.determineBarreOptions(frets, fingers, [6]);
+    const barres = determineBarreOptions(frets, fingers, [6]);
 
     guitarInstance.addChord(frets, fingers, {
       label: "Bbmaj7",
@@ -53,7 +54,7 @@
     if (inputState.barres) {
       const barreParts = inputState.barres.split("/").map((e) => Number(e));
 
-      autoBarres = guitarInstance?.determineBarreOptions(
+      autoBarres = determineBarreOptions(
         inputState.frets,
         inputState.fingers,
         barreParts,
@@ -79,7 +80,7 @@
     if (inputState.barres) {
       const barreParts = inputState.barres.split("/").map((e) => Number(e));
 
-      autoBarres = guitarInstance?.determineBarreOptions(
+      autoBarres = determineBarreOptions(
         inputState.frets,
         inputState.fingers,
         barreParts,

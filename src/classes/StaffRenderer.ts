@@ -1,4 +1,4 @@
-import { getAccidentalGlyph, getClefGlyph, getTimeSigGlyph } from "../glyphs";
+import { BRACE, getAccidentalGlyph, getClefGlyph, getTimeSigGlyph } from "../glyphs";
 import { getPitchStepClefDifference } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, STAFF_LINE_COUNT, STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED, validateKeySignature, validateTimeSignature, type KeySignatures } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
@@ -7,6 +7,7 @@ import type SVGRenderer from "./SVGRenderer";
 type DrawStaffLinesArgs = {
   width: number;
   startYPos: number;
+  startXPos?: number;
   staffGroup: SVGGElement;
 };
 
@@ -19,19 +20,27 @@ type DrawClefsArgs = {
 type DrawKeySignatureArgs = {
   key: KeySignatures;
   clefType: ClefTypes;
-  startYPos: number;   // Drives the vertical placement
+  startYPos: number;
   staffGroup: SVGGElement;
 }
 
 type DrawTimeSignatureArgs = {
   topNumber: number;
   bottomNumber: number;
-  startYPos: number;   // Drives vertical placement
+  startYPos: number;
+  staffGroup: SVGGElement;
+}
+
+type DrawBraceArgs = {
+  topY: number;
+  bottomY: number;
   staffGroup: SVGGElement;
 }
 
 export const COMPONENT_GAP = 10;
+export const BARLINE_X_OFFSET = 0.5;
 
+const BRACE_PADDING = 3;
 export const CLEF_X_OFFSET = 4;
 const KEY_SIG_ACCIDENTAL_SPACING = 12;
 
@@ -83,11 +92,12 @@ export default class StaffRenderer {
   }
 
   /** @returns Total Y space taken by the staff lines */
-  public drawStaffLines({ width, startYPos, staffGroup }: DrawStaffLinesArgs): number {
+  public drawStaffLines({ width, startYPos, startXPos, staffGroup }: DrawStaffLinesArgs): number {
     let yCurrent = startYPos;
+    let startX = startXPos ?? 0;
 
     for (let i = 0; i < STAFF_LINE_COUNT; i++) {
-      this.svgRendererInstance.drawLine(0, yCurrent, width, yCurrent, staffGroup);
+      this.svgRendererInstance.drawLine(startX, yCurrent, width, yCurrent, staffGroup);
       yCurrent += STAFF_LINE_SPACING;
     }
 
@@ -149,5 +159,28 @@ export default class StaffRenderer {
     this.drawTimeSigNumber(bottomNumber, bottomStartX, startYPos + numberHeight, staffGroup);
 
     return maxWidth;
+  }
+
+  public drawBrace({ topY, bottomY, staffGroup }: DrawBraceArgs) {
+
+    const def = BRACE;
+    const height = bottomY - topY;
+    const scaleY = height / (def.glyphHeight || 1);
+    const scaleX = 2.5;
+
+    const parsedScaleY = parseFloat(scaleY.toFixed(2));
+
+    const braceGroup = this.svgRendererInstance.createGroup("brace");
+
+    // By leaving X as 1, the brace stretches vertically to fit the staves 
+    braceGroup.setAttribute("transform", `translate(0, ${topY}) scale(${scaleX}, ${parsedScaleY})`);
+
+    this.svgRendererInstance.drawGlyph(def.name, braceGroup, { x: 0, y: 0 });
+    staffGroup.appendChild(braceGroup);
+
+    let totalWidth = (def.glyphWidth * scaleX) + BRACE_PADDING;
+    totalWidth = Math.round(totalWidth);
+
+    return totalWidth;
   }
 }

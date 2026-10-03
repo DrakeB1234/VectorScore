@@ -130,6 +130,7 @@ button.primary:hover {
 .staff-container {
   position: sticky;
   top: 0;
+  z-index: 99;
 
   display: grid;
   place-items: center;

@@ -1,5 +1,5 @@
-import { AUGMENTATION_DOT, getAccidentalGlyph, getFlagGlyph, getNoteheadGlyphByDuration, getRestGlyphByDuration } from "../glyphs";
-import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj, assignAccidentalColumns, type BeamableConfig, snapPitchStepToStaffSpace, isSecondInterval } from "../helpers/noteHelpers";
+import { AUGMENTATION_DOT, getAccidentalGlyph, getArticulationGlyph, getFlagGlyph, getNoteheadGlyphByDuration, getRestGlyphByDuration, NOTEHEAD_BLACK } from "../glyphs";
+import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSChordNoteObj, type VSNoteObj, assignAccidentalColumns, type BeamableConfig, snapPitchStepToStaffSpace, isSecondInterval, getArticulationYPos, type NoteArticulations, type VSChordObj } from "../helpers/noteHelpers";
 import { STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 import type { ClefTypes } from "../types";
 import BeamRenderer from "./BeamRenderer";
@@ -12,6 +12,16 @@ type StemOptions = {
   lowStep: number;
   noteHeadWidth: number;
 };
+
+type DrawChordOptions = {
+  noteObjs: VSChordNoteObj[];
+  duration: NoteDurations;
+  isDotted: boolean;
+  articulation?: NoteArticulations;
+  clef: ClefTypes;
+  chordGroup: SVGGElement;
+  options?: RenderOptions;
+}
 
 type RenderOptions = {
   skipStem?: boolean;
@@ -189,6 +199,21 @@ export default class NoteRenderer {
       );
     });
 
+    // Render articulations
+    const noteArtic = noteObj.articulation;
+    if (noteArtic) {
+      const def = getArticulationGlyph(noteArtic);
+
+      // The helper handles all spacing, line-snapping, and direction overrides automatically
+      const finalY = getArticulationYPos(noteArtic, notePitchStep, isStemDown);
+      const xOffset = (noteHeadDef.glyphWidth - def.glyphWidth) / 2;
+
+      this.svgRendererInstance.drawGlyph(def.name, noteGroup, {
+        x: xOffset,
+        y: finalY
+      });
+    };
+
     // Get bounding box width to return to caller
     const hasLedgers = ledgerYCoords.length > 0;
     const ledgerMinX = hasLedgers ? -LEDGER_LINE_PADDING : 0;
@@ -205,10 +230,12 @@ export default class NoteRenderer {
     };
   };
 
-  public drawChord(noteObjs: VSChordNoteObj[], duration: NoteDurations, isDotted: boolean, clef: ClefTypes, chordGroup: SVGGElement, options?: RenderOptions) {
+  public drawChord(chordObj: VSChordObj, clef: ClefTypes, chordGroup: SVGGElement, options?: RenderOptions) {
+
+    const { notes, duration, isDotted, articulation } = chordObj;
 
     // Get Y pos for each note and sorted from lowest to highest
-    const positionedNoteObjs: PositionedChordNote[] = noteObjs.map(noteObj => {
+    const positionedNoteObjs: PositionedChordNote[] = notes.map(noteObj => {
       const pitchStep = getPitchStepClefDifference(noteObj.letter, noteObj.octave, clef);
 
       return {
@@ -285,7 +312,22 @@ export default class NoteRenderer {
           x: startX
         })
       })
-    }
+    };
+
+    // Render articulations
+    if (articulation) {
+      const def = getArticulationGlyph(articulation);
+      const extremeNote = isStemDown ? positionedNoteObjs[positionedNoteObjs.length - 1] : positionedNoteObjs[0];
+
+      // The helper handles all spacing, line-snapping, and direction overrides automatically
+      const finalY = getArticulationYPos(articulation, extremeNote.pitchStep, isStemDown);
+      const xOffset = extremeNote.xOffset + ((noteHeadDef.glyphWidth - def.glyphWidth) / 2);
+
+      this.svgRendererInstance.drawGlyph(def.name, chordGroup, {
+        x: xOffset,
+        y: finalY
+      });
+    };
 
     // Draw ledger lines
     const ledgerLineSpans = getChordLedgerLineSpans(positionedNoteObjs, noteHeadDef.glyphWidth);

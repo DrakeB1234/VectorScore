@@ -1,4 +1,4 @@
-import { COMPONENT_GAP } from "./StaffRenderer";
+import { BARLINE_X_OFFSET, COMPONENT_GAP } from "./StaffRenderer";
 import StaffRenderer from "./StaffRenderer";
 import type SVGRenderer from "./SVGRenderer";
 import type { ClefTypes, SystemTypes } from "../types";
@@ -28,6 +28,7 @@ export default class StaffFrame {
   public totalStaffHeight: number;
   private currentNoteStartX: number = 0;
 
+  private braceWidth: number;
   private clefWidth: number;
   private keySigWidth: number = 0;
   private timeSigWidth: number = 0;
@@ -57,11 +58,13 @@ export default class StaffFrame {
       const res = this.renderGrandStaff();
       this.totalStaffHeight = res.totalStaffHeight;
       this.clefWidth = res.clefWidth;
+      this.braceWidth = res.braceWidth;
     }
     else {
       const staffHeight = this.staffRenderer.drawStaffLines({
         width: this.options.width,
         startYPos: 0,
+        startXPos: 0,
         staffGroup: this.staffGroup,
       });
       const clefWidth = this.staffRenderer.drawClef({
@@ -72,24 +75,36 @@ export default class StaffFrame {
 
       this.totalStaffHeight = staffHeight;
       this.clefWidth = clefWidth;
+      this.braceWidth = 0;
     }
 
     // Draw Signatures & Barlines
     if (this.options.keySignature) this.drawKeySignature(this.options.keySignature);
     if (this.options.timeSignature) this.drawTimeSignature(this.options.timeSignature);
 
-    this.staffRenderer.drawStaffBarLine(0.5, this.options.staffType, this.staffGroup);
-    this.staffRenderer.drawStaffBarLine(this.options.width - 0.5, this.options.staffType, this.staffGroup);
+    this.staffRenderer.drawStaffBarLine(BARLINE_X_OFFSET + this.braceWidth, this.options.staffType, this.staffGroup);
+    this.staffRenderer.drawStaffBarLine(this.options.width - BARLINE_X_OFFSET, this.options.staffType, this.staffGroup);
 
     this.updateStaffLayout();
   }
 
   private renderGrandStaff() {
+
+    const totalStaffHeight = (BASE_STAFF_HEIGHT * 2) + GRAND_STAFF_SPACING;
     let y = 0;
+
+    const braceWidth = this.staffRenderer.drawBrace({
+      topY: 0,
+      bottomY: totalStaffHeight,
+      staffGroup: this.staffGroup
+    });
+
+    this.clefGroup.setAttribute("transform", `translate(${braceWidth}, 0)`);
 
     const trebleStaffHeight = this.staffRenderer.drawStaffLines({
       width: this.options.width,
       startYPos: y,
+      startXPos: braceWidth,
       staffGroup: this.staffGroup,
     });
     const trebleClefWidth = this.staffRenderer.drawClef({
@@ -102,6 +117,7 @@ export default class StaffFrame {
     const bassStaffHeight = this.staffRenderer.drawStaffLines({
       width: this.options.width,
       startYPos: y,
+      startXPos: braceWidth,
       staffGroup: this.staffGroup,
     });
     const bassClefWidth = this.staffRenderer.drawClef({
@@ -113,7 +129,8 @@ export default class StaffFrame {
 
     return {
       clefWidth: Math.max(trebleClefWidth, bassClefWidth),
-      totalStaffHeight: y
+      totalStaffHeight: y,
+      braceWidth
     }
   }
 
@@ -122,7 +139,7 @@ export default class StaffFrame {
    * @returns The new starting X coordinate where notes should safely begin.
    */
   private updateStaffLayout(): number {
-    let currentX = this.clefWidth;
+    let currentX = this.clefWidth + this.braceWidth;
 
     if (this.options.keySignature && this.keySigWidth > 0) {
       currentX += COMPONENT_GAP;
