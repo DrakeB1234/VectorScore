@@ -235,9 +235,13 @@ Typical note string to draw (i.e. StandardStaff.drawNote). For example `C4q` wou
 * Letters: A-G (any case)
 * Accidental: #, b, n, ##, bb
 * Octave: 0-9
-* Durations: w, h, q, e, s, t (with optional '.' for dotted durations)
+* Durations: w, h, q, e, s, t 
+* Dotted: . *optional*
+* Articulation: (staccacto) *optional*
 
 Variations could be `C#4q.`, where the '#' is a sharpened note and the 'q.' reprsents a dotted quarter duration.
+
+Example with all parameters `C#4q.(fermata)`
 
 ### Chord String Syntax
 Similar to note string syntax, however durations are not defined in the string and instead defined as a separate parameter.

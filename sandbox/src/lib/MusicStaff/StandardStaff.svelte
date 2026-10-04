@@ -8,6 +8,7 @@
   import SignatureCard from "./SignatureCard.svelte";
   import ErrorUICard from "./ErrorUiCard.svelte";
   import ReplaceCard from "./ReplaceCard.svelte";
+  import { chordConfig, noteConfig, restConfig } from "@VS/helpers/noteHelpers";
 
   type StaffActionTypes =
     | "drawing"
@@ -37,6 +38,15 @@
 
     if (staffType === "grand") {
       staff = staffMap["grand"];
+
+      staff?.drawNote("C4q.(fermata)");
+      staff?.drawNote(noteConfig("C4q.", "fermata"));
+
+      staff?.drawChord("[C4,E4,G4]q.(accent)");
+      staff?.drawChord(chordConfig(["C4", "E4", "G4"], "q.", "accent"));
+
+      staff?.drawRest("Rt.");
+      staff?.drawRest(restConfig("q."));
     }
   }
 

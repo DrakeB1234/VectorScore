@@ -60,10 +60,10 @@ export function chordConfig(notes: string[], duration: string, articulation?: No
   return { type: "chord", chord: chordObj };
 };
 
-export function restConfig(duration: string): DrawRestConfig {
-  const { duration: _duration, isDotted } = parseDurationString(duration);
+export function restConfig(restInput: string): DrawRestConfig {
+  const { duration, isDotted } = parseRestString(restInput);
 
-  return { type: "rest", duration: _duration, isDotted };
+  return { type: "rest", duration, isDotted };
 };
 
 export function beamConfig(entries: BeamableConfig[]): DrawBeamConfig {
@@ -73,6 +73,13 @@ export function beamConfig(entries: BeamableConfig[]): DrawBeamConfig {
   })
 
   return { type: "beam", entries };
+};
+
+export function chordConfigFromString(chordString: string): DrawChordConfig {
+  return {
+    type: "chord",
+    chord: parseChordString(chordString)
+  };
 }
 
 export type PositionedChordNote = {
@@ -117,18 +124,20 @@ export const SECOND_INTERVAL_X_OFFSET = 1;
 // Accidentals whose notes are a seventh (6 steps) or more apart don't overlap vertically, so they can share a column.
 const ACCIDENTAL_MIN_STEP_GAP = 6;
 
-const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqestWHQEST])(?<dot>\.?)$/;
+const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqestWHQEST])(?<dot>\.?)(?:\((?<articulation>[a-z]+)\))?$/;
+const REGEX_CHORD_STRING = /^\[(?<notes>[A-Ga-g0-9#b\s,]+)\](?<duration>[whqestWHQEST])(?<dot>\.?)(?:\((?<articulation>[a-z]+)\))?$/;
 const REGEX_CHORD_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)$/;
 const REGEX_DURATION_STRING = /^(?<duration>[whqestWHQEST])(?<dot>\.?)$/;
+const REGEX_REST_STRING = /^(?:[Rr])?(?<duration>[whqestWHQEST])(?<dot>\.?)$/;
 
 export function parseNoteString(noteString: string): VSNoteObj {
   const match = noteString.match(REGEX_NOTE_STRING);
 
   if (!match || !match.groups) {
-    throw new Error(`Invalid note string format: ${noteString}. Expected format: [A-Ga-g][#|b]?[0-9][w|h|q|e|s|t].`);
+    throw new Error(`Invalid note string format: ${noteString}. Expected format: [A-Ga-g][#|b]?[0-9][w|h|q|e|s|t].(articulation)`);
   };
 
-  let { letter, accidental, octave, duration, dot } = match.groups;
+  let { letter, accidental, octave, duration, dot, articulation } = match.groups;
 
   letter = letter.toUpperCase();
   duration = duration.toLowerCase();
@@ -141,13 +150,57 @@ export function parseNoteString(noteString: string): VSNoteObj {
     isDotted: dot === "."
   };
 
+  if (articulation) {
+    validateArticulationString(articulation);
+    noteObj.articulation = articulation as NoteArticulations;
+  }
+
   return noteObj;
+};
+
+export function parseChordString(chordString: string): VSChordObj {
+  const match = chordString.match(REGEX_CHORD_STRING);
+
+  if (!match || !match.groups) {
+    throw new Error(`Invalid note string format: ${chordString}. Expected format: [C4,E4,G4]q.(articulation)`);
+  };
+
+  const { notes, duration, dot, articulation } = match.groups;
+
+  const rawNotes = notes.split(",").map(n => n.trim());
+  const noteObjs = rawNotes.map(note => parseChordNoteString(note));
+
+  const chordObj: VSChordObj = {
+    notes: noteObjs,
+    duration: duration.toLowerCase() as NoteDurations,
+    isDotted: dot === ".",
+  };
+
+  if (articulation) {
+    validateArticulationString(articulation);
+    chordObj.articulation = articulation as NoteArticulations;
+  }
+
+  return chordObj;
 };
 
 export function parseDurationString(durationString: string) {
   const match = durationString.match(REGEX_DURATION_STRING);
   if (!match || !match.groups) {
     throw new Error(`Invalid duration string format: ${durationString}. Expected format: [w|h|q|e|s|t][.]?`);
+  }
+
+  return {
+    duration: match.groups.duration.toLowerCase() as NoteDurations,
+    isDotted: match.groups.dot === "."
+  };
+};
+
+export function parseRestString(restString: string) {
+  const match = restString.match(REGEX_REST_STRING);
+
+  if (!match || !match.groups) {
+    throw new Error(`Invalid rest string format: ${restString}. Expected format: [R]q[.]`);
   }
 
   return {
