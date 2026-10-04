@@ -1,5 +1,5 @@
 import { AUGMENTATION_DOT, getAccidentalGlyph, getArticulationGlyph, getFlagGlyph, getNoteheadGlyphByDuration, getRestGlyphByDuration } from "../glyphs";
-import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSNoteObj, assignAccidentalColumns, type BeamableConfig, snapPitchStepToStaffSpace, isSecondInterval, getArticulationYPos, type VSChordObj } from "../helpers/noteHelpers";
+import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSNoteObj, assignAccidentalColumns, type BeamableConfig, snapPitchStepToStaffSpace, isSecondInterval, getArticulationYPos, type VSChordObj, type VSRestObj, type DrawBeamConfig, type VSBeamObj } from "../helpers/noteHelpers";
 import { STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 import type { ClefTypes } from "../types";
 import BeamRenderer from "./BeamRenderer";
@@ -355,7 +355,9 @@ export default class NoteRenderer {
   }
 
   /** - Returns the width of the drawn rest glyph */
-  public drawRest(duration: NoteDurations, isDotted: boolean, restGroup: SVGGElement) {
+  public drawRest(rest: VSRestObj, restGroup: SVGGElement) {
+    const duration = rest.duration;
+    const isDotted = rest.isDotted;
     const glyphDef = getRestGlyphByDuration(duration);
 
     this.svgRendererInstance.drawGlyph(glyphDef.name, restGroup);
@@ -385,8 +387,8 @@ export default class NoteRenderer {
     };
   };
 
-  public drawBeam(configs: BeamableConfig[], clef: ClefTypes, group: SVGGElement) {
-    return this.beamRendererInstance.drawBeamGroup(configs, clef, group);
+  public drawBeam(beam: VSBeamObj, clef: ClefTypes, group: SVGGElement) {
+    return this.beamRendererInstance.drawBeamGroup(beam, clef, group);
   };
 
   /**  Bypasses all clef, ledger, and accidental logic. */

@@ -8,7 +8,13 @@
   import SignatureCard from "./SignatureCard.svelte";
   import ErrorUICard from "./ErrorUiCard.svelte";
   import ReplaceCard from "./ReplaceCard.svelte";
-  import { chordConfig, noteConfig, restConfig } from "@VS/helpers/noteHelpers";
+  import {
+    beamConfig,
+    chordConfig,
+    noteConfig,
+    restConfig,
+    type VSNoteObj,
+  } from "@VS/helpers/noteHelpers";
 
   type StaffActionTypes =
     | "drawing"
@@ -40,13 +46,69 @@
       staff = staffMap["grand"];
 
       staff?.drawNote("C4q.(fermata)");
-      staff?.drawNote(noteConfig("C4q.", "fermata"));
+      staff?.drawNote(
+        noteConfig({
+          letter: "E",
+          accidental: null,
+          octave: 4,
+          duration: "q",
+          isDotted: true,
+          articulation: "fermata",
+        }),
+      );
 
       staff?.drawChord("[C4,E4,G4]q.(accent)");
-      staff?.drawChord(chordConfig(["C4", "E4", "G4"], "q.", "accent"));
+      staff?.drawChord(
+        chordConfig({
+          notes: [
+            { letter: "C", octave: 4, accidental: null },
+            { letter: "E", octave: 4, accidental: null },
+            { letter: "G", octave: 4, accidental: null },
+          ],
+          duration: "q",
+          isDotted: true,
+          articulation: "accent",
+        }),
+      );
 
       staff?.drawRest("Rt.");
-      staff?.drawRest(restConfig("q."));
+      staff?.drawRest(
+        restConfig({
+          duration: "t",
+          isDotted: true,
+        }),
+      );
+
+      staff.drawBeam("C4e.-[E4,G4]e(marcato)-C#4e");
+      staff.drawBeam(
+        beamConfig({
+          entries: [
+            noteConfig({
+              letter: "C",
+              accidental: null,
+              octave: 4,
+              duration: "e",
+              isDotted: true,
+            }),
+            chordConfig({
+              notes: [
+                { letter: "E", octave: 4, accidental: null },
+                { letter: "G", octave: 4, accidental: null },
+              ],
+              duration: "e",
+              isDotted: false,
+              articulation: "marcato",
+            }),
+            noteConfig({
+              letter: "C",
+              accidental: "#",
+              octave: 4,
+              duration: "e",
+              isDotted: false,
+            }),
+          ],
+        }),
+      );
     }
   }
 

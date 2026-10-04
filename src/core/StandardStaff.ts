@@ -1,5 +1,5 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, ARTIC_ACCENT, ARTIC_FERMATA, ARTIC_MARCATO, ARTIC_STACCATO, ARTIC_TENUTO, AUGMENTATION_DOT, BRACE, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, type BeamableConfig, getPitchStepClefDifference, convertPitchStepToYPos, type DrawBeamConfig, type NoteArticulations, chordConfig, noteConfig, restConfig, beamConfig, parseChordString, chordConfigFromString } from "../helpers/noteHelpers";
+import { parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, getPitchStepClefDifference, convertPitchStepToYPos, type DrawBeamConfig, chordConfig, noteConfig, restConfig, parseChordString, parseNoteString, parseRestString, beamConfig, parseBeamString } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
@@ -221,18 +221,21 @@ export default class StandardStaff {
       };
     }
     else if (config.type === "rest") {
-      const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawRest(config.duration, config.isDotted, group);
+
+      const rest = config.rest;
+
+      const { fullWidth, originXOffset, yPos } = this.noteRendererInstance.drawRest(rest, group);
       newEntry = {
         ...newEntry,
         type: "rest",
-        duration: config.duration,
+        duration: rest.duration,
         originXOffset,
         totalWidth: fullWidth,
         yPos: yPos
       };
     }
     else if (config.type === "beam") {
-      const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawBeam(config.entries, targetClef, group);
+      const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawBeam(config.beam, targetClef, group);
       newEntry = {
         ...newEntry,
         type: "beam",
@@ -278,25 +281,26 @@ export default class StandardStaff {
 
   /** - Draws a note on the staff. Returns the index of the drawn element */
   public drawNote(input: string | DrawNoteConfig, options?: StandardStaffDrawOptions) {
-    const config = typeof input === "string" ? noteConfig(input) : input;
+    const config = typeof input === "string" ? noteConfig(parseNoteString(input)) : input;
     return this.appendEntry(config, options);
   }
 
   /** - Draws a chord on the staff. Returns the index of the drawn element */
   public drawChord(input: string | DrawChordConfig, options?: StandardStaffDrawOptions) {
-    const config = typeof input === "string" ? chordConfigFromString(input) : input;
+    const config = typeof input === "string" ? chordConfig(parseChordString(input)) : input;
     return this.appendEntry(config, options);
   }
 
   /** - Draws a rest on the staff. Returns the index of the drawn element */
   public drawRest(input: string | DrawRestConfig, options?: StandardStaffDrawOptions) {
-    const config = typeof input === "string" ? restConfig(input) : input;
+    const config = typeof input === "string" ? restConfig(parseRestString(input)) : input;
     return this.appendEntry(config, options);
   }
 
   /** - Draws a beam on the staff. Returns the index of the drawn element */
-  public drawBeam(entries: BeamableConfig[], options?: StandardStaffDrawOptions) {
-    return this.appendEntry(beamConfig(entries), options);
+  public drawBeam(input: string | DrawBeamConfig, options?: StandardStaffDrawOptions) {
+    const config = typeof input === "string" ? beamConfig(parseBeamString(input)) : input;
+    return this.appendEntry(config, options);
   }
 
   /** - Draws a barline on the staff. Returns the index of the drawn element */

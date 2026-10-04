@@ -1,7 +1,7 @@
 import type SVGRenderer from "./SVGRenderer";
 import type NoteRenderer from "./NoteRenderer";
 import type { ClefTypes } from "../types";
-import { convertPitchStepToYPos, getPitchStepClefDifference, getStemSteps, MIDDLE_LINE_STEP, type BeamableConfig, type NoteDurations } from "../helpers/noteHelpers";
+import { convertPitchStepToYPos, getPitchStepClefDifference, getStemSteps, MIDDLE_LINE_STEP, type BeamableConfig, type DrawBeamConfig, type NoteDurations, type VSBeamObj } from "../helpers/noteHelpers";
 import { getNoteheadGlyphByDuration } from "../glyphs";
 import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 import { setTransformAttr } from "../constants";
@@ -159,18 +159,18 @@ export default class BeamRenderer {
     return { x0, y0: finalY0, slope };
   }
 
-  public drawBeamGroup(configs: BeamableConfig[], clef: ClefTypes, beamGroup: SVGGElement) {
+  public drawBeamGroup(beam: VSBeamObj, clef: ClefTypes, beamGroup: SVGGElement) {
     let internalCursorX = 0;
 
     // Calculate the unified stem direction for the whole group
-    const isStemDown = this.getGroupStemDirection(configs, clef);
+    const isStemDown = this.getGroupStemDirection(beam.entries, clef);
 
     const stemCoordinates: StemCoord[] = [];
     const yPosArray: number[] = [];
     let firstOriginXOffset = 0; // Only considers the first entries xOffset, if it exists.
 
     // Loop through and draw the noteheads (skipping stems)
-    configs.forEach((config, i) => {
+    beam.entries.forEach((entry, i) => {
 
       let entryWidth = 0;
       let originXOffset = 0;
@@ -178,28 +178,28 @@ export default class BeamRenderer {
       // We need these to calculate where the stem attaches
       let highStep = Infinity;
       let lowStep = -Infinity;
-      const duration = config.type === "note" ? config.note.duration : config.chord.duration;
+      const duration = entry.type === "note" ? entry.note.duration : entry.chord.duration;
       const resolvedDuration = this.resolveDuration(duration);
 
-      const wrapperGroup = this.svgRendererInstance.createGroup(config.type);
+      const wrapperGroup = this.svgRendererInstance.createGroup(entry.type);
 
-      if (config.type === "note") {
-        const step = getPitchStepClefDifference(config.note.letter, config.note.octave, clef);
+      if (entry.type === "note") {
+        const step = getPitchStepClefDifference(entry.note.letter, entry.note.octave, clef);
         highStep = step;
         lowStep = step;
 
-        const result = this.noteRendererInstance.drawNote(config.note, clef, wrapperGroup, { skipStem: true });
+        const result = this.noteRendererInstance.drawNote(entry.note, clef, wrapperGroup, { skipStem: true });
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
         yPosArray.push(result.yPos);
 
-      } else if (config.type === "chord") {
+      } else if (entry.type === "chord") {
 
-        const steps = config.chord.notes.map(n => getPitchStepClefDifference(n.letter, n.octave, clef));
+        const steps = entry.chord.notes.map(n => getPitchStepClefDifference(n.letter, n.octave, clef));
         highStep = Math.min(...steps);
         lowStep = Math.max(...steps);
 
-        const result = this.noteRendererInstance.drawChord(config.chord, clef, wrapperGroup, { skipStem: true });
+        const result = this.noteRendererInstance.drawChord(entry.chord, clef, wrapperGroup, { skipStem: true });
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
         yPosArray.push(isStemDown ? result.yPosArray[result.yPosArray.length - 1] : result.yPosArray[0]);

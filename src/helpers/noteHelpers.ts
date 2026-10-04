@@ -1,11 +1,14 @@
 import type { ClefTypes } from "../types";
 import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "./staffHelpers";
 
-export type NoteLetters = "A" | "B" | "C" | "D" | "E" | "F" | "G";
-export type NoteDurations = "w" | "h" | "q" | "e" | "s" | "t";
-export type NoteAccidentals = "#" | "b" | "n" | "##" | "bb";
-const articulations = ["staccato", "tenuto", "accent", "marcato", "fermata"] as const;
-export type NoteArticulations = typeof articulations[number];
+const noteLetters = ["A", "B", "C", "D", "E", "F", "G"] as const;
+const noteArticultations = ["staccato", "tenuto", "accent", "marcato", "fermata"] as const;
+const noteDurations = ["w", "h", "q", "e", "s", "t"] as const;
+const noteAccidentals = ["#", "b", "n", "##", "bb"] as const;
+export type NoteLetters = typeof noteLetters[number];
+export type NoteArticulations = typeof noteArticultations[number];
+export type NoteDurations = typeof noteDurations[number];
+export type NoteAccidentals = typeof noteAccidentals[number];
 
 const excludedBeamDurations: NoteDurations[] = ["w", "h", "q"];
 
@@ -25,62 +28,50 @@ export interface VSChordObj {
   articulation?: NoteArticulations;
 }
 
+export interface VSRestObj {
+  duration: NoteDurations;
+  isDotted: boolean;
+}
+
+export interface VSBeamObj {
+  entries: (DrawNoteConfig | DrawChordConfig)[];
+}
+
 export type VSChordNoteObj = Omit<VSNoteObj, "duration" | "isDotted" | "articulation">;
 
 // Common types / actions for drawing methods on staff
 
 export type DrawNoteConfig = { type: "note"; note: VSNoteObj };
 export type DrawChordConfig = { type: "chord"; chord: VSChordObj };
-export type DrawRestConfig = { type: "rest"; duration: NoteDurations; isDotted: boolean; };
-export type DrawBeamConfig = { type: "beam"; entries: BeamableConfig[]; };
+export type DrawRestConfig = { type: "rest"; rest: VSRestObj };
+export type DrawBeamConfig = { type: "beam"; beam: VSBeamObj; };
 
 export type BeamableConfig = DrawNoteConfig | DrawChordConfig;
 
-export function noteConfig(note: string, articulation?: NoteArticulations): DrawNoteConfig {
-  const noteObj = parseNoteString(note);
-  if (articulation && validateArticulationString(articulation)) noteObj.articulation = articulation;
+export function noteConfig(note: VSNoteObj): DrawNoteConfig {
 
-  return { type: "note", note: noteObj };
+  return { type: "note", note };
 };
 
-export function chordConfig(notes: string[], duration: string, articulation?: NoteArticulations): DrawChordConfig {
-  if (notes.length < 1 || notes.length > 10) throw new Error("Invalid amount of notes provided in chord config. Please provide 1-10 notes.");
-  const { duration: _duration, isDotted } = parseDurationString(duration);
-  const noteObjs = notes.map(note => parseChordNoteString(note));
+export function chordConfig(chord: VSChordObj): DrawChordConfig {
+  if (chord.notes.length < 1 || chord.notes.length > 10) throw new Error("Invalid amount of notes provided in chord config. Please provide 1-10 notes.");
 
-  if (articulation) validateArticulationString(articulation);
-
-  const chordObj: VSChordObj = {
-    notes: noteObjs,
-    duration: _duration,
-    isDotted,
-    articulation
-  };
-
-  return { type: "chord", chord: chordObj };
+  return { type: "chord", chord };
 };
 
-export function restConfig(restInput: string): DrawRestConfig {
-  const { duration, isDotted } = parseRestString(restInput);
+export function restConfig(rest: VSRestObj): DrawRestConfig {
 
-  return { type: "rest", duration, isDotted };
+  return { type: "rest", rest };
 };
 
-export function beamConfig(entries: BeamableConfig[]): DrawBeamConfig {
-  entries.map(entry => {
+export function beamConfig(beam: VSBeamObj): DrawBeamConfig {
+  beam.entries.map(entry => {
     const duration = entry.type === "note" ? entry.note.duration : entry.chord.duration;
     if (excludedBeamDurations.includes(duration)) throw new Error(`Invalid duration '${duration}' was provided. Please use e|s|t.`);
-  })
+  });
 
-  return { type: "beam", entries };
+  return { type: "beam", beam };
 };
-
-export function chordConfigFromString(chordString: string): DrawChordConfig {
-  return {
-    type: "chord",
-    chord: parseChordString(chordString)
-  };
-}
 
 export type PositionedChordNote = {
   noteObj: VSChordNoteObj;
@@ -184,19 +175,7 @@ export function parseChordString(chordString: string): VSChordObj {
   return chordObj;
 };
 
-export function parseDurationString(durationString: string) {
-  const match = durationString.match(REGEX_DURATION_STRING);
-  if (!match || !match.groups) {
-    throw new Error(`Invalid duration string format: ${durationString}. Expected format: [w|h|q|e|s|t][.]?`);
-  }
-
-  return {
-    duration: match.groups.duration.toLowerCase() as NoteDurations,
-    isDotted: match.groups.dot === "."
-  };
-};
-
-export function parseRestString(restString: string) {
+export function parseRestString(restString: string): VSRestObj {
   const match = restString.match(REGEX_REST_STRING);
 
   if (!match || !match.groups) {
@@ -205,8 +184,27 @@ export function parseRestString(restString: string) {
 
   return {
     duration: match.groups.duration.toLowerCase() as NoteDurations,
-    isDotted: match.groups.dot === "."
+    isDotted: match.groups.dot === ".",
   };
+};
+
+export function parseBeamString(beamString: string): VSBeamObj {
+  const chunks = beamString.split("-").map(chunk => chunk.trim());
+
+  if (chunks.length < 2) {
+    throw new Error(`Invalid beam string format: ${beamString}. Expected at least two items connected by hyphens (e.g., 'C4e-D4e').`);
+  }
+
+  const entries: BeamableConfig[] = chunks.map(chunk => {
+    if (chunk.startsWith("[")) {
+      return chordConfig(parseChordString(chunk));
+    }
+    else {
+      return noteConfig(parseNoteString(chunk));
+    }
+  });
+
+  return { entries };
 }
 
 export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
@@ -227,11 +225,22 @@ export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
   }
 
   return noteObj;
-}
+};
 
-export function validateArticulationString(string: string) {
-  if (!articulations.includes(string as any)) throw new Error(`Invalid articulation string '${string}'. Valid options are 'staccato', 'tenuto', 'accent', 'marcato' or 'fermata'.`);
-  return true
+export function parseDurationString(durationString: string) {
+  const match = durationString.match(REGEX_DURATION_STRING);
+  if (!match || !match.groups) {
+    throw new Error(`Invalid duration string format: ${durationString}. Expected format: [w|h|q|e|s|t][.]?`);
+  }
+
+  return {
+    duration: match.groups.duration.toLowerCase() as NoteDurations,
+    isDotted: match.groups.dot === "."
+  };
+};
+
+export function validateArticulationString(string: string | undefined) {
+  if (string && !noteArticultations.includes(string as any)) throw new Error(`Invalid articulation string '${string}'. Valid options are 'staccato', 'tenuto', 'accent', 'marcato' or 'fermata'.`);
 }
 
 export function getPitchStep(letter: string, octave: number): number {
