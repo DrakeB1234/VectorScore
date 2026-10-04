@@ -5,7 +5,7 @@
     chordConfig,
     noteConfig,
     restConfig,
-  } from "@VS/helpers/noteHelpers";
+  } from "@VS/helpers/inputHelpers";
 
   let staff: ScrollingStaff | null = $state(null);
 
@@ -39,33 +39,6 @@
     if (!staff) return;
 
     isNotesOut = false;
-
-    const beam = beamConfig([
-      noteConfig("C4e"),
-      noteConfig("E4e"),
-      noteConfig("F4e"),
-    ]);
-
-    const chord = chordConfig(["D4", "F#4", "A4"], "q", "marcato");
-
-    staff.queueNotes([
-      noteConfig("C4q."),
-      restConfig("s"),
-      beam,
-      chord,
-      noteConfig("D4q"),
-      restConfig("q"),
-      noteConfig("E4q"),
-      noteConfig("F4q"),
-      beam,
-      restConfig("t"),
-      noteConfig("G4q"),
-      noteConfig("A4q"),
-      chord,
-      noteConfig("B4q"),
-      noteConfig("D4q"),
-      noteConfig("E4q"),
-    ]);
   }
 </script>
 

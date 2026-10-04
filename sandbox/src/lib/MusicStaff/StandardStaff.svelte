@@ -13,8 +13,7 @@
     chordConfig,
     noteConfig,
     restConfig,
-    type VSNoteObj,
-  } from "@VS/helpers/noteHelpers";
+  } from "@VS/helpers/inputHelpers";
 
   type StaffActionTypes =
     | "drawing"
@@ -30,85 +29,24 @@
 
   function setupStaff(element: HTMLDivElement, staffType: SystemTypes) {
     staffMap[staffType] = new MusicStaff(element, {
-      width: 400,
+      width: 600,
       scale: 1,
       staffType: staffType,
       paddingTop: 40,
       paddingBottom: 40,
-      // keySignature: "G",
+      keySignature: "G",
       timeSignature: {
-        topNumber: 4,
-        bottomNumber: 4,
+        topNumber: 9,
+        bottomNumber: 8,
       },
     });
 
     if (staffType === "grand") {
       staff = staffMap["grand"];
-
-      staff?.drawNote("C4q.(fermata)");
-      staff?.drawNote(
-        noteConfig({
-          letter: "E",
-          accidental: null,
-          octave: 4,
-          duration: "q",
-          isDotted: true,
-          articulation: "fermata",
-        }),
+      staff.drawBatchElements(
+        "C4w B#4q.(staccato) | [B4,D5,F5]q(fermata) | rt rq. rh | C4e(staccato)-[E4,G4,A5]e(tenuto)-G4s(staccato)",
       );
-
-      staff?.drawChord("[C4,E4,G4]q.(accent)");
-      staff?.drawChord(
-        chordConfig({
-          notes: [
-            { letter: "C", octave: 4, accidental: null },
-            { letter: "E", octave: 4, accidental: null },
-            { letter: "G", octave: 4, accidental: null },
-          ],
-          duration: "q",
-          isDotted: true,
-          articulation: "accent",
-        }),
-      );
-
-      staff?.drawRest("Rt.");
-      staff?.drawRest(
-        restConfig({
-          duration: "t",
-          isDotted: true,
-        }),
-      );
-
-      staff.drawBeam("C4e.-[E4,G4]e(marcato)-C#4e");
-      staff.drawBeam(
-        beamConfig({
-          entries: [
-            noteConfig({
-              letter: "C",
-              accidental: null,
-              octave: 4,
-              duration: "e",
-              isDotted: true,
-            }),
-            chordConfig({
-              notes: [
-                { letter: "E", octave: 4, accidental: null },
-                { letter: "G", octave: 4, accidental: null },
-              ],
-              duration: "e",
-              isDotted: false,
-              articulation: "marcato",
-            }),
-            noteConfig({
-              letter: "C",
-              accidental: "#",
-              octave: 4,
-              duration: "e",
-              isDotted: false,
-            }),
-          ],
-        }),
-      );
+      staff.justifyNotes();
     }
   }
 

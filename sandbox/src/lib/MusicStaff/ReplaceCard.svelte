@@ -6,8 +6,8 @@
     chordConfig,
     noteConfig,
     restConfig,
-    shiftPitches,
-  } from "@VS/helpers/noteHelpers";
+  } from "@VS/helpers/inputHelpers";
+  import { shiftPitches } from "@VS/helpers/noteHelpers";
 
   type Props = {
     staffInstance: StandardStaff | null;

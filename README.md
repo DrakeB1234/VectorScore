@@ -21,6 +21,9 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
   * [Rhythm Staff](#rhythm-staff)
   * [Guitar Chords](#guitar-chords)
 * [Styling / Theme Guide](#css-classes--theming)
+* [Drawing Elements](#drawing-elements)
+  * [Individual Elements](#drawing-individual-elements)
+  * [Batch of Elements](#drawing-batch-of-elements)
 * [Input String Syntax](#input-string-syntax)
   * [Note String Syntax](#note-string-syntax)
   * [Chord String Syntax](#chord-string-syntax)
@@ -225,6 +228,51 @@ VectorScore as of the latest release ***does not*** contain pre-made stylesheets
   .vs-guitar-group-guitar-group-barre {}
   .vs-guitar-group-guitar-barre {}
   
+```
+
+## Drawing Elements
+
+### Drawing individual elements
+Notes, chords, rests, beams and barlines can each be described two ways. Draw methods accept either, and the result is identical.
+
+| Element | String | Config object |
+|---|---|---|
+| Note | `"C4q"`, `"F#5e.(staccato)"` | `noteConfig({ letter: "C", octave: 4, duration: "q" })` |
+| Chord | `"[C4,E4,G4]q"` | `chordConfig({ notes: [{ letter: "C", octave: 4 }, ...], duration: "q" })` |
+| Rest | `"q"`, `"Rq."` | `restConfig({ duration: "q" })` |
+| Beam | `"C4e-D4e-[E4,G4]e"` | `beamConfig({ entries: [noteConfig(...), ...] })` |
+| Barline | `staff.drawBarline()` | `{ type: "barline" }` |
+
+```ts
+import { StandardStaff, noteConfig, chordConfig } from "vector-score";
+
+const staff = new StandardStaff(container, { staffType: "grand", width: 500 });
+
+// Strings; quick and easy to work with
+staff.drawNote("C4q");
+staff.drawChord("[G3,C4,E4]h.(accent)");
+staff.drawBeam("C4e-D4e-E4e-F4e");
+
+// Config objects; good for generated or dynamic data
+staff.drawNote(noteConfig({ letter: pitch.letter, octave: pitch.octave, duration: "q" }));
+```
+
+### Drawing batch of elements
+With the `drawBatchElements()` method, using similar syntax above, multiple elements can be draw in a single string argument. However, config objects are the only way to define per element options (staff direction, classes)
+
+```ts
+import { StandardStaff, noteConfig, chordConfig } from "vector-score";
+
+const staff = new StandardStaff(container, { staffType: "grand", width: 500 });
+
+staff.drawBatchElements("C4w B#4q.(staccato) | [B4,D5,F5]q(fermata) | rt rq. rh | C4e(staccato)-[E4,G4,A5]e(tenuto)-G4s(staccato)");
+
+staff.drawBatchElements([
+  { config: drawNote({ letter: "C", octave: 4 }), options: { staff: "bottom", classes: ["wrong-note"] } },
+  { config: drawNote({ letter: "B", accidental: "#", octave: 4 }), options: { classes: ["correct-note"] } },
+  { type: "barline" },
+  { config: drawChord(...) },
+])
 ```
 
 ## Input String Syntax

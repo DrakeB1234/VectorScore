@@ -1,4 +1,4 @@
-import type { NoteAccidentals, NoteArticulations, NoteDurations } from "./helpers/noteHelpers";
+import type { NoteAccidentals, NoteArticulations, NoteDurations } from "./helpers/inputHelpers";
 import type { ClefTypes } from "./types";
 
 export type GlyphDef = {

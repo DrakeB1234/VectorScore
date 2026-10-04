@@ -4,7 +4,7 @@ import NoteRenderer from "../classes/NoteRenderer";
 import SVGRenderer from "../classes/SVGRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
-import { type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig } from "../helpers/noteHelpers";
+import { type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig } from "../helpers/inputHelpers";
 import { NAMESPACE, setTransformAttr } from "../constants";
 
 const USE_GLPYHS: GlyphDef[] = [
@@ -142,7 +142,7 @@ export default class ScrollingStaff {
     }
     else if (nextNoteInBuffer.type === "beam") {
       const res = this.noteRendererInstance.drawBeam(
-        nextNoteInBuffer.entries,
+        nextNoteInBuffer.beam,
         targetClef,
         group
       );
@@ -151,9 +151,7 @@ export default class ScrollingStaff {
     }
     else {
       // Is rest
-      const res = this.noteRendererInstance.drawRest(
-        nextNoteInBuffer.duration,
-        nextNoteInBuffer.isDotted,
+      const res = this.noteRendererInstance.drawRest(nextNoteInBuffer.rest,
         group
       );
       fullWidth = res.fullWidth;

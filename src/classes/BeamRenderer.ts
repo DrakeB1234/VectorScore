@@ -1,10 +1,12 @@
 import type SVGRenderer from "./SVGRenderer";
 import type NoteRenderer from "./NoteRenderer";
 import type { ClefTypes } from "../types";
-import { convertPitchStepToYPos, getPitchStepClefDifference, getStemSteps, MIDDLE_LINE_STEP, type BeamableConfig, type DrawBeamConfig, type NoteDurations, type VSBeamObj } from "../helpers/noteHelpers";
+import { convertPitchStepToYPos, getPitchStepClefDifference, getStemSteps, MIDDLE_LINE_STEP } from "../helpers/noteHelpers";
 import { getNoteheadGlyphByDuration } from "../glyphs";
 import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 import { setTransformAttr } from "../constants";
+import type { BeamableConfig, NoteDurations } from "..";
+import type { VSBeamObj } from "../helpers/inputHelpers";
 
 const BEAM_INTERNAL_SPACING = 8;
 const STEM_X_OFFSET = 0.5;

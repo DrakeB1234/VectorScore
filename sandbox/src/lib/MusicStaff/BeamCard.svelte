@@ -5,7 +5,7 @@
     chordConfig,
     noteConfig,
     type BeamableConfig,
-  } from "@VS/helpers/noteHelpers";
+  } from "@VS/helpers/inputHelpers";
 
   let { staffInstance = $bindable() }: { staffInstance: MusicStaff | null } =
     $props();

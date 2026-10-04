@@ -1,77 +1,6 @@
 import type { ClefTypes } from "../types";
+import { parseChordNoteString, type NoteAccidentals, type NoteArticulations, type NoteDurations, type VSChordNoteObj } from "./inputHelpers";
 import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "./staffHelpers";
-
-const noteLetters = ["A", "B", "C", "D", "E", "F", "G"] as const;
-const noteArticultations = ["staccato", "tenuto", "accent", "marcato", "fermata"] as const;
-const noteDurations = ["w", "h", "q", "e", "s", "t"] as const;
-const noteAccidentals = ["#", "b", "n", "##", "bb"] as const;
-export type NoteLetters = typeof noteLetters[number];
-export type NoteArticulations = typeof noteArticultations[number];
-export type NoteDurations = typeof noteDurations[number];
-export type NoteAccidentals = typeof noteAccidentals[number];
-
-const excludedBeamDurations: NoteDurations[] = ["w", "h", "q"];
-
-export interface VSNoteObj {
-  letter: NoteLetters;
-  accidental: NoteAccidentals | null;
-  octave: number;
-  duration: NoteDurations;
-  isDotted: boolean;
-  articulation?: NoteArticulations;
-};
-
-export interface VSChordObj {
-  notes: VSChordNoteObj[];
-  duration: NoteDurations;
-  isDotted: boolean;
-  articulation?: NoteArticulations;
-}
-
-export interface VSRestObj {
-  duration: NoteDurations;
-  isDotted: boolean;
-}
-
-export interface VSBeamObj {
-  entries: (DrawNoteConfig | DrawChordConfig)[];
-}
-
-export type VSChordNoteObj = Omit<VSNoteObj, "duration" | "isDotted" | "articulation">;
-
-// Common types / actions for drawing methods on staff
-
-export type DrawNoteConfig = { type: "note"; note: VSNoteObj };
-export type DrawChordConfig = { type: "chord"; chord: VSChordObj };
-export type DrawRestConfig = { type: "rest"; rest: VSRestObj };
-export type DrawBeamConfig = { type: "beam"; beam: VSBeamObj; };
-
-export type BeamableConfig = DrawNoteConfig | DrawChordConfig;
-
-export function noteConfig(note: VSNoteObj): DrawNoteConfig {
-
-  return { type: "note", note };
-};
-
-export function chordConfig(chord: VSChordObj): DrawChordConfig {
-  if (chord.notes.length < 1 || chord.notes.length > 10) throw new Error("Invalid amount of notes provided in chord config. Please provide 1-10 notes.");
-
-  return { type: "chord", chord };
-};
-
-export function restConfig(rest: VSRestObj): DrawRestConfig {
-
-  return { type: "rest", rest };
-};
-
-export function beamConfig(beam: VSBeamObj): DrawBeamConfig {
-  beam.entries.map(entry => {
-    const duration = entry.type === "note" ? entry.note.duration : entry.chord.duration;
-    if (excludedBeamDurations.includes(duration)) throw new Error(`Invalid duration '${duration}' was provided. Please use e|s|t.`);
-  });
-
-  return { type: "beam", beam };
-};
 
 export type PositionedChordNote = {
   noteObj: VSChordNoteObj;
@@ -114,134 +43,6 @@ export const SECOND_INTERVAL_X_OFFSET = 1;
 
 // Accidentals whose notes are a seventh (6 steps) or more apart don't overlap vertically, so they can share a column.
 const ACCIDENTAL_MIN_STEP_GAP = 6;
-
-const REGEX_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)(?<duration>[whqestWHQEST])(?<dot>\.?)(?:\((?<articulation>[a-z]+)\))?$/;
-const REGEX_CHORD_STRING = /^\[(?<notes>[A-Ga-g0-9#b\s,]+)\](?<duration>[whqestWHQEST])(?<dot>\.?)(?:\((?<articulation>[a-z]+)\))?$/;
-const REGEX_CHORD_NOTE_STRING = /^(?<letter>[A-Ga-g])(?<accidental>##|bb|[#bn]?)(?<octave>\d)$/;
-const REGEX_DURATION_STRING = /^(?<duration>[whqestWHQEST])(?<dot>\.?)$/;
-const REGEX_REST_STRING = /^(?:[Rr])?(?<duration>[whqestWHQEST])(?<dot>\.?)$/;
-
-export function parseNoteString(noteString: string): VSNoteObj {
-  const match = noteString.match(REGEX_NOTE_STRING);
-
-  if (!match || !match.groups) {
-    throw new Error(`Invalid note string format: ${noteString}. Expected format: [A-Ga-g][#|b]?[0-9][w|h|q|e|s|t].(articulation)`);
-  };
-
-  let { letter, accidental, octave, duration, dot, articulation } = match.groups;
-
-  letter = letter.toUpperCase();
-  duration = duration.toLowerCase();
-
-  const noteObj: VSNoteObj = {
-    letter: letter as NoteLetters,
-    octave: parseInt(octave),
-    duration: duration as NoteDurations,
-    accidental: accidental ? accidental as NoteAccidentals : null,
-    isDotted: dot === "."
-  };
-
-  if (articulation) {
-    validateArticulationString(articulation);
-    noteObj.articulation = articulation as NoteArticulations;
-  }
-
-  return noteObj;
-};
-
-export function parseChordString(chordString: string): VSChordObj {
-  const match = chordString.match(REGEX_CHORD_STRING);
-
-  if (!match || !match.groups) {
-    throw new Error(`Invalid note string format: ${chordString}. Expected format: [C4,E4,G4]q.(articulation)`);
-  };
-
-  const { notes, duration, dot, articulation } = match.groups;
-
-  const rawNotes = notes.split(",").map(n => n.trim());
-  const noteObjs = rawNotes.map(note => parseChordNoteString(note));
-
-  const chordObj: VSChordObj = {
-    notes: noteObjs,
-    duration: duration.toLowerCase() as NoteDurations,
-    isDotted: dot === ".",
-  };
-
-  if (articulation) {
-    validateArticulationString(articulation);
-    chordObj.articulation = articulation as NoteArticulations;
-  }
-
-  return chordObj;
-};
-
-export function parseRestString(restString: string): VSRestObj {
-  const match = restString.match(REGEX_REST_STRING);
-
-  if (!match || !match.groups) {
-    throw new Error(`Invalid rest string format: ${restString}. Expected format: [R]q[.]`);
-  }
-
-  return {
-    duration: match.groups.duration.toLowerCase() as NoteDurations,
-    isDotted: match.groups.dot === ".",
-  };
-};
-
-export function parseBeamString(beamString: string): VSBeamObj {
-  const chunks = beamString.split("-").map(chunk => chunk.trim());
-
-  if (chunks.length < 2) {
-    throw new Error(`Invalid beam string format: ${beamString}. Expected at least two items connected by hyphens (e.g., 'C4e-D4e').`);
-  }
-
-  const entries: BeamableConfig[] = chunks.map(chunk => {
-    if (chunk.startsWith("[")) {
-      return chordConfig(parseChordString(chunk));
-    }
-    else {
-      return noteConfig(parseNoteString(chunk));
-    }
-  });
-
-  return { entries };
-}
-
-export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
-  const match = chordNoteString.match(REGEX_CHORD_NOTE_STRING);
-
-  if (!match || !match.groups) {
-    throw new Error(`Invalid chord note string format: ${chordNoteString}. Expected format: [A-Ga-g][#|b]?[0-9].`);
-  };
-
-  let { letter, accidental, octave } = match.groups;
-
-  letter = letter.toUpperCase();
-
-  const noteObj: VSChordNoteObj = {
-    letter: letter as NoteLetters,
-    octave: parseInt(octave),
-    accidental: accidental ? accidental as NoteAccidentals : null
-  }
-
-  return noteObj;
-};
-
-export function parseDurationString(durationString: string) {
-  const match = durationString.match(REGEX_DURATION_STRING);
-  if (!match || !match.groups) {
-    throw new Error(`Invalid duration string format: ${durationString}. Expected format: [w|h|q|e|s|t][.]?`);
-  }
-
-  return {
-    duration: match.groups.duration.toLowerCase() as NoteDurations,
-    isDotted: match.groups.dot === "."
-  };
-};
-
-export function validateArticulationString(string: string | undefined) {
-  if (string && !noteArticultations.includes(string as any)) throw new Error(`Invalid articulation string '${string}'. Valid options are 'staccato', 'tenuto', 'accent', 'marcato' or 'fermata'.`);
-}
 
 export function getPitchStep(letter: string, octave: number): number {
   return (octave * 7) + DIATONIC_STEPS[letter];
@@ -409,7 +210,7 @@ function createSideLedgerSpans(
 export function assignAccidentalColumns(notes: PositionedChordNote[]): AccidentalPlacement[] {
   // filter() copies, so sorting here doesn't reorder the caller's array
   const highToLow = notes
-    .filter(n => n.noteObj.accidental !== null)
+    .filter(n => n.noteObj.accidental !== undefined)
     .sort((a, b) => a.pitchStep - b.pitchStep);
 
   const columnSteps: number[][] = []; // Pitch steps of the accidentals already placed in each column
@@ -477,7 +278,7 @@ export function shiftPitches(pitches: string[], steps: number): string[] {
     const newLetterIdx = ((newAbsStep % 7) + 7) % 7;
 
     if (newOctave > 9) throw new Error("ShiftPitches Error: notes can not exceed the 9th octave.");
-    if (newOctave < 1) throw new Error("ShiftPitches Error: notes can not be below the 0th octave.");
+    if (newOctave < 0) throw new Error("ShiftPitches Error: notes can not be below the 0th octave.");
 
     const newLetter = Object.keys(DIATONIC_STEPS).find(
       key => DIATONIC_STEPS[key] === newLetterIdx
@@ -487,4 +288,17 @@ export function shiftPitches(pitches: string[], steps: number): string[] {
 
     return `${newLetter}${accidentalStr}${newOctave}`;
   });
-}
+};
+
+const REGEX_DURATION_STRING = /^(?<duration>[whqestWHQEST])(?<dot>\.?)$/;
+export function parseDurationString(durationString: string) {
+  const match = durationString.match(REGEX_DURATION_STRING);
+  if (!match || !match.groups) {
+    throw new Error(`Invalid duration string format: ${durationString}. Expected format: [w|h|q|e|s|t][.]?`);
+  }
+
+  return {
+    duration: match.groups.duration.toLowerCase() as NoteDurations,
+    isDotted: match.groups.dot === "."
+  };
+};

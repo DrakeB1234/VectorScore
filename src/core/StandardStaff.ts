@@ -1,11 +1,12 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, ARTIC_ACCENT, ARTIC_FERMATA, ARTIC_MARCATO, ARTIC_STACCATO, ARTIC_TENUTO, AUGMENTATION_DOT, BRACE, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, getPitchStepClefDifference, convertPitchStepToYPos, type DrawBeamConfig, chordConfig, noteConfig, restConfig, parseChordString, parseNoteString, parseRestString, beamConfig, parseBeamString } from "../helpers/noteHelpers";
+import { getPitchStepClefDifference, convertPitchStepToYPos } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import SVGRenderer from "../classes/SVGRenderer";
 import { setTransformAttr, VALID_CLASS_ATTR_REGEX } from "../constants";
+import { beamConfig, chordConfig, noteConfig, parseBatchString, parseBeamString, parseChordNoteString, parseChordString, parseNoteString, parseRestString, restConfig, type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/inputHelpers";
 
 export type StandardStaffUserOptions = {
   width?: number;
@@ -251,6 +252,7 @@ export default class StandardStaff {
         type: "barline",
         totalWidth: 0,
         originXOffset: 0,
+        yOffset: 0
       };
     }
 
@@ -308,11 +310,24 @@ export default class StandardStaff {
     return this.appendEntry({ type: "barline" }, { ...options, staff: "top" });
   }
 
-  /** - Draw multiple elements in one operation. Uses config objects as its parameter */
+  /** 
+   * - Draw multiple elements in one operation. globalOptions parameter will apply the same class to each element in batch.
+   * - Accepts a space-separated string ("C4q Rq | C4e-D4e") or an array of config objects.
+   */
   public drawBatchElements(
-    items: { config: StandardStaffDrawConfig; options?: StandardStaffDrawOptions }[]
+    input: string | { config: StandardStaffDrawConfig; options?: StandardStaffDrawOptions }[],
+    globalOptions?: StandardStaffDrawOptions
   ): number[] {
-    return items.map(({ config, options }) => this.appendEntry(config, options));
+
+    if (typeof input === "string") {
+      const configs = parseBatchString(input);
+      return configs.map(config => this.appendEntry(config, globalOptions));
+    }
+
+    return input.map(({ config, options }) => {
+      const mergedOptions = { ...globalOptions, ...options };
+      return this.appendEntry(config, mergedOptions);
+    });
   }
 
   /** - Replaces a entry on staff by index, uses config object as parameter */

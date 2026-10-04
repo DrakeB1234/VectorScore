@@ -2,8 +2,9 @@ import { AUGMENTATION_DOT, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN
 import SVGRenderer from "../classes/SVGRenderer";
 import NoteRenderer, { STEM_UP_X_OFFSET } from "../classes/NoteRenderer";
 import StaffRenderer from "../classes/StaffRenderer";
-import { parseDurationString, type NoteDurations } from "../helpers/noteHelpers";
+import { type NoteDurations } from "../helpers/inputHelpers";
 import { setTransformAttr } from "../constants";
+import { parseDurationString } from "../helpers/noteHelpers";
 
 export type RhythmStaffUserOptions = {
   width?: number;
@@ -282,7 +283,7 @@ export default class RhythmStaff {
         const res = this.resolveDuration(item.duration);
 
         renderFn = (g: SVGGElement) => {
-          this.noteRendererInstance.drawRest(res.duration, res.isDotted, g);
+          this.noteRendererInstance.drawRest({ duration: res.duration, isDotted: res.isDotted }, g);
         };
 
         group.setAttribute("y-offset", (-(this.options.padding * 0.8)).toString());

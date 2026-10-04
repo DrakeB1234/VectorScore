@@ -2,12 +2,7 @@
   import StandardStaff, {
     type StandardStaffDrawOptions,
   } from "@VS/core/StandardStaff";
-  import {
-    chordConfig,
-    noteConfig,
-    restConfig,
-    shiftPitches,
-  } from "@VS/helpers/noteHelpers";
+  import { shiftPitches } from "@VS/helpers/noteHelpers";
 
   type Props = {
     staffInstance: StandardStaff | null;

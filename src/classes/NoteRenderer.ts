@@ -1,5 +1,7 @@
+import type { NoteDurations } from "..";
 import { AUGMENTATION_DOT, getAccidentalGlyph, getArticulationGlyph, getFlagGlyph, getNoteheadGlyphByDuration, getRestGlyphByDuration } from "../glyphs";
-import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type NoteDurations, type PositionedChordNote, type VSNoteObj, assignAccidentalColumns, type BeamableConfig, snapPitchStepToStaffSpace, isSecondInterval, getArticulationYPos, type VSChordObj, type VSRestObj, type DrawBeamConfig, type VSBeamObj } from "../helpers/noteHelpers";
+import type { VSBeamObj, VSChordObj, VSNoteObj, VSRestObj } from "../helpers/inputHelpers";
+import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type PositionedChordNote, assignAccidentalColumns, snapPitchStepToStaffSpace, isSecondInterval, getArticulationYPos } from "../helpers/noteHelpers";
 import { STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 import type { ClefTypes } from "../types";
 import BeamRenderer from "./BeamRenderer";
