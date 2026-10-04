@@ -4,12 +4,10 @@ import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "./staffHelpers";
 export type NoteLetters = "A" | "B" | "C" | "D" | "E" | "F" | "G";
 export type NoteDurations = "w" | "h" | "q" | "e" | "s" | "t";
 export type NoteAccidentals = "#" | "b" | "n" | "##" | "bb";
-export type NoteArticulations =
-  | "staccato"
-  | "tenuto"
-  | "accent"
-  | "marcato"
-  | "fermata";
+const articulations = ["staccato", "tenuto", "accent", "marcato", "fermata"] as const;
+export type NoteArticulations = typeof articulations[number];
+
+const excludedBeamDurations: NoteDurations[] = ["w", "h", "q"];
 
 export interface VSNoteObj {
   letter: NoteLetters;
@@ -27,7 +25,7 @@ export interface VSChordObj {
   articulation?: NoteArticulations;
 }
 
-export type VSChordNoteObj = Omit<VSNoteObj, "duration" | "isDotted" | "articulations">;
+export type VSChordNoteObj = Omit<VSNoteObj, "duration" | "isDotted" | "articulation">;
 
 // Common types / actions for drawing methods on staff
 
@@ -40,16 +38,19 @@ export type BeamableConfig = DrawNoteConfig | DrawChordConfig;
 
 export function noteConfig(note: string, articulation?: NoteArticulations): DrawNoteConfig {
   const noteObj = parseNoteString(note);
-  if (articulation) noteObj.articulation = articulation;
+  if (articulation && validateArticulationString(articulation)) noteObj.articulation = articulation;
 
   return { type: "note", note: noteObj };
 };
 
 export function chordConfig(notes: string[], duration: string, articulation?: NoteArticulations): DrawChordConfig {
+  if (notes.length < 1 || notes.length > 10) throw new Error("Invalid amount of notes provided in chord config. Please provide 1-10 notes.");
   const { duration: _duration, isDotted } = parseDurationString(duration);
   const noteObjs = notes.map(note => parseChordNoteString(note));
 
-  let chordObj: VSChordObj = {
+  if (articulation) validateArticulationString(articulation);
+
+  const chordObj: VSChordObj = {
     notes: noteObjs,
     duration: _duration,
     isDotted,
@@ -66,6 +67,11 @@ export function restConfig(duration: string): DrawRestConfig {
 };
 
 export function beamConfig(entries: BeamableConfig[]): DrawBeamConfig {
+  entries.map(entry => {
+    const duration = entry.type === "note" ? entry.note.duration : entry.chord.duration;
+    if (excludedBeamDurations.includes(duration)) throw new Error(`Invalid duration '${duration}' was provided. Please use e|s|t.`);
+  })
+
   return { type: "beam", entries };
 }
 
@@ -170,6 +176,11 @@ export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
   return noteObj;
 }
 
+export function validateArticulationString(string: string) {
+  if (!articulations.includes(string as any)) throw new Error(`Invalid articulation string '${string}'. Valid options are 'staccato', 'tenuto', 'accent', 'marcato' or 'fermata'.`);
+  return true
+}
+
 export function getPitchStep(letter: string, octave: number): number {
   return (octave * 7) + DIATONIC_STEPS[letter];
 };
@@ -257,7 +268,6 @@ export function getPitchStepRange(notes: Pick<PositionedChordNote, "pitchStep">[
   return { highStep: Math.min(...steps), lowStep: Math.max(...steps) };
 };
 
-/** @returns X offset IF has second interval, will be 0 unless is offsetted negatively */
 export function applySecondIntervalOffsets(notes: PositionedChordNote[], isStemDown: boolean, baseWidth: number) {
 
   // Sort pitches lowest to highest pitch
@@ -403,6 +413,9 @@ export function shiftPitches(pitches: string[], steps: number): string[] {
     const newAbsStep = currentAbsStep + steps;
     const newOctave = Math.floor(newAbsStep / 7);
     const newLetterIdx = ((newAbsStep % 7) + 7) % 7;
+
+    if (newOctave > 9) throw new Error("ShiftPitches Error: notes can not exceed the 9th octave.");
+    if (newOctave < 1) throw new Error("ShiftPitches Error: notes can not be below the 0th octave.");
 
     const newLetter = Object.keys(DIATONIC_STEPS).find(
       key => DIATONIC_STEPS[key] === newLetterIdx

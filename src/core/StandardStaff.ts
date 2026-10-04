@@ -1,5 +1,5 @@
 import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, ARTIC_ACCENT, ARTIC_FERMATA, ARTIC_MARCATO, ARTIC_STACCATO, ARTIC_TENUTO, AUGMENTATION_DOT, BRACE, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
-import { parseNoteString, parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, parseDurationString, type BeamableConfig, getPitchStepClefDifference, convertPitchStepToYPos, type DrawBeamConfig, type NoteArticulations, type VSChordObj, chordConfig, noteConfig, restConfig, beamConfig } from "../helpers/noteHelpers";
+import { parseChordNoteString, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj, type BeamableConfig, getPitchStepClefDifference, convertPitchStepToYPos, type DrawBeamConfig, type NoteArticulations, chordConfig, noteConfig, restConfig, beamConfig } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
@@ -10,7 +10,6 @@ import { VALID_CLASS_ATTR_REGEX } from "../constants";
 export type StandardStaffUserOptions = {
   width?: number;
   scale?: number;
-  /** - Overrides constant that defaults this value to '16'. */
   noteStartX?: number;
   paddingTop?: number;
   paddingBottom?: number;
@@ -210,7 +209,6 @@ export default class StandardStaff {
     else if (config.type === "chord") {
 
       const chord = config.chord;
-      if (chord.notes.length < 1 || chord.notes.length > 10) throw new Error("Invalid amount of notes provided in chord config. Please provide 1-10 notes.");
 
       const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawChord(chord, targetClef, group);
       newEntry = {

@@ -11,7 +11,7 @@ export type TimeSignature = {
   bottomNumber: number;
 }
 
-const KeySignaturesArr = ["C", "G", "D", "A", "E", "B", "F#", "C#", "F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"] as const;
+export const KeySignaturesArr = ["C", "G", "D", "A", "E", "B", "F#", "C#", "F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"] as const;
 export type KeySignatures = typeof KeySignaturesArr[number];
 
 type KeySignatureDef = { type: "sharp" | "flat"; count: number };
@@ -56,13 +56,13 @@ export const KEY_SIG_OCTAVES: Record<ClefTypes, Record<string, number[]>> = {
 };
 
 /** @throws Error - If key is not in record */
-export function validateKeySignature(key: string) {
+export function validateKeySignature(key: string): asserts key is KeySignatures {
   const foundKey = KeySignaturesArr.find(k => k === key);
   if (!foundKey) throw new Error(`Unknown key signature "${key}". Valid keys: ${KeySignaturesArr.join(", ")}`);
 };
 
 /** @throws Error - Invalid values, numbers over 100 or NaN */
 export function validateTimeSignature(top: number, bottom: number): void {
-  if (isNaN(top) || isNaN(bottom)) throw new Error("Invalid time signature values. Must be less than 100 for each parameter.");
-  if (top > 100 || bottom > 100) throw new Error("Invalid time signature values. Must be less than 100 for each parameter.");
+  const ok = (n: number) => Number.isInteger(n) && n >= 1 && n <= 99;
+  if (!ok(top) || !ok(bottom)) throw new Error("Invalid time signature: top and bottom must be whole numbers from 1 to 99.");
 }

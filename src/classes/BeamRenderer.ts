@@ -72,7 +72,7 @@ export default class BeamRenderer {
         const step = getPitchStepClefDifference(config.note.letter, config.note.octave, clef);
         processStep(step);
       } else if (config.type === "chord") {
-        config.notes.forEach(n => {
+        config.chord.notes.forEach(n => {
           const step = getPitchStepClefDifference(n.letter, n.octave, clef);
           processStep(step);
         });
@@ -177,7 +177,7 @@ export default class BeamRenderer {
       // We need these to calculate where the stem attaches
       let highStep = Infinity;
       let lowStep = -Infinity;
-      const duration = config.type === "note" ? config.note.duration : config.duration;
+      const duration = config.type === "note" ? config.note.duration : config.chord.duration;
       const resolvedDuration = this.resolveDuration(duration);
 
       const wrapperGroup = this.svgRendererInstance.createGroup(config.type);
@@ -194,11 +194,11 @@ export default class BeamRenderer {
 
       } else if (config.type === "chord") {
 
-        const steps = config.notes.map(n => getPitchStepClefDifference(n.letter, n.octave, clef));
+        const steps = config.chord.notes.map(n => getPitchStepClefDifference(n.letter, n.octave, clef));
         highStep = Math.min(...steps);
         lowStep = Math.max(...steps);
 
-        const result = this.noteRendererInstance.drawChord(config.notes, resolvedDuration, config.isDotted, clef, wrapperGroup, { skipStem: true });
+        const result = this.noteRendererInstance.drawChord(config.chord, clef, wrapperGroup, { skipStem: true });
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
         yPosArray.push(isStemDown ? result.yPosArray[result.yPosArray.length - 1] : result.yPosArray[0]);

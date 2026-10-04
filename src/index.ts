@@ -1,9 +1,8 @@
 // General Exports
 export type { ClefTypes, SystemTypes } from './types';
-export type { KeySignatures, TimeSignature } from './helpers/staffHelpers';
-export { noteConfig, chordConfig, restConfig, beamConfig } from './helpers/noteHelpers'; // General config constructors, for use in some drawing methods
-export type { DrawNoteConfig, DrawChordConfig, DrawRestConfig, DrawBeamConfig, NoteDurations, BeamableConfig } from './helpers/noteHelpers';
-export { shiftPitches } from './helpers/noteHelpers';
+export type { KeySignatures, TimeSignature, KeySignaturesArr } from './helpers/staffHelpers';
+export type { DrawNoteConfig, DrawChordConfig, DrawRestConfig, DrawBeamConfig, BeamableConfig, NoteArticulations, NoteDurations } from './helpers/noteHelpers';
+export { shiftPitches, noteConfig, chordConfig, restConfig, beamConfig } from './helpers/noteHelpers';
 
 
 // Standard Staff Exports

@@ -27,7 +27,7 @@ export function getRestGlyphByDuration(duration: NoteDurations) {
     case "s": return REST_SIXTEENTH;
     case "t": return REST_THIRTY_SECOND;
     default: {
-      throw new Error("Unable to retrieve rest glpyh for given value " + duration);
+      throw new Error("Unable to retrieve rest glyph for given value " + duration);
     };
   };
 };
@@ -42,7 +42,7 @@ export function getAccidentalGlyph(accidental: NoteAccidentals | "sharp" | "flat
     case "bb": return ACCIDENTAL_DOUBLEFLAT;
     case "n": return ACCIDENTAL_NATURAL;
     default: {
-      throw new Error("Unable to retrieve accidental glpyh for given value " + accidental);
+      throw new Error("Unable to retrieve accidental glyph for given value " + accidental);
     };
   };
 };
@@ -55,7 +55,7 @@ export function getArticulationGlyph(artic: NoteArticulations) {
     case "staccato": return ARTIC_STACCATO;
     case "fermata": return ARTIC_FERMATA;
     default: {
-      throw new Error("Unable to retrieve articulation glpyh for given value " + artic);
+      throw new Error("Unable to retrieve articulation glyph for given value " + artic);
     };
   }
 }
@@ -66,7 +66,7 @@ export function getClefGlyph(clef: ClefTypes) {
     case "bass": return CLEF_BASS;
     case "alto": return CLEF_ALTO;
     default: {
-      throw new Error("Unable to retrieve clef glpyh for given value " + clef);
+      throw new Error("Unable to retrieve clef glyph for given value " + clef);
     };
   };
 };
@@ -84,7 +84,7 @@ export function getTimeSigGlyph(number: number) {
     case 8: return TIMESIG_8
     case 9: return TIMESIG_9
     default: {
-      throw new Error("Unable to retrieve time signature glpyh for given value " + number);
+      throw new Error("Unable to retrieve time signature glyph for given value " + number);
     };
   }
 };
@@ -104,7 +104,7 @@ export function getFlagGlyph(duration: Extract<NoteDurations, "s" | "e" | "t">, 
       return FLAG_THIRTY_SECOND_UP
     }
     default: {
-      throw new Error("Unable to retrieve flag glpyh for given value " + duration);
+      throw new Error("Unable to retrieve flag glyph for given value " + duration);
     };
   }
 }

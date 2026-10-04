@@ -13,6 +13,7 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
 ## Table of Contents
 
 * [Features](#features)
+* [Install](#install)
 * [Usage](#usage)
 * [Core Classes Examples](#core-classes-examples)
   * [Standard Staff](#standard-staff)
@@ -24,7 +25,7 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
   * [Note String Syntax](#note-string-syntax)
   * [Chord String Syntax](#chord-string-syntax)
   * [Guitar String Syntax](#guitar-string-syntax)
-* [Using Note Config Functions (used in drawNote methods)](#)
+* [Using Note Config Functions (used in drawNote methods)](#using-note-config-functions)
 * [API Reference](#api-reference)
   * [Standard Staff Class](#standardstaff-class)
   * [Scrolling Staff Class](#scrollingstaff-class)
@@ -35,6 +36,7 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
   * [Scrolling Staff](#scrollingstaffoptions)
   * [Rhythm Staff](#rhythmstaffoptions)
   * [Guitar Chords](#guitarchordoptions)
+* [Migration from 1.3.1 to 2.0](#migrating-from-131)
 * [Resources](#resources)
 
 ## Features
@@ -42,7 +44,8 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
 **Rendering Standard Musical Notation**
 * Supports grand, treble, bass, and alto clefs.
 * Easy to add notes and provides justifying alignment functions.
-* Simple single line staff for display chords, notes, or scales.
+* Notes can be drawn with accidentals, dotted durations, and articultations.
+* Beamed notes are supported, with option for notes or chords.
 
 **Render and Display Guitar Chords**
 * Write explicitly which string, fret, and optionally finger to display on the diagram.
@@ -52,6 +55,12 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
 **Extra Classes**
 * Dedicated staff for rhythm exercises with customizable time signatures and bar handling.
 * Staff made to allow for 'endless' style of notes.
+
+## Install
+
+```bash
+npm install vector-score
+```
 
 ## Usage
 
@@ -65,16 +74,15 @@ Create a container element in your HTML where the staff will be rendered.
 ### 2. Import and Initialize
 Import desired class (StandardStaff, GuitarChord, etc.). Declare variable with reference to container element. Pass in options for specific class (options are typed).
 
-```typescript
+```ts
 import { StandardStaff } from 'vector-score';
 
-const containerRoot = document.getElementById('staff-container');
+const containerRoot = document.getElementById('staff-container') as HTMLElement;
 
 const staff = new StandardStaff(containerRoot, {
   staffType: 'grand',
   width: 400,
   scale: 1.2,
-  spaceBelow: 1,
   keySignature: "Bb",
 });
 ```
@@ -83,30 +91,36 @@ const staff = new StandardStaff(containerRoot, {
 
 ### Standard Staff
 ```ts
+import { StandardStaff, noteConfig, chordConfig } from "vector-score";
+
 const staff = new StandardStaff(containerRoot, options);
 
-staff.drawNote("C4", options);
+staff.drawNote("C4w", options);
+staff.drawNote("C4q", {
+  articulation: "staccato"
+});
 
 staff.drawChord(["G3", "C4", "E4"], "q", options);
 staff.drawRest("q", options);
 
 staff.drawBeam([
-  noteConfig("C4e"),
-  noteConfig("E4e"),
-  noteConfig("G4e"),
+  noteConfig("C4e", "staccato"),
+  chordConfig(["E4", "G4"], "e", "staccato"),
 ], options);
 ```
 <img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/StandardStaff.webp" width="500" alt="StandardStaff">
 
 ### Scrolling Staff
 ```ts
+import { ScrollingStaff, noteConfig, chordConfig, restConfig, beamConfig } from "vector-score";
+
 function handleNotesOut() {
   console.log("All Done!");
 }
 
 const staff = new ScrollingStaff(containerRoot, {
   ...options,
-  onNotesOut: handleNotesOut()
+  onNotesOut: handleNotesOut
 });
 
 staff.queueNotes([
@@ -117,7 +131,7 @@ staff.queueNotes([
     noteConfig("C4e"),
     noteConfig("E4e"),
     noteConfig("F4e"),
-  ]);
+  ])
 ]);
 
 staff.advanceNotes();
@@ -125,6 +139,8 @@ staff.advanceNotes();
 
 ### Rhythm Staff
 ```ts
+import { RhythmStaff } from "vector-score";
+
 const staff = new RhythmStaff(containerRoot, options);
 
 staff.drawMeasure([
@@ -135,7 +151,7 @@ staff.drawMeasure([
 staff.drawMeasure([
   { type: "note", duration: "q" },
   { type: "rest", duration: "e" },
-  { type: "beam", duration: "ee" },
+  { type: "beam", durations: "ee" },
   { type: "rest", duration: "q." },
 ]);
 ```
@@ -143,7 +159,9 @@ staff.drawMeasure([
 
 ### Guitar Chords
 ```ts
-const chordsSection = new GuitarChords(containerRoot, options);
+import { determineBarreOptions, GuitarChord } from "vector-score";
+
+const chordsSection = new GuitarChord(containerRoot, options);
 
 chordsSection.addChord("xx0232", "000132", {
   label: "D",
@@ -161,10 +179,6 @@ chordsSection.addChord(frets, fingers, {
 ```
 <img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/GuitarChords.webp" width="500" alt="GuitarChords">
 
-## Migrating from 1.3.1
-
-* MusicStaff > StandardStaff
-
 ## CSS Classes & Theming
 All core classes uses CSS classes for styling. All elements that can be targeted for theming are prefixed with `vs`.
 
@@ -180,6 +194,7 @@ VectorScore as of the latest release ***does not*** contain pre-made stylesheets
   .vs-clef {}
   .vs-key-sig {}
   .vs-time-sig {}
+  .vs-brace {}
 
   /* === Note Theming === */
   .vs-notes-layer {} 
@@ -207,22 +222,27 @@ VectorScore as of the latest release ***does not*** contain pre-made stylesheets
 
   .vs-guitar-group-string-labels {}
 
-  .vs-guitar-group-guitar-group-barre
-  .vs-guitar-group-guitar-barre
+  .vs-guitar-group-guitar-group-barre {}
+  .vs-guitar-group-guitar-barre {}
   
 ```
 
 ## Input String Syntax
 
 ### Note String Syntax
-Typical note string to draw (i.e. MusicStaff.drawNote). For example `C4q` would be a 'C' note on the fourth octave '4' and of quarter duration 'q'.
+Typical note string to draw (i.e. StandardStaff.drawNote). For example `C4q` would be a 'C' note on the fourth octave '4' and of quarter duration 'q'.
+
+* Letters: A-G (any case)
+* Accidental: #, b, n, ##, bb
+* Octave: 0-9
+* Durations: w, h, q, e, s, t (with optional '.' for dotted durations)
 
 Variations could be `C#4q.`, where the '#' is a sharpened note and the 'q.' reprsents a dotted quarter duration.
 
 ### Chord String Syntax
 Similar to note string syntax, however durations are not defined in the string and instead defined as a separate parameter.
 
-Examples for a eighth beat C major chord would be `C4, E4, G4` and `e`
+Examples for a eighth beat C major chord would be `["C4", "E4", "G4"]` and `"e"`
 
 ### Guitar String Syntax
 
@@ -232,21 +252,23 @@ Frets are defined in a few ways: either `x` for a muted string, `0` for open str
 
 Fingers only support numbers `1-9`, with `0` being used to define no finger.
 
-Barres require more specific defintion. Barres are defined in the `barres` property in GuitarChordDrawOptions in the `addChord` method. The `barres` property is typed as BarreDef[]. The recommended way to define barres is to use helper `determineBarreOptions` to automatically create this option.
+Barres require more specific defintion. Barres are defined in the `barres` property in GuitarChordDrawOptions in the `addChord` method. The `barres` property is typed as GuitarBarreDef[]. The recommended way to define barres is to use helper `determineBarreOptions` to automatically create this option.
 
 Code example for making a **F Major barre chord**
 ```ts
-const guitarInstance = new GuitarChords(element, options);
+import { determineBarreOptions, GuitarChord } from "vector-score";
+
+const guitarInstance = new GuitarChord(element, options);
 
 const frets = "133211";
 const fingers = "134211";
 
-// the '1' value in the array means that there is one barre on the first fret.
+// The array holds the fret numbers to barre.
 const barreDef: GuitarBarreDef[] = determineBarreOptions(frets, fingers, [1]);
 
-addChord(frets, fingers, {
+guitarInstance.addChord(frets, fingers, {
   label: "F Major",
-  barres: barreOptions
+  barres: barreDef
 });
 ```
 Code example for making a **D Major chord**
@@ -260,25 +282,68 @@ addChord(frets, fingers, {
 });
 ```
 
+## Using Note Config Functions
+
+Some drawing methods (such as drawBatchElements in StandardStaff) take in config objects to define which to draw. VectorScore uses helpers to create these configs in a much more convient manner.
+
+###### *Note: Valid articulation values are 'staccato', 'tenuto', 'accent', 'marcato', and 'fermata'.
+
+###### **Note: Please follow the section in this read me titled 'Input String Syntax' for proper string values.
+
+Config Helpers
+
+* `noteConfig(note: string, articulation?: string)`
+* `chordConfig(notes: string[], duration: string, articulation?: string)`
+* `restConfig(duration: string)`
+* `beamConfig(entries: BeamableConfig[])`
+  * Note: `BeamableConfig[]` is just a array of configs, which can be created with the above functions.
+
+Example using config functions to draw notes to StandardStaff
+```ts
+import {noteConfig, chordConfig, restConfig, beamConfig, StandardStaff } from "vector-score";
+
+const staff = new StandardStaff(rootEle, options);
+
+const note = noteConfig("A3q", "tenuto");
+const note2 = noteConfig("C4q.");
+const chord = chordConfig(["C4", "E4"], "q", "accent");
+const rest = restConfig("h");
+
+const beamNote = noteConfig("A3e", "staccato");
+// Uses const 'beamNote' for easy reusing of config objects.
+const beam = beamConfig([
+    beamNote,
+    chordConfig(["C4", "E4"], "e"),
+    beamNote
+]);
+
+staff.drawBatchElements([
+  { config: note, options: { staff: "bottom", classes: ["my-note"] } },
+  { config: chord },
+  { config: rest },
+  { config: beam }
+]);
+```
+
 ## API Reference
 
 ### StandardStaff Class
 
-* `drawNote(note: string, options?: DrawOptions)`
+* `drawNote(note: string, options?: StandardStaffDrawOptions)`
   * Draws a single note `(ex. "C4q")` and advances the layout cursor.
   * @Returns: The index of the entry.
-* `drawChord(notes: string[], duration: string, options?: DrawOptions)`
+* `drawChord(notes: string[], duration: string, options?: StandardStaffDrawOptions)`
   * Draws a chord of provided notes and duration.
   * @Returns: The index of the entry.
-* `drawBeam(entries: BeamableConfig[], options?: DrawOptions)`
+* `drawBeam(entries: BeamableConfig[], options?: StandardStaffDrawOptions)`
   * Draws a grouped beam of notes.
   * @Returns: The index of the entry.
-* `drawBarline(options?: DrawOptions)`
+* `drawBarline(options?: StandardStaffDrawOptions)`
   * Draws a barline across the staff on the next staff position.
   * @Returns: The index of the entry.
-* `drawBatchElements(items: { config: StandardStaffDrawConfig; options?: DrawOptions }[])`
+* `drawBatchElements(items: { config: StandardStaffDrawConfig; options?: StandardStaffDrawOptions }[])`
   * Draws multiple elements in one method.
-* `replaceByIndex(index: number, config: ReplaceConfig, options?: DrawOptions)`
+* `replaceByIndex(index: number, config: StandardStaffDrawConfig, options?: StandardStaffDrawOptions)`
   * Replaces an element at a specific index with a new configuration and recalculates layout spacing.
 * `removeElementByIndex(index: number)`
   * Removes element at index.
@@ -321,7 +386,7 @@ Scrolling animation can only be applied via CSS.
   * Draws notes on the diagram using string configurations.
 * `modifyChordByIndex(frets: string, fingers: string, chordIndex: number, options?: GuitarChordDrawOptions)`
   * Modifies the chord at the specified index with new definitions and options.
-* `removeChordByIndex()`
+* `removeChordByIndex(chordIndex: number)`
 * `clearAllChords()`
 * `destroy()`
 
@@ -336,7 +401,7 @@ Scrolling animation can only be applied via CSS.
 * `staffType`: `'treble' | 'bass' | 'alto' | 'grand'`.
 * `svgAutoFill`: Sets inline styles on root SVG element to allow for screen scaling (default: true).
 * `keySignature`: Key signature to display on the staff.
-* `timeSignatures`: Time signature to display on the staff.
+* `timeSignature: { topNumber, bottomNumber }`: Time signature to display on the staff.
 
 ### ScrollingStaffOptions
 * All options in StandardStaffOptions **AND**
@@ -348,8 +413,8 @@ Scrolling animation can only be applied via CSS.
 * `padding`: Padding for both sides of staff (in pixels).
 * `svgAutoFill`: Sets inline styles on root SVG element to allow for screen scaling (default: true).
 * `maxMeasures`: Allowed amount of measures on staff (default: 2).
-* `topNumber`: Top number on key signature (default: 4).
-* `bottomNumber`: Bottom number on key signature (default: 4).
+* `topNumber`: Top number on time signature (default: 4).
+* `bottomNumber`: Bottom number on time signature (default: 4).
 
 ### GuitarChordOptions
 * `stringCount`: Amount of strings to show in diagram, default is 6.
@@ -360,6 +425,26 @@ Scrolling animation can only be applied via CSS.
 * `scale`: Zoom factor (default: 1).
 * `width`: Total width of the SVG in pixels, overrides inlineChordAmount auto width calculation (default: undefined).
 * `svgAutoFill`: Sets inline styles on root SVG element to allow for screen scaling (default: true).
+
+## Migrating from 1.3.1
+
+| 1.x | 2.0 |
+|---|---|
+| `import { MusicStaff }` | `import { StandardStaff }` |
+| `drawNote(['C4q', 'D4q'])` (string or array) | `drawNote("C4q")`, one note per call, returns the entry index. Use `drawBatchElements` for many. |
+| `drawChord(['C4w','E4w','G4w'])` (durations inside the strings) | `drawChord(["C4","E4","G4"], "w")` (duration is a separate argument) |
+| `changeNoteByIndex(note, index)` / `changeChordByIndex(notes, index)` | `replaceByIndex(index, config)` with `noteConfig(...)` / `chordConfig(...)` (index comes first) |
+| `spaceAbove` / `spaceBelow` (staff-line spaces) | `paddingTop` / `paddingBottom` (pixels; one staff space is 10px) |
+| `staffColor` / `staffBackgroundColor` | Removed. Drawing uses `currentColor`, so set CSS `color` / `background`, or target the `.vs-*` classes |
+| RhythmStaff `barsCount` | `maxMeasures` (new: `bottomNumber`, `padding`; removed: `currentBeatUIColor`) |
+| RhythmStaff `drawNote(['q','q'])`, `drawRest(['h'])`, `drawBeamedNotes('e', 4)` | `drawMeasure([{ type: "note", duration: "q" }, { type: "rest", duration: "h" }, { type: "beam", durations: "eeee" }])` |
+| `incrementCurrentBeatUI()` / `resetCurrentBeatUI()` | Removed. Position your own element with `getBeatCoordinateX()` in `uiLayer` |
+| RhythmStaff `clearAllNotes()` | `clear()` |
+| ScrollingStaff `queueNotes(["C4w", ["C4w","E4w","G4w"]])` | `queueNotes([noteConfig("C4w"), chordConfig(["C4","E4","G4"], "w")])` |
+| ScrollingStaff `clearAllNote()` | `clearAllNotes()` |
+| CSS `.vs-scrolling-notes-layer > g.vs-note-wrapper` | `.vs-scrolling-notes-layer > g` (groups are now `vs-note`, `vs-chord`, `vs-rest`, `vs-beam`) |
+
+New in 2.0: Leland font glyphs, more accurate notation, rests, beams, barlines, dotted notes, 32nd notes, articulations, time signatures, key signatures, grand-staff brace.
 
 ## Resources
 

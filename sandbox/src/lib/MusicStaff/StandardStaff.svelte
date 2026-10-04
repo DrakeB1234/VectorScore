@@ -87,6 +87,7 @@
   <hr />
 
   <div class="actions">
+    <button onclick={() => staff?.drawBarline()}>Draw Barline</button>
     <button onclick={() => staff?.justifyNotes()}>Justify Notes</button>
     <button onclick={() => staff?.clearAllNotes()}>Clear Notes</button>
   </div>
@@ -128,7 +129,7 @@
   {:else if currentStaffAction === "beams"}
     <BeamCard bind:staffInstance={staff} />
   {:else if currentStaffAction === "signatures"}
-    <SignatureCard bind:staffInstance={staff} />
+    <SignatureCard bind:musicStaffInstance={staff} />
   {:else if currentStaffAction === "error-ui"}
     <ErrorUICard bind:musicStaffInstance={staff} />
   {/if}
