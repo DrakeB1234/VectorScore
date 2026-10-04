@@ -5,7 +5,7 @@ import SVGRenderer from "../classes/SVGRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import { type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig } from "../helpers/noteHelpers";
-import { NAMESPACE } from "../constants";
+import { NAMESPACE, setTransformAttr } from "../constants";
 
 const USE_GLPYHS: GlyphDef[] = [
   CLEF_TREBLE, CLEF_BASS, CLEF_ALTO, BRACE,
@@ -107,7 +107,7 @@ export default class ScrollingStaff {
   };
 
   private updateNotesLayerTransform(startX: number) {
-    this.notesLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
+    setTransformAttr(this.notesLayer, startX, this.options.paddingTop);
   };
 
   private resolveStaffTarget() {
@@ -161,7 +161,7 @@ export default class ScrollingStaff {
     }
 
     // The note cursor at this stage will be placed at the last spawned position
-    group.setAttribute("transform", `translate(${this.noteCursorX + originXOffset}, 0)`);
+    setTransformAttr(group, this.noteCursorX + originXOffset, 0);
 
     // Add current rendered note to active drawn notes, remove from buffer
     this.activeEntries.push({
@@ -221,7 +221,7 @@ export default class ScrollingStaff {
     // Shift all remaining active entries left by the calculated amount
     this.activeEntries.forEach(e => {
       e.xPos -= shiftAmount;
-      e.gElement.setAttribute("transform", `translate(${e.xPos + e.originXOffset}, 0)`);
+      setTransformAttr(e.gElement, e.xPos + e.originXOffset, 0);
     });
 
     this.noteCursorX -= shiftAmount;

@@ -1,4 +1,4 @@
-import { NAMESPACE } from "../constants";
+import { NAMESPACE, setTransformAttr } from "../constants";
 import { type GlyphDef } from "../glyphs";
 
 export const SVG_HREF = "http://www.w3.org/2000/svg";
@@ -76,7 +76,7 @@ export default class SVGRenderer {
       path.setAttribute("id", `glyph-${glyph.name}`);
 
       path.setAttribute("d", glyph.path);
-      path.setAttribute("transform", `translate(0, ${glyph.yOffset})`);
+      setTransformAttr(path, 0, glyph.yOffset);
 
       defsElement.appendChild(path);
     });
@@ -247,7 +247,7 @@ export default class SVGRenderer {
     useElement.setAttribute("href", `#glyph-${glyphName}`);
     useElement.setAttribute("fill", `currentColor`);
 
-    if (options.x || options.y) useElement.setAttribute("transform", `translate(${options.x}, ${options.y})`);
+    setTransformAttr(useElement, options.x ?? 0, options.y ?? 0);;
 
     parent.appendChild(useElement);
   }

@@ -3,6 +3,7 @@ import SVGRenderer from "../classes/SVGRenderer";
 import NoteRenderer, { STEM_UP_X_OFFSET } from "../classes/NoteRenderer";
 import StaffRenderer from "../classes/StaffRenderer";
 import { parseDurationString, type NoteDurations } from "../helpers/noteHelpers";
+import { setTransformAttr } from "../constants";
 
 export type RhythmStaffUserOptions = {
   width?: number;
@@ -106,7 +107,7 @@ export default class RhythmStaff {
     this.staffLayer = this.svgRendererInstance.createLayer("staff");
     this.notesLayer = this.svgRendererInstance.createLayer("notes");
     this.uiLayer = this.svgRendererInstance.createLayer("rhythm-ui");
-    this.staffLayer.setAttribute("transform", `translate(0, ${this.options.padding})`);
+    setTransformAttr(this.staffLayer, 0, this.options.padding);
 
     // Draw time sig
     this.timeSigGroup = this.svgRendererInstance.createGroup("time-sig");
@@ -118,7 +119,7 @@ export default class RhythmStaff {
       startYPos: 0,
       staffGroup: this.timeSigGroup,
     });
-    this.timeSigGroup.setAttribute("transform", `translate(${TIME_SIG_START_X}, 0)`);
+    setTransformAttr(this.timeSigGroup, TIME_SIG_START_X, 0);
     this.staffLayer.appendChild(this.timeSigGroup);
 
     // Draw single line staff
@@ -132,8 +133,8 @@ export default class RhythmStaff {
     this.staffLayer.appendChild(this.barlinesGroup);
 
     this.noteLayerStartX = timeSigWidth + TIME_SIG_START_X + NOTES_LAYER_START_X;
-    this.notesLayer.setAttribute("transform", `translate(${this.noteLayerStartX}, ${staffLineY + this.options.padding})`);
-    this.uiLayer.setAttribute("transform", `translate(${this.noteLayerStartX}, ${staffLineY + this.options.padding})`);
+    setTransformAttr(this.notesLayer, this.noteLayerStartX, staffLineY + this.options.padding);
+    setTransformAttr(this.uiLayer, this.noteLayerStartX, staffLineY + this.options.padding);
 
     // Calculate exact width per measure. 
     const availableWidth = this.options.width - this.noteLayerStartX - STAFF_RIGHT_SPACING;
@@ -209,7 +210,7 @@ export default class RhythmStaff {
         const noteGroup = this.svgRendererInstance.createGroup("note");
 
         this.noteRendererInstance.drawRhythmNote("q", false, noteGroup);
-        noteGroup.setAttribute("transform", `translate(${internalX}, 0)`);
+        setTransformAttr(noteGroup, internalX, 0);
         group.appendChild(noteGroup);
 
         const stemX = internalX + NOTEHEAD_BLACK.glyphWidth - STEM_UP_X_OFFSET;
@@ -316,7 +317,7 @@ export default class RhythmStaff {
       const finalSpacing = item.baseSpacing + (item.baseSpacing * stretchFactor);
 
       const yOffset = item.group.getAttribute("y-offset") || "0";
-      item.group.setAttribute("transform", `translate(${currentX}, ${yOffset})`);
+      setTransformAttr(item.group, currentX, Number(yOffset));
       this.notesLayer.appendChild(item.group);
 
       // Execute deferred rendering to apply the stretch factor internally to beams

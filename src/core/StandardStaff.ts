@@ -5,7 +5,7 @@ import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import SVGRenderer from "../classes/SVGRenderer";
-import { VALID_CLASS_ATTR_REGEX } from "../constants";
+import { setTransformAttr, VALID_CLASS_ATTR_REGEX } from "../constants";
 
 export type StandardStaffUserOptions = {
   width?: number;
@@ -175,8 +175,8 @@ export default class StandardStaff {
   }
 
   private updateLayersX(startX: number) {
-    this.notesLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
-    this.uiLayer.setAttribute("transform", `translate(${startX}, ${this.options.paddingTop})`);
+    setTransformAttr(this.notesLayer, startX, this.options.paddingTop);
+    setTransformAttr(this.uiLayer, startX, this.options.paddingTop);
   };
 
   // General helper to create staff entries and call relative draw method on note renderer
@@ -263,7 +263,7 @@ export default class StandardStaff {
       ? this.noteCursorX + 0
       : this.noteCursorX + newEntry.originXOffset;
 
-    newEntry.gElement.setAttribute("transform", `translate(${x}, ${newEntry.yOffset})`);
+    setTransformAttr(newEntry.gElement, x, newEntry.yOffset);
     this.notesLayer.appendChild(newEntry.gElement);
 
     this.noteEntries.push(newEntry);

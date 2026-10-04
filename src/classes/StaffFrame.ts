@@ -3,6 +3,7 @@ import StaffRenderer from "./StaffRenderer";
 import type SVGRenderer from "./SVGRenderer";
 import type { ClefTypes, SystemTypes } from "../types";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
+import { setTransformAttr } from "../constants";
 
 export type StaffLayoutOptions = {
   width: number;
@@ -41,7 +42,7 @@ export default class StaffFrame {
 
     // Create the layer and set its vertical padding immediately
     this.staffLayer = this.svgRendererInstance.createLayer("staff");
-    this.staffLayer.setAttribute("transform", `translate(0, ${this.options.paddingTop})`);
+    setTransformAttr(this.staffLayer, 0, this.options.paddingTop);
 
     this.staffGroup = this.svgRendererInstance.createGroup("staff");
     this.clefGroup = this.svgRendererInstance.createGroup("clef");
@@ -99,7 +100,7 @@ export default class StaffFrame {
       staffGroup: this.staffGroup
     });
 
-    this.clefGroup.setAttribute("transform", `translate(${braceWidth}, 0)`);
+    setTransformAttr(this.clefGroup, braceWidth, 0);
 
     const trebleStaffHeight = this.staffRenderer.drawStaffLines({
       width: this.options.width,
@@ -143,18 +144,18 @@ export default class StaffFrame {
 
     if (this.options.keySignature && this.keySigWidth > 0) {
       currentX += COMPONENT_GAP;
-      this.keySigGroup.setAttribute("transform", `translate(${currentX}, 0)`);
+      setTransformAttr(this.keySigGroup, currentX, 0);
       currentX += this.keySigWidth;
     } else {
-      this.keySigGroup.setAttribute("transform", `translate(0, 0)`);
+      setTransformAttr(this.keySigGroup, 0, 0);
     }
 
     if (this.options.timeSignature && this.timeSigWidth > 0) {
       currentX += COMPONENT_GAP;
-      this.timeSigGroup.setAttribute("transform", `translate(${currentX}, 0)`);
+      setTransformAttr(this.timeSigGroup, currentX, 0);
       currentX += this.timeSigWidth;
     } else {
-      this.timeSigGroup.setAttribute("transform", `translate(0, 0)`);
+      setTransformAttr(this.timeSigGroup, 0, 0);
     }
 
     this.currentNoteStartX = currentX + this.options.noteStartX;

@@ -22,7 +22,7 @@ import {
 import { calculateStartFret, createStateStrings, parseFingersEntry, parseFretsEntry } from "../helpers/guitarHelpers";
 import type { GuitarBarreDef, GuitarChordDrawOptions, GuitarStringState } from "../helpers/guitarHelpers";
 import SVGRenderer from "../classes/SVGRenderer";
-import { NAMESPACE } from "../constants";
+import { NAMESPACE, setTransformAttr } from "../constants";
 
 export type GuitarChordOptions = {
   width?: number;
@@ -148,7 +148,7 @@ export default class GuitarChord {
       // Draw a X for 'muted' string
       if (fret === "x") {
         fretDotGroup.classList.add(`${NAMESPACE}-guitar-fret-muted`);
-        fretDotGroup.setAttribute("transform", `translate(${x}, ${markerY})`);
+        setTransformAttr(fretDotGroup, x, markerY);
 
         this.svgRendererInstance.drawLine(-GUITAR_MARKER_RADIUS, -GUITAR_MARKER_RADIUS, GUITAR_MARKER_RADIUS, GUITAR_MARKER_RADIUS, fretDotGroup, {
           strokeWidth: 1.5
@@ -160,7 +160,7 @@ export default class GuitarChord {
       // Draw a outlined circle for 'open' string
       else if (fret === "0") {
         fretDotGroup.classList.add(`${NAMESPACE}-guitar-fret-open`);
-        fretDotGroup.setAttribute("transform", `translate(${x}, ${markerY})`);
+        setTransformAttr(fretDotGroup, x, markerY);
 
         this.svgRendererInstance.drawCircle(0, 0, GUITAR_MARKER_RADIUS, fretDotGroup, { filled: false });
       }
@@ -180,7 +180,7 @@ export default class GuitarChord {
         }
 
         const dotY = this.gridTopY + (relativeFret - 0.5) * GUITAR_FRET_SPACING;
-        fretDotGroup.setAttribute("transform", `translate(${x}, ${dotY})`);
+        setTransformAttr(fretDotGroup, x, dotY);
 
         this.svgRendererInstance.drawCircle(0, 0, GUITAR_DOT_RADIUS, fretDotGroup, {
           classes: "guitar-fret-circle"
@@ -242,8 +242,7 @@ export default class GuitarChord {
 
     const y = this.gridTopY + (GUITAR_FRET_SPACING * relativeFret);
 
-    barreGroup.setAttribute("transform", `translate(0, ${y})`);
-
+    setTransformAttr(barreGroup, 0, y);
 
     this.svgRendererInstance.drawRect(width, height, barreGroup, {
       x: startX - GUITAR_DOT_RADIUS,
@@ -384,7 +383,7 @@ export default class GuitarChord {
       row.forEach((entry) => {
         entry.xPos = this.cursorX;
         entry.yPos = this.cursorY;
-        entry.gElement.setAttribute("transform", `translate(${this.cursorX}, ${this.cursorY})`);
+        setTransformAttr(entry.gElement, this.cursorX, this.cursorY);
 
         this.cursorX += this.diagramWidth + GUITAR_DIAGRAM_H_SPACING;
       });

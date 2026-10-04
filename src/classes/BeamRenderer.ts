@@ -4,6 +4,7 @@ import type { ClefTypes } from "../types";
 import { convertPitchStepToYPos, getPitchStepClefDifference, getStemSteps, MIDDLE_LINE_STEP, type BeamableConfig, type NoteDurations } from "../helpers/noteHelpers";
 import { getNoteheadGlyphByDuration } from "../glyphs";
 import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
+import { setTransformAttr } from "../constants";
 
 const BEAM_INTERNAL_SPACING = 8;
 const STEM_X_OFFSET = 0.5;
@@ -204,7 +205,7 @@ export default class BeamRenderer {
         yPosArray.push(isStemDown ? result.yPosArray[result.yPosArray.length - 1] : result.yPosArray[0]);
       }
 
-      wrapperGroup.setAttribute("transform", `translate(${internalCursorX + originXOffset}, 0)`);
+      setTransformAttr(wrapperGroup, internalCursorX + originXOffset, 0);
       beamGroup.appendChild(wrapperGroup);
 
       const noteHeadWidth = getNoteheadGlyphByDuration(duration).glyphWidth;
