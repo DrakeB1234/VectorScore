@@ -9,6 +9,9 @@ export type NoteArticulations = typeof noteArticultations[number];
 export type NoteDurations = typeof noteDurations[number];
 export type NoteAccidentals = typeof noteAccidentals[number];
 
+export const barlineTypes = ["single", "double", "end", "repeat-start", "repeat-end"] as const;
+export type BarlineTypes = typeof barlineTypes[number];
+
 const excludedBeamDurations: NoteDurations[] = ["w", "h", "q"];
 
 export interface VSNoteObj {
@@ -47,6 +50,7 @@ export type DrawNoteConfig = { type: "note"; note: VSNoteObj };
 export type DrawChordConfig = { type: "chord"; chord: VSChordObj };
 export type DrawRestConfig = { type: "rest"; rest: VSRestObj };
 export type DrawBeamConfig = { type: "beam"; beam: VSBeamObj; };
+export type DrawBarlineConfig = { type: "barline"; barLineType: BarlineTypes; };
 
 export type BeamableConfig = DrawNoteConfig | DrawChordConfig;
 
@@ -80,6 +84,12 @@ export function beamConfig(beam: VSBeamObj): DrawBeamConfig {
   });
 
   return { type: "beam", beam };
+};
+
+/** @description Replaces string input with object in staff draw methods */
+export function barlineConfig(barLineType: BarlineTypes): DrawBarlineConfig {
+
+  return { type: "barline", barLineType };
 };
 
 // String Parsers
@@ -174,6 +184,18 @@ export function parseBeamString(beamString: string): VSBeamObj {
   });
 
   return { entries };
+};
+
+export function parseBarlineString(barlineString: string): BarlineTypes {
+  switch (barlineString) {
+    case "|": return "single";
+    case "||": return "double";
+    case "|]": return "end";
+    case "|:": return "repeat-start";
+    case ":|": return "repeat-end";
+    default:
+      throw new Error(`Invalid barline syntax: '${barlineString}'`);
+  }
 }
 
 export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
@@ -203,8 +225,8 @@ export function parseBatchString(batchString: string): StandardStaffDrawConfig[]
   const configs: StandardStaffDrawConfig[] = [];
 
   for (const chunk of chunks) {
-    if (chunk === "|") {
-      configs.push({ type: "barline" });
+    if (/^[|\]:]+$/.test(chunk)) {
+      configs.push(barlineConfig(parseBarlineString(chunk)));
     }
     else if (chunk.includes("-")) {
       configs.push(beamConfig(parseBeamString(chunk)));

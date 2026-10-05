@@ -1,4 +1,4 @@
-import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, ARTIC_ACCENT, ARTIC_FERMATA, ARTIC_MARCATO, ARTIC_STACCATO, ARTIC_TENUTO, AUGMENTATION_DOT, BRACE, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, ARTIC_ACCENT, ARTIC_FERMATA, ARTIC_MARCATO, ARTIC_STACCATO, ARTIC_TENUTO, AUGMENTATION_DOT, BRACE, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REPEAT_DOTS, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
 import { getPitchStepClefDifference, convertPitchStepToYPos } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
@@ -6,7 +6,7 @@ import NoteRenderer from "../classes/NoteRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import SVGRenderer from "../classes/SVGRenderer";
 import { setTransformAttr, VALID_CLASS_ATTR_REGEX } from "../constants";
-import { beamConfig, chordConfig, noteConfig, parseBatchString, parseBeamString, parseChordNoteString, parseChordString, parseNoteString, parseRestString, restConfig, type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/inputHelpers";
+import { barlineConfig, beamConfig, chordConfig, noteConfig, parseBarlineString, parseBatchString, parseBeamString, parseChordNoteString, parseChordString, parseNoteString, parseRestString, restConfig, type DrawBarlineConfig, type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/inputHelpers";
 
 export type StandardStaffUserOptions = {
   width?: number;
@@ -31,7 +31,7 @@ const USE_GLPYHS: GlyphDef[] = [
   TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9,
   FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP,
   REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH, REST_THIRTY_SECOND,
-  AUGMENTATION_DOT, ARTIC_ACCENT, ARTIC_MARCATO, ARTIC_TENUTO, ARTIC_STACCATO, ARTIC_FERMATA
+  AUGMENTATION_DOT, ARTIC_ACCENT, ARTIC_MARCATO, ARTIC_TENUTO, ARTIC_STACCATO, ARTIC_FERMATA, REPEAT_DOTS
 ];
 
 const NOTEHEAD_WIDTH = NOTEHEAD_BLACK.glyphWidth;
@@ -92,7 +92,7 @@ export type StandardStaffDrawOptions = {
   classes?: string[];
 };
 
-export type StandardStaffDrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig | { type: "barline" };
+export type StandardStaffDrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig | DrawBarlineConfig;
 
 export default class StandardStaff {
   private options: ResolvedStaffOptions;
@@ -246,11 +246,14 @@ export default class StandardStaff {
       };
     }
     else if (config.type === "barline") {
-      this.staffFrame.staffRenderer.drawStaffBarLine(0, this.options.staffType, group);
+      // const width = this.staffFrame.staffRenderer.drawStaffBarLine(0, this.options.staffType, group);
+
+      const res = this.staffFrame.drawBarline(config.barLineType, group);
+
       newEntry = {
         ...newEntry,
         type: "barline",
-        totalWidth: 0,
+        totalWidth: res,
         originXOffset: 0,
         yOffset: 0
       };
@@ -306,8 +309,9 @@ export default class StandardStaff {
   }
 
   /** - Draws a barline on the staff. Returns the index of the drawn element */
-  public drawBarline(options?: Pick<StandardStaffDrawOptions, "classes">) {
-    return this.appendEntry({ type: "barline" }, { ...options, staff: "top" });
+  public drawBarline(input: string | DrawBarlineConfig, options?: StandardStaffDrawOptions) {
+    const config = typeof input === "string" ? barlineConfig(parseBarlineString(input)) : input;
+    return this.appendEntry(config, options);
   }
 
   /** 

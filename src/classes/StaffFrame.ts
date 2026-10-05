@@ -1,9 +1,10 @@
-import { BARLINE_X_OFFSET, COMPONENT_GAP } from "./StaffRenderer";
+import { COMPONENT_GAP } from "./StaffRenderer";
 import StaffRenderer from "./StaffRenderer";
 import type SVGRenderer from "./SVGRenderer";
 import type { ClefTypes, SystemTypes } from "../types";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
 import { setTransformAttr } from "../constants";
+import type { BarlineTypes } from "../helpers/inputHelpers";
 
 export type StaffLayoutOptions = {
   width: number;
@@ -33,6 +34,7 @@ export default class StaffFrame {
   private clefWidth: number;
   private keySigWidth: number = 0;
   private timeSigWidth: number = 0;
+  private staffYStartPositions: number[];
 
   constructor(svgRendererInstance: SVGRenderer, options: StaffLayoutOptions) {
     this.options = options;
@@ -60,6 +62,7 @@ export default class StaffFrame {
       this.totalStaffHeight = res.totalStaffHeight;
       this.clefWidth = res.clefWidth;
       this.braceWidth = res.braceWidth;
+      this.staffYStartPositions = [0, this.totalStaffHeight - BASE_STAFF_HEIGHT];
     }
     else {
       const staffHeight = this.staffRenderer.drawStaffLines({
@@ -77,14 +80,32 @@ export default class StaffFrame {
       this.totalStaffHeight = staffHeight;
       this.clefWidth = clefWidth;
       this.braceWidth = 0;
+      this.staffYStartPositions = [0];
     }
 
     // Draw Signatures & Barlines
     if (this.options.keySignature) this.drawKeySignature(this.options.keySignature);
     if (this.options.timeSignature) this.drawTimeSignature(this.options.timeSignature);
 
-    this.staffRenderer.drawStaffBarLine(BARLINE_X_OFFSET + this.braceWidth, this.options.staffType, this.staffGroup);
-    this.staffRenderer.drawStaffBarLine(this.options.width - BARLINE_X_OFFSET, this.options.staffType, this.staffGroup);
+    const startLineGroup = this.svgRendererInstance.createGroup("barline");
+    this.staffRenderer.drawBarline({
+      topY: 0,
+      bottomY: this.totalStaffHeight,
+      barType: "single",
+      group: startLineGroup
+    });
+    setTransformAttr(startLineGroup, this.braceWidth, 0);
+    this.staffGroup.appendChild(startLineGroup);
+
+    const endLineGroup = this.svgRendererInstance.createGroup("barline");
+    this.staffRenderer.drawBarline({
+      topY: 0,
+      bottomY: this.totalStaffHeight,
+      barType: "single",
+      group: endLineGroup
+    });
+    setTransformAttr(endLineGroup, this.options.width - 1, 0);
+    this.staffGroup.appendChild(endLineGroup);
 
     this.updateStaffLayout();
   }
@@ -262,5 +283,15 @@ export default class StaffFrame {
     this.keySigGroup.replaceChildren();
 
     return this.updateStaffLayout();
+  }
+
+  public drawBarline(barType: BarlineTypes, group: SVGGElement): number {
+    return this.staffRenderer.drawBarline({
+      topY: 0,
+      bottomY: this.totalStaffHeight,
+      barType,
+      repeatYStartPositions: this.staffYStartPositions,
+      group
+    });
   }
 }

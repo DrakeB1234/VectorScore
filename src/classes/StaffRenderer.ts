@@ -1,4 +1,5 @@
-import { BRACE, getAccidentalGlyph, getClefGlyph, getTimeSigGlyph } from "../glyphs";
+import { BRACE, getAccidentalGlyph, getClefGlyph, getTimeSigGlyph, REPEAT_DOTS } from "../glyphs";
+import type { BarlineTypes } from "../helpers/inputHelpers";
 import { getPitchStepClefDifference } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, STAFF_LINE_COUNT, STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED, validateKeySignature, validateTimeSignature, type KeySignatures } from "../helpers/staffHelpers";
 import type { ClefTypes, SystemTypes } from "../types";
@@ -37,12 +38,25 @@ type DrawBraceArgs = {
   staffGroup: SVGGElement;
 }
 
+type DrawBarlineArgs = {
+  topY: number;
+  bottomY: number;
+  barType: BarlineTypes;
+  group: SVGGElement;
+  repeatYStartPositions?: number[];
+};
+
 export const COMPONENT_GAP = 10;
-export const BARLINE_X_OFFSET = 0.5;
 
 const BRACE_PADDING = 3;
 export const CLEF_X_OFFSET = 4;
 const KEY_SIG_ACCIDENTAL_SPACING = 12;
+
+const BAR_THIN_WIDTH = 1;
+const BAR_THICK_WIDTH = 5;
+const BAR_STANDARD_GAP = 4;
+const BAR_REPEAT_DOT_GAP = 4;
+const BAR_REPEAT_DOT_WIDTH = 3;
 
 export default class StaffRenderer {
   private svgRendererInstance: SVGRenderer;
@@ -182,5 +196,70 @@ export default class StaffRenderer {
     totalWidth = Math.round(totalWidth);
 
     return totalWidth;
+  };
+
+  public drawBarline({ topY, bottomY, barType, repeatYStartPositions, group }: DrawBarlineArgs): number {
+    const height = bottomY - topY;
+
+    const drawVerticalBar = (xOffset: number, width: number) => {
+      this.svgRendererInstance.drawRect(width, height, group, {
+        x: xOffset,
+        y: topY
+      });
+    };
+
+    const drawRepeatDots = (xOffset: number) => {
+      if (!repeatYStartPositions) return;
+      repeatYStartPositions.forEach(staffTopY => {
+        this.svgRendererInstance.drawGlyph(REPEAT_DOTS.name, group, {
+          x: xOffset,
+          y: staffTopY
+        });
+      });
+    };
+
+    let currentX = 0;
+
+    switch (barType) {
+      case "single":
+        drawVerticalBar(currentX, BAR_THIN_WIDTH);
+        currentX += BAR_THIN_WIDTH;
+        return currentX;
+
+      case "double":
+        drawVerticalBar(currentX, BAR_THIN_WIDTH);
+        currentX += BAR_THIN_WIDTH + BAR_STANDARD_GAP;
+        drawVerticalBar(currentX, BAR_THIN_WIDTH);
+        currentX += BAR_THIN_WIDTH;
+        return currentX;
+
+      case "end":
+        drawVerticalBar(currentX, BAR_THIN_WIDTH);
+        currentX += BAR_THIN_WIDTH + BAR_STANDARD_GAP;
+        drawVerticalBar(currentX, BAR_THICK_WIDTH);
+        currentX += BAR_THICK_WIDTH;
+        return currentX;
+
+      case "repeat-start":
+        drawVerticalBar(currentX, BAR_THICK_WIDTH);
+        currentX += BAR_THICK_WIDTH + BAR_STANDARD_GAP;
+        drawVerticalBar(currentX, BAR_THIN_WIDTH);
+        currentX += BAR_THIN_WIDTH + BAR_REPEAT_DOT_GAP;
+        drawRepeatDots(currentX);
+        currentX += BAR_REPEAT_DOT_WIDTH;
+        return currentX;
+
+      case "repeat-end":
+        drawRepeatDots(currentX);
+        currentX += BAR_REPEAT_DOT_WIDTH + BAR_REPEAT_DOT_GAP;
+        drawVerticalBar(currentX, BAR_THIN_WIDTH);
+        currentX += BAR_THIN_WIDTH + BAR_STANDARD_GAP;
+        drawVerticalBar(currentX, BAR_THICK_WIDTH);
+        currentX += BAR_THICK_WIDTH;
+        return currentX;
+
+      default:
+        return 0;
+    }
   }
 }
