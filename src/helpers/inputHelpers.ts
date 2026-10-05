@@ -76,7 +76,7 @@ export function restConfig(rest: RestInput): DrawRestConfig {
 
 /** @description Replaces string input with object in staff draw methods */
 export function beamConfig(beam: VSBeamObj): DrawBeamConfig {
-  beam.entries.map(entry => {
+  beam.entries.forEach(entry => {
     const duration = entry.type === "note" ? entry.note.duration : entry.chord.duration;
     const articulation = entry.type === "note" ? entry.note.articulation : entry.chord.articulation;
     if (excludedBeamDurations.includes(duration)) throw new Error(`Invalid duration '${duration}' was provided. Please use e|s|t.`);
@@ -195,6 +195,7 @@ export function parseBarlineString(barlineString: string): BarlineTypes {
     case ":|": return "repeat-end";
     default:
       throw new Error(`Invalid barline syntax: '${barlineString}'`);
+
   }
 }
 

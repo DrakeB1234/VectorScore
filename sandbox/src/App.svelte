@@ -12,22 +12,14 @@
 
 <RenderScan />
 
-<main>
-  <Navbar bind:activeComponent />
+<Navbar bind:activeComponent />
 
-  {#if activeComponent === "music-staff"}
-    <StandardStaff />
-  {:else if activeComponent === "scrolling-staff"}
-    <ScrollingStaff />
-  {:else if activeComponent === "rhythm-staff"}
-    <RhythmStaff />
-  {:else}
-    <GuitarChords />
-  {/if}
-</main>
-
-<style>
-  main {
-    padding-bottom: 10em;
-  }
-</style>
+{#if activeComponent === "music-staff"}
+  <StandardStaff />
+{:else if activeComponent === "scrolling-staff"}
+  <ScrollingStaff />
+{:else if activeComponent === "rhythm-staff"}
+  <RhythmStaff />
+{:else}
+  <GuitarChords />
+{/if}

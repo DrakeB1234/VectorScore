@@ -6,7 +6,7 @@ import NoteRenderer from "../classes/NoteRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import SVGRenderer from "../classes/SVGRenderer";
 import { setTransformAttr, VALID_CLASS_ATTR_REGEX } from "../constants";
-import { barlineConfig, beamConfig, chordConfig, noteConfig, parseBarlineString, parseBatchString, parseBeamString, parseChordNoteString, parseChordString, parseNoteString, parseRestString, restConfig, type DrawBarlineConfig, type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/inputHelpers";
+import { barlineConfig, beamConfig, chordConfig, noteConfig, parseBarlineString, parseBatchString, parseBeamString, parseChordNoteString, parseChordString, parseNoteString, parseRestString, restConfig, type BarlineTypes, type DrawBarlineConfig, type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/inputHelpers";
 
 export type StandardStaffUserOptions = {
   width?: number;
@@ -82,7 +82,8 @@ type BeamEntry = BaseEntry & {
 };
 
 type BarlineEntry = BaseEntry & {
-  type: "barline",
+  type: "barline";
+  barType: BarlineTypes;
 }
 
 type StaffEntry = NoteEntry | ChordEntry | RestEntry | BeamEntry | BarlineEntry;
@@ -253,6 +254,7 @@ export default class StandardStaff {
       newEntry = {
         ...newEntry,
         type: "barline",
+        barType: config.barLineType,
         totalWidth: res,
         originXOffset: 0,
         yOffset: 0

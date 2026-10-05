@@ -56,7 +56,7 @@ const BAR_THIN_WIDTH = 1;
 const BAR_THICK_WIDTH = 5;
 const BAR_STANDARD_GAP = 4;
 const BAR_REPEAT_DOT_GAP = 4;
-const BAR_REPEAT_DOT_WIDTH = 3;
+const BAR_REPEAT_DOT_WIDTH = 4;
 
 export default class StaffRenderer {
   private svgRendererInstance: SVGRenderer;
