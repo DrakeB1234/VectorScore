@@ -1,11 +1,11 @@
 import type { StandardStaffDrawConfig } from "../core/StandardStaff";
 
 const noteLetters = ["A", "B", "C", "D", "E", "F", "G"] as const;
-export const noteArticultations = ["staccato", "tenuto", "accent", "marcato", "fermata"] as const;
+export const noteArticulations = ["staccato", "tenuto", "accent", "marcato", "fermata"] as const;
 export const noteDurations = ["w", "h", "q", "e", "s", "t"] as const;
 const noteAccidentals = ["#", "b", "n", "##", "bb"] as const;
 export type NoteLetters = typeof noteLetters[number];
-export type NoteArticulations = typeof noteArticultations[number];
+export type NoteArticulations = typeof noteArticulations[number];
 export type NoteDurations = typeof noteDurations[number];
 export type NoteAccidentals = typeof noteAccidentals[number];
 
@@ -249,5 +249,5 @@ export function parseBatchString(batchString: string): StandardStaffDrawConfig[]
 // Validators
 
 export function validateArticulationString(string: string | undefined) {
-  if (string && !noteArticultations.includes(string as any)) throw new Error(`Invalid articulation string '${string}'. Valid options are 'staccato', 'tenuto', 'accent', 'marcato' or 'fermata'.`);
+  if (string && !noteArticulations.includes(string as any)) throw new Error(`Invalid articulation string '${string}'. Valid options are 'staccato', 'tenuto', 'accent', 'marcato' or 'fermata'.`);
 }

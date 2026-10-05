@@ -1,7 +1,13 @@
 // General Exports
 export type { ClefTypes, SystemTypes } from './types';
 export type { KeySignatures, TimeSignature, KeySignaturesArr } from './helpers/staffHelpers';
-export type { DrawNoteConfig, DrawChordConfig, DrawRestConfig, DrawBeamConfig, BeamableConfig, NoteArticulations, NoteDurations, noteConfig, chordConfig, restConfig, beamConfig, noteArticultations, noteDurations } from './helpers/inputHelpers';
+export type {
+  NoteArticulations, NoteDurations, BarlineTypes,
+  DrawNoteConfig, DrawChordConfig, DrawRestConfig, DrawBeamConfig, BeamableConfig, DrawBarlineConfig,
+  NoteInput, ChordInput, RestInput, VSNoteObj, VSChordObj, VSRestObj, VSBeamObj,
+  noteConfig, chordConfig, restConfig, beamConfig, barlineConfig,
+  noteArticulations, noteDurations, barlineTypes
+} from './helpers/inputHelpers';
 export { shiftPitches } from './helpers/noteHelpers';
 
 
