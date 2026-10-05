@@ -1,21 +1,16 @@
-import { NAMESPACE } from "../constants";
-import { GLPYH_ENTRIES, type GlyphNames } from "../glyphs";
+import { NAMESPACE, setTransformAttr } from "../constants";
+import { type GlyphDef } from "../glyphs";
 
 export const SVG_HREF = "http://www.w3.org/2000/svg";
-const GLOBAL_SYMBOL_SCALE = 0.1;
-const VIEWBOX_PADDING = 2;
-
-type SVGRendererOptions = {
-  width: number;
-  height: number;
-  scale: number;
-  useGlyphs: GlyphNames[];
-  svgAutoFill: boolean;
-}
 
 type DrawGlyphOptions = {
-  yOffset?: number;
-  xOffset?: number;
+  y?: number;
+  x?: number;
+}
+
+type DrawPolygonOptions = {
+  fill?: string;
+  classes?: string | string[];
 }
 
 type DrawLineOptions = {
@@ -49,62 +44,44 @@ type DrawTextOptions = {
 
 export default class SVGRenderer {
   private rootElementRef: HTMLElement;
-  private svgElementRef: SVGElement;
+  svgElementRef: SVGElement;
 
   // Layers
-  private parentGroupContainer: SVGGElement;
   private layers: Record<string, SVGGElement> = {};
 
   // Positioning variables
-  private width: number;
-  private scale: number;
-  private totalYOffset: number = 0;
-  private totalHeight: number = 0;
+  private viewBoxWidth: number = 0;
+  private scale: number = 1;
 
   // Setups root SVG element and layers, sets attributes for scaling, creates defs for glyphs
   // Does not append to DOM automatically, must be done manually with commitElementsToDOM and passing rootSvgElement
   // from get rootSvgElement().
   // HEIGHT and YOfsset should be set externally, values are calculated internally.
-  constructor(rootElementCtx: HTMLElement, options: SVGRendererOptions) {
+  constructor(rootElementCtx: HTMLElement, useGlyphs?: GlyphDef[]) {
     this.rootElementRef = rootElementCtx;
-    this.width = options.width;
-    this.scale = options.scale;
 
     this.svgElementRef = document.createElementNS(SVG_HREF, "svg");
     this.svgElementRef.classList.add(`${NAMESPACE}-svg-renderer-root`);
 
-    // SET ROOT SVG ATTRIBUTES, WIDTH/HEIGHT * SCALE APPLIED AFTER STAFF IS DRAWN
-    if (options.svgAutoFill) {
-      this.svgElementRef.style.maxWidth = `100%`;
-      this.svgElementRef.style.height = `auto`;
-    }
-
-    // CREATE DEFS THEN PARENT GROUP IN ORDER
-    this.makeGlyphDefs(options.useGlyphs);
-    this.parentGroupContainer = this.createGroup("svg-renderer-parent");
-    this.svgElementRef.appendChild(this.parentGroupContainer);
+    if (useGlyphs) this.makeGlyphDefs(useGlyphs);
   }
 
   // Creates SVG defs for all glyphs in GLYPH_ENTRIES, applies global scale and offsets, appends to root SVG
-  private makeGlyphDefs(useGlyphs: GlyphNames[]) {
+  private makeGlyphDefs(useGlyphs: GlyphDef[]) {
     const defsElement = document.createElementNS(SVG_HREF, "defs");
-    // Only get the glyphs specified in the constructor
-    const activeGlyphs = Object.entries(GLPYH_ENTRIES)
-      .filter(([key]) => useGlyphs.includes(key as GlyphNames));
 
-    activeGlyphs.forEach(([name, data]) => {
+    useGlyphs.forEach((glyph) => {
       const path = document.createElementNS(SVG_HREF, "path");
-      path.setAttribute("id", `glyph-${name}`);
-      path.setAttribute("d", data.path);
-      path.setAttribute("fill", "currentColor");
 
-      // BAKE SCALE AND OFFSETS INTO SYMBOL
-      path.setAttribute("transform", `translate(${data.xOffset}, ${data.yOffset}) scale(${GLOBAL_SYMBOL_SCALE})`);
+      path.setAttribute("id", `glyph-${glyph.name}`);
+
+      path.setAttribute("d", glyph.path);
+      setTransformAttr(path, 0, glyph.yOffset);
 
       defsElement.appendChild(path);
     });
 
-    this.rootSvgElement.appendChild(defsElement);
+    this.svgElementRef.appendChild(defsElement);
   }
 
   private addNamespacedClassesToElement(classes: string | string[], parent: SVGElement) {
@@ -112,6 +89,35 @@ export default class SVGRenderer {
     classesArr.forEach(className => parent.classList.add(`${NAMESPACE}-${className}`));
   }
 
+  setRootSVGSizing(width: number, height: number, scale: number) {
+    const scaledWidth = Math.round(width * scale);
+    const scaledHeight = Math.round(height * scale);
+
+    this.svgElementRef.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    this.svgElementRef.setAttribute("width", scaledWidth.toString());
+    this.svgElementRef.setAttribute("height", scaledHeight.toString());
+
+    this.viewBoxWidth = width;
+    this.scale = scale;
+  }
+
+  setRootSVGHeight(newHeight: number) {
+    const scaledHeight = newHeight * this.scale;
+
+    this.svgElementRef.setAttribute("viewBox", `0 0 ${this.viewBoxWidth} ${newHeight}`);
+    this.svgElementRef.setAttribute("height", scaledHeight.toString());
+  }
+
+  setSVGAutoFill(autoFill: boolean) {
+    if (autoFill) {
+      this.svgElementRef.style.maxWidth = "100%";
+      this.svgElementRef.style.height = "auto";
+    }
+    else {
+      this.svgElementRef.style.maxWidth = "";
+      this.svgElementRef.style.height = "";
+    };
+  }
 
   /**
    * Creates a layer that is appended to parent element.
@@ -125,7 +131,7 @@ export default class SVGRenderer {
     const layer = document.createElementNS(SVG_HREF, "g");
     layer.classList.add(`${NAMESPACE}-${layerName}-layer`);
     this.layers[layerName] = layer;
-    this.parentGroupContainer.appendChild(this.layers[layerName]);
+    this.svgElementRef.appendChild(this.layers[layerName]);
 
     return layer;
   }
@@ -156,38 +162,8 @@ export default class SVGRenderer {
     parent.appendChild(fragment);
   }
 
-  addTotalRootSvgHeight(amount: number) {
-    this.totalHeight += amount;
-  }
+  // ==== Drawing Methods ====
 
-  setTotalRootSvgHeight(amount: number) {
-    this.totalHeight = amount;
-  }
-
-  addTotalRootSvgYOffset(amount: number) {
-    this.totalYOffset += amount;
-  }
-
-  applySizingToRootSvg() {
-    this.parentGroupContainer.setAttribute("transform", `translate(${VIEWBOX_PADDING / 2}, ${this.totalYOffset})`);
-
-    let newWidth = Math.round(this.width * this.scale);
-    const newHeight = (this.totalHeight + this.totalYOffset) * this.scale;
-
-    // Apply padding to sides to prevent clipping of staff end lines
-    newWidth += VIEWBOX_PADDING;
-
-    this.svgElementRef.setAttribute("width", newWidth.toString());
-    this.svgElementRef.setAttribute("height", newHeight.toString());
-
-    this.svgElementRef.setAttribute("viewBox", `0 0 ${this.width + VIEWBOX_PADDING} ${this.totalHeight + this.totalYOffset}`);
-  }
-
-  get rootSvgElement(): SVGElement { return this.svgElementRef; }
-  get parentGroupElement(): SVGElement { return this.parentGroupContainer; }
-
-
-  // Drawing Methods
   drawLine(x1: number, y1: number, x2: number, y2: number, parent: SVGElement, options?: DrawLineOptions) {
     const strokeWidth = options?.strokeWidth ?? 1;
 
@@ -199,9 +175,11 @@ export default class SVGRenderer {
     line.setAttribute("stroke", "currentColor");
     line.setAttribute("stroke-width", strokeWidth.toString());
 
-    if (options?.classes) this.addNamespacedClassesToElement(options.classes, parent);
+    if (options?.classes) this.addNamespacedClassesToElement(options.classes, line);
 
     parent.appendChild(line);
+
+    return line;
   }
 
   drawRect(width: number, height: number, parent: SVGElement, options?: DrawRectOptions): SVGRectElement {
@@ -225,21 +203,6 @@ export default class SVGRenderer {
     return rect;
   }
 
-  drawGlyph(glyphName: GlyphNames, parent: SVGElement, options?: DrawGlyphOptions) {
-    options = {
-      xOffset: 0,
-      yOffset: 0,
-      ...options
-    };
-
-    const useElement = document.createElementNS(SVG_HREF, "use");
-    useElement.setAttribute("href", `#glyph-${glyphName}`);
-
-    if (options.xOffset || options.yOffset) useElement.setAttribute("transform", `translate(${options.xOffset}, ${options.yOffset})`);
-
-    parent.appendChild(useElement);
-  }
-
   drawCircle(cx: number, cy: number, radius: number, parent: SVGElement, options?: DrawCircleOptions): SVGCircleElement {
     const circle = document.createElementNS(SVG_HREF, "circle");
     circle.setAttribute("cx", cx.toString());
@@ -258,6 +221,35 @@ export default class SVGRenderer {
 
     parent.appendChild(circle);
     return circle;
+  }
+
+  /**  Points are [x, y] pairs, connected in order and closed automatically */
+  drawPolygon(points: [number, number][], parent: SVGElement, options?: DrawPolygonOptions): SVGPolygonElement {
+    const polygon = document.createElementNS(SVG_HREF, "polygon");
+
+    polygon.setAttribute("points", points.map(([x, y]) => `${x},${y}`).join(" "));
+    polygon.setAttribute("fill", options?.fill ?? "currentColor");
+
+    if (options?.classes) this.addNamespacedClassesToElement(options.classes, polygon);
+
+    parent.appendChild(polygon);
+    return polygon;
+  }
+
+  drawGlyph(glyphName: string, parent: SVGElement, options?: DrawGlyphOptions) {
+    options = {
+      x: 0,
+      y: 0,
+      ...options
+    };
+
+    const useElement = document.createElementNS(SVG_HREF, "use");
+    useElement.setAttribute("href", `#glyph-${glyphName}`);
+    useElement.setAttribute("fill", `currentColor`);
+
+    setTransformAttr(useElement, options.x ?? 0, options.y ?? 0);;
+
+    parent.appendChild(useElement);
   }
 
   drawText(text: string, x: number, y: number, parent: SVGElement, options?: DrawTextOptions): SVGTextElement {

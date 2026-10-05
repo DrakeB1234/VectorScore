@@ -1,12 +1,33 @@
-export { default as MusicStaff } from './classes/MusicStaff';
-export { default as RhythmStaff } from './classes/RhythmStaff';
-export { default as ScrollingStaff } from './classes/ScrollingStaff';
-export { default as GuitarChord } from './classes/GuitarChord';
+// General Exports
+export type { ClefTypes, SystemTypes } from './types';
+export type { KeySignatures, TimeSignature, KeySignaturesArr } from './helpers/staffHelpers';
+export type {
+  NoteArticulations, NoteDurations, BarlineTypes,
+  DrawNoteConfig, DrawChordConfig, DrawRestConfig, DrawBeamConfig, BeamableConfig, DrawBarlineConfig,
+  NoteInput, ChordInput, RestInput, VSNoteObj, VSChordObj, VSRestObj, VSBeamObj,
+  noteConfig, chordConfig, restConfig, beamConfig, barlineConfig,
+  noteArticulations, noteDurations, barlineTypes
+} from './helpers/inputHelpers';
+export { shiftPitches } from './helpers/noteHelpers';
 
-export type { MusicStaffOptions } from './classes/MusicStaff';
-export type { RhythmStaffOptions } from './classes/RhythmStaff';
-export type { ScrollingStaffOptions } from './classes/ScrollingStaff';
-export type { GuitarChordOptions } from './classes/GuitarChord';
 
-export type { StaffTypes } from './types';
-export type { GuitarChordDrawOptions, GuitarBarreDef } from './types';
+// Standard Staff Exports
+export { default as StandardStaff } from './core/StandardStaff';
+export type { StandardStaffUserOptions, StandardStaffDrawConfig, StandardStaffDrawOptions } from './core/StandardStaff';
+
+
+// Scrolling Staff Exports
+export { default as ScrollingStaff } from './core/ScrollingStaff';
+export type { ScrollingStaffUserOptions, ScrollingStaffDrawConfig } from './core/ScrollingStaff';
+
+
+// Rhythm Staff Exports
+export { default as RhythmStaff } from './core/RhythmStaff';
+export type { RhythmStaffUserOptions, RhythmItem } from './core/RhythmStaff';
+
+
+// Guitar Chord Exports
+export { default as GuitarChord } from './core/GuitarChord';
+export type { GuitarChordOptions } from './core/GuitarChord';
+export { determineBarreOptions } from './helpers/guitarHelpers';
+export type { GuitarBarreDef, GuitarChordDrawOptions } from './helpers/guitarHelpers';

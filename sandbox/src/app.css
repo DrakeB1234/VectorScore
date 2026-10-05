@@ -1,0 +1,230 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+}
+
+ul[role="list"],
+ol[role="list"] {
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+body {
+  text-rendering: optimizeSpeed;
+}
+
+img,
+picture,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+:root {
+  --space-4: 0.25rem;
+  --space-8: 0.5rem;
+  --space-12: 0.75rem;
+  --space-16: 1rem;
+  --space-24: 1.5rem;
+  --space-36: 2.25rem;
+  --space-52: 3.25rem;
+  --space-72: 4.5rem;
+
+  --color-page: oklch(96% 0.012 250);
+  --color-surface: oklch(99% 0.005 250);
+  --color-surface-active: oklch(94% 0.015 250);
+  --color-on-surface: oklch(10% 0.1 250);
+  --color-on-surface-subtle: oklch(55% 0.05 250);
+  --color-on-surface-inverse: oklch(99% 0.01 250);
+
+  --color-primary: oklch(60% 0.22 260);
+  --color-primary-active: oklch(52% 0.22 260);
+  --color-on-primary: white;
+
+  --color-border: oklch(88% 0.025 250);
+
+  --radius: 4px;
+  --radius-lg: 8px;
+
+  --shadow-1: 0 2px 6px -2px rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+  --shadow-2: 0 4px 12px -2px rgba(0, 0, 0, 0.33), 0 2px 4px -1px rgba(0, 0, 0, 0.22);
+  --shadow-3: 0 5px 16px -2px rgba(0, 0, 0, 0.4), 0 3px 5px -1px rgba(0, 0, 0, 0.25);
+}
+
+body.dark {
+  --color-page: oklch(20% 0.017 250);
+  --color-surface: oklch(28% 0.023 250);
+  --color-surface-active: oklch(36% 0.025 250);
+  --color-on-surface: oklch(99% 0.01 250);
+  --color-on-surface-subtle: oklch(70% 0.01 250);
+  --color-on-surface-inverse: oklch(10% 0.1 250);
+
+  --color-border: oklch(40% 0.025 250);
+}
+
+body {
+  background-color: var(--color-page);
+  font-family: 'Inter', "sans-serif";
+  font-size: 14px;
+}
+
+p,
+span,
+label {
+  color: var(--color-on-surface);
+}
+
+label {
+  font-size: 12px;
+}
+
+.text-caption-subtle {
+  font-size: 12px;
+  color: var(--color-on-surface-subtle);
+}
+
+button {
+  padding: var(--space-8) var(--space-12);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-on-surface);
+
+  cursor: pointer;
+
+  transition: background-color 0.1s ease-in;
+}
+
+button:hover {
+  background-color: var(--color-surface-active);
+}
+
+button.icon {
+  padding: var(--space-8);
+}
+
+button.text {
+  border-color: transparent;
+}
+
+button.primary {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: transparent;
+}
+
+button.primary:hover {
+  background-color: var(--color-primary-active);
+}
+
+button.toggle.active {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+/* Inputs */
+
+input,
+select {
+  padding: var(--space-8);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-on-surface);
+}
+
+input::placeholder {
+  color: var(--color-on-surface-subtle);
+}
+
+input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+
+.label-group__col {
+  display: grid;
+  gap: var(--space-4);
+
+  max-width: 300px;
+}
+
+.label-group__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  max-width: 300px;
+}
+
+/* Components */
+
+.staff-container {
+  display: grid;
+  place-items: center;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.toggles {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+
+  padding: var(--space-16);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.card-title {
+  font-weight: bold;
+  margin-bottom: var(--space-12);
+}
+
+.card-section {
+  padding-block: var(--space-12);
+}
+
+.card-divider-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+
+  margin-block: var(--space-24);
+}
+
+.card-divider::before {
+  display: flex;
+
+  content: "";
+
+  width: 100%;
+  height: 1px;
+  margin-block: var(--space-8);
+  background-color: var(--color-border);
+}
+
+.card-divider-text::before,
+.card-divider-text::after {
+  content: "";
+
+  width: 100%;
+  height: 1px;
+  background-color: var(--color-border);
+}

@@ -1,21 +1,14 @@
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
-import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [
-    dts({
-      insertTypesEntry: true,
-      include: ['src'],
-      exclude: ['dev']
-    }),
-  ],
-  publicDir: false,
   build: {
+    copyPublicDir: false,
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'VectorScore',
-      fileName: 'vector-score',
-    }
+      entry: 'src/index.ts',
+      formats: ['es'],
+      fileName: 'vector-score',   // -> dist/vector-score.js
+    },
   },
+  plugins: [dts({ rollupTypes: true })],   // one dist/index.d.ts
 });

@@ -30,6 +30,6 @@
     "src"
   ],
   "exclude": [
-    "src/dev"
+    "sandbox/"
   ]
 }
