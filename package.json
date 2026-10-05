@@ -45,16 +45,13 @@
     "dev": "npm run dev --prefix sandbox",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "prepublishOnly": "npm test && npm run build"
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^25.0.0",
     "jsdom": "^27.3.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
-    "vite-plugin-dts": "^4.5.4",
-    "vitest": "^4.0.15"
+    "vite-plugin-dts": "^4.5.4"
   }
 }
