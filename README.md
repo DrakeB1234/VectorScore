@@ -1,6 +1,6 @@
 <div align="center" style="background-color: white;">
   <img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/vector-score-icon.svg" alt="Vector Score Logo" />
-</div> 
+</div>
 
 ## Vector Score
 ![NPM Version](https://img.shields.io/npm/v/vector-score)
@@ -9,6 +9,8 @@
 [![Github Repo](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/DrakeB1234/VectorScore)
 
 A lightweight, SVG-based TypeScript library for rendering simple musical notation, rhythms, and guitar chords. This project aims to provide a simple to use renderer for web-based musical apps.
+
+<img src="public/standardStaff1.png" alt="" width="450" />
 
 ## Table of Contents
 

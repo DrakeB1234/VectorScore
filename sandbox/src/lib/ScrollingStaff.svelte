@@ -39,6 +39,19 @@
     if (!staff) return;
 
     isNotesOut = false;
+
+    const note = noteConfig({ letter: "B", octave: 4, duration: "q" });
+    const chord = chordConfig({
+      notes: [
+        { letter: "B", octave: 4 },
+        { letter: "D", octave: 4 },
+      ],
+      duration: "q",
+      articulation: "accent",
+    });
+    const rest = restConfig({ duration: "q" });
+
+    staff.queueNotes([note, chord, note, chord, rest]);
   }
 </script>
 

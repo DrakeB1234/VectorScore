@@ -17,7 +17,7 @@
       paddingBottom: 50,
       keySignature: "G",
       timeSignature: {
-        topNumber: 4,
+        topNumber: 3,
         bottomNumber: 4,
       },
     });
