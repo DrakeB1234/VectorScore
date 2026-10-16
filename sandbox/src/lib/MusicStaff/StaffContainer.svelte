@@ -28,7 +28,8 @@
 
     availableStaffs.push(staff);
 
-    staff.drawNote("C4w");
+    staff.drawBatchElements("C4q C4e-B4e-F4e [C4,E4,G4]q");
+    staff.justifyNotes();
   }
 </script>
 

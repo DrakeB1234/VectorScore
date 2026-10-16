@@ -220,30 +220,33 @@ export function parseChordNoteString(chordNoteString: string): VSChordNoteObj {
   return noteObj;
 };
 
-export function parseBatchString(batchString: string): StandardStaffDrawConfig[] {
-  // Split by one or more spaces, trimming any trailing/leading whitespace
-  const chunks = batchString.trim().split(/\s+/);
-  const configs: StandardStaffDrawConfig[] = [];
+export function parseElementString(elementString: string): StandardStaffDrawConfig {
+  const token = elementString.trim();
 
-  for (const chunk of chunks) {
-    if (/^[|\]:]+$/.test(chunk)) {
-      configs.push(barlineConfig(parseBarlineString(chunk)));
-    }
-    else if (chunk.includes("-")) {
-      configs.push(beamConfig(parseBeamString(chunk)));
-    }
-    else if (chunk.startsWith("[")) {
-      configs.push(chordConfig(parseChordString(chunk)));
-    }
-    else if (chunk.toLowerCase().startsWith("r")) {
-      configs.push(restConfig(parseRestString(chunk)));
-    }
-    else {
-      configs.push(noteConfig(parseNoteString(chunk)));
-    }
+  if (!token) {
+    throw new Error("Invalid element string: input cannot be empty.");
   }
 
-  return configs;
+  if (/^[|\]:]+$/.test(token)) {
+    return barlineConfig(parseBarlineString(token));
+  }
+  else if (token.includes("-")) {
+    return beamConfig(parseBeamString(token));
+  }
+  else if (token.startsWith("[")) {
+    return chordConfig(parseChordString(token));
+  }
+  else if (token.toLowerCase().startsWith("r")) {
+    return restConfig(parseRestString(token));
+  }
+  else {
+    return noteConfig(parseNoteString(token));
+  }
+}
+
+export function parseBatchString(batchString: string): StandardStaffDrawConfig[] {
+  const chunks = batchString.trim().match(/\[[^\]]+\]\S*|\S+/g) ?? [];
+  return chunks.map(chunk => parseElementString(chunk));
 }
 
 // Validators

@@ -6,7 +6,7 @@ import NoteRenderer from "../classes/NoteRenderer";
 import StaffFrame from "../classes/StaffFrame";
 import SVGRenderer from "../classes/SVGRenderer";
 import { setTransformAttr, VALID_CLASS_ATTR_REGEX } from "../constants";
-import { barlineConfig, beamConfig, chordConfig, noteConfig, parseBarlineString, parseBatchString, parseBeamString, parseChordNoteString, parseChordString, parseNoteString, parseRestString, restConfig, type BarlineTypes, type DrawBarlineConfig, type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/inputHelpers";
+import { barlineConfig, beamConfig, chordConfig, noteConfig, parseBarlineString, parseBatchString, parseBeamString, parseChordNoteString, parseChordString, parseElementString, parseNoteString, parseRestString, restConfig, type BarlineTypes, type DrawBarlineConfig, type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig, type NoteDurations, type VSChordNoteObj, type VSNoteObj } from "../helpers/inputHelpers";
 
 export type StandardStaffUserOptions = {
   width?: number;
@@ -337,8 +337,15 @@ export default class StandardStaff {
   }
 
   /** - Replaces a entry on staff by index, uses config object as parameter */
-  public replaceByIndex(index: number, config: StandardStaffDrawConfig, options?: StandardStaffDrawOptions) {
+  public replaceByIndex(
+      index: number,
+      input: string | StandardStaffDrawConfig,
+      options?: StandardStaffDrawOptions
+    ) {
+
     this.validateEntriesIndex(index);
+
+    const config = typeof input === "string" ? parseElementString(input) : input;
 
     const oldEntry = this.noteEntries[index];
     const staffArg = options?.staff ?? (oldEntry.isTopStaff ? "top" : "bottom");
@@ -391,10 +398,7 @@ export default class StandardStaff {
     this.noteEntries.forEach(entry => {
       entry.xPos = currentX;
 
-      entry.gElement.setAttribute(
-        "transform",
-        `translate(${currentX + entry.originXOffset}, ${entry.yOffset})`
-      );
+      setTransformAttr(entry.gElement, currentX + entry.originXOffset, entry.yOffset);
 
       currentX += entry.totalWidth + gap;
     });
