@@ -54,7 +54,7 @@
     //   { type: "rest", duration: "q" },
     // ]);
     staff?.drawMeasure([
-      { type: "note", duration: "h" },
+      { type: "rest", duration: "h" },
       { type: "rest", duration: "q" },
       { type: "beam", durations: "ee" },
     ]);
@@ -71,8 +71,6 @@
   let cursorDividend: number = $state(4);
 
   const UI_BEAT_WIDTH = 16;
-  const NOTEHEAD_WIDTH = 14;
-  const CENTER_OFFSET = Math.floor((NOTEHEAD_WIDTH - UI_BEAT_WIDTH) / 2);
 
   function updateCursor() {
     if (!staff || !cursorRect) return;
@@ -82,10 +80,9 @@
 
     if (localX !== -1) {
       cursorRect.style.opacity = "1";
-      // Center perfectly over the conceptual notehead
       cursorRect.setAttribute(
         "transform",
-        `translate(${localX + CENTER_OFFSET}, 0)`,
+        `translate(${localX - (UI_BEAT_WIDTH / 2)}, 0)`,
       );
     } else {
       cursorRect.style.opacity = "0";

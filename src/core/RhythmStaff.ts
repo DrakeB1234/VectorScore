@@ -265,6 +265,7 @@ export default class RhythmStaff {
     this.clear();
   }
 
+  /** - Returns the X position of given time value on measure, returns X centered on notehead glyph */
   public getBeatCoordinateX(index: number, dividend: number = this.options.bottomNumber): number {
     const stepsPerMeasure = (this.options.topNumber * dividend) / this.options.bottomNumber;
     const totalSteps = this.options.maxMeasures * stepsPerMeasure;
@@ -277,7 +278,10 @@ export default class RhythmStaff {
     const measureStartX = measureIndex * this.dynamicMeasureWidth;
     const workableWidth = this.getWorkableMeasureWidth();
 
+    let res = measureStartX + MEASURE_LEFT_PADDING + (stepIndex / stepsPerMeasure) * workableWidth;
+    res += NOTEHEAD_BLACK.glyphWidth / 2;
+
     // Uses the exact same proportional ratio as timeToX in drawMeasure
-    return measureStartX + MEASURE_LEFT_PADDING + (stepIndex / stepsPerMeasure) * workableWidth;
+    return res;
   }
 }

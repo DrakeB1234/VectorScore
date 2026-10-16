@@ -1,8 +1,8 @@
 import { BRACE, getAccidentalGlyph, getClefGlyph, getTimeSigGlyph, REPEAT_DOTS } from "../glyphs";
 import type { BarlineTypes } from "../helpers/inputHelpers";
 import { getPitchStepClefDifference } from "../helpers/noteHelpers";
-import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, STAFF_LINE_COUNT, STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED, validateKeySignature, validateTimeSignature, type KeySignatures } from "../helpers/staffHelpers";
-import type { ClefTypes, SystemTypes } from "../types";
+import { BASE_STAFF_HEIGHT, KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, STAFF_LINE_COUNT, STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED, validateKeySignature, validateTimeSignature, type KeySignatures } from "../helpers/staffHelpers";
+import type { ClefTypes } from "../types";
 import type SVGRenderer from "./SVGRenderer";
 
 type DrawStaffLinesArgs = {
@@ -61,12 +61,8 @@ const BAR_REPEAT_DOT_WIDTH = 4;
 export default class StaffRenderer {
   private svgRendererInstance: SVGRenderer;
 
-  private grandStaffSpacing: number = GRAND_STAFF_SPACING;
-
-  constructor(svgRenderer: SVGRenderer, overrideGrandStaffSpacing?: number) {
+  constructor(svgRenderer: SVGRenderer) {
     this.svgRendererInstance = svgRenderer;
-
-    if (overrideGrandStaffSpacing) this.grandStaffSpacing = overrideGrandStaffSpacing;
   };
 
   private getTimeSigNumberWidth(num: number): number {

@@ -25,6 +25,7 @@ A lightweight, SVG-based TypeScript library for rendering simple musical notatio
   * [Chord Syntax](#chord-string-syntax)
   * [Rest Syntax](#rest-string-syntax)
   * [Beam Syntax](#beam-string-syntax)
+* [Creating Custom UI](#creating-custom-ui)
 * [Migration from 1.3.1 to 2.0](#migrating-from-131)
 * [Resources](#resources)
 
@@ -309,6 +310,75 @@ Will NOT accept note durations of `w | h | q`;
 
 * example: `C4e-[E4,G4]e-C4e` - Minimum required values.
 * example: `C#4s.(tenuto)-[E#4,G#4]e(tenuto)-C#4s.(tenuto)` - All properties defined.
+
+## Creating Custom UI
+Classes such as `StandardStaff` and `RhythmStaff` provide useful methods for being able to render custom UI elements onto its publicly accesible UILayer nodes.
+
+Displaying a 'bar' over a note in `StandardStaff` core class.
+```ts
+import { StandardStaff } from "vector-score";
+
+const staff = new StandardStaff(rootElementRef, ...options);
+
+// Drawing some notes on the staff
+staff.drawBatchElements("C4q | C4s-F4s-D5e [C4,E4,G4]q");
+
+// Creating a SVG element for the UI
+const noteBar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+const noteBarWidth = 24;
+noteBar.setAttribute("width", "24"); // Around double notehead glpyh width
+noteBar.setAttribute("height", "100");
+noteBar.setAttribute("fill", "#00ff0077");
+
+// Gets ALL positional data (includes individual notes in beamed groups, ignores barlines by default)
+const positionalData = staff.getAllPositionData();
+// This targets the third element, which in this case is the 'F4s' note in the beam group
+const targetData = positionalData[2];
+
+// Move UI element to target position (subtract half of UI element width, as x data is centered)
+noteBar.setAttribute("x", (targetData.x - noteBarWidth / 2).toString());
+noteBar.setAttribute("y", "-20");
+
+// Finally, append new UI element to the staff's UI layer
+staff.uiLayer.appendChild(noteBar);
+```
+
+Displaying a 'bar' over a rhythm note in `RhythmStaff` core class.
+```ts
+import { RhythmStaff } from "vector-score";
+
+const staff = new RhythmStaff(node);
+
+// Drawing measures
+staff.drawMeasure([
+  { type: "beam", durations: "eee" },
+  { type: "note", duration: "q." },
+  { type: "rest", duration: "q" },
+]);
+staff.drawMeasure([
+  { type: "note", duration: "q." },
+  { type: "beam", durations: "eee" },
+  { type: "rest", duration: "q" },
+]);
+
+// Creating a SVG element for the UI
+const uiBar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+const uiBarWidth = 20;
+uiBar.setAttribute("width", uiBarWidth.toString());
+uiBar.setAttribute("height", "100");
+uiBar.setAttribute("fill", "#00ff0077");
+
+// Gets next X position relative to time: 0 is the index, 4 is the beat number (4 = quarter, 8 = eighths...)
+// Returns -1 for invalid states (out of bounds etc..)
+const x = staff.getBeatCoordinateX(0, 4);
+if (x === -1) return; 
+
+uiBar.setAttribute("x", (x - uiBarWidth / 2).toString());
+uiBar.setAttribute("y", "-50");
+
+// Append new UI element to the staff's UI layer
+staff.uiLayer.appendChild(uiBar);
+```
 
 ## Migrating from 1.3.1
 
