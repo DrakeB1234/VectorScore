@@ -4,7 +4,7 @@ import type { VSBeamObj, VSChordObj, VSNoteObj, VSRestObj } from "../helpers/inp
 import { applySecondIntervalOffsets, convertPitchStepToYPos, getChordStemDirection, getChordLedgerLineSpans, getLedgerLineYCoords, getPitchStepClefDifference, getPitchStepRange, getStemSteps, MIDDLE_LINE_STEP, type LedgerLineSpan, type PositionedChordNote, assignAccidentalColumns, snapPitchStepToStaffSpace, isSecondInterval, getArticulationYPos } from "../helpers/noteHelpers";
 import { STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 import type { ClefTypes } from "../types";
-import BeamRenderer from "./BeamRenderer";
+import BeamRenderer, { type BeamLayoutOptions, type StemCoord } from "./BeamRenderer";
 import type SVGRenderer from "./SVGRenderer";
 
 type StemOptions = {
@@ -389,9 +389,13 @@ export default class NoteRenderer {
     };
   };
 
-  public drawBeam(beam: VSBeamObj, clef: ClefTypes, group: SVGGElement) {
-    return this.beamRendererInstance.drawBeamGroup(beam, clef, group);
-  };
+  public drawBeam(beam: VSBeamObj, clef: ClefTypes, group: SVGGElement, options?: BeamLayoutOptions) {
+    return this.beamRendererInstance.drawBeamGroup(beam, clef, group, options);
+  }
+
+  public drawRhythmBeamStems(stems: StemCoord[], group: SVGGElement) {
+    this.beamRendererInstance.drawStemsAndBeams(stems, false, group, false);
+  }
 
   /**  Bypasses all clef, ledger, and accidental logic. */
   public drawRhythmNote(duration: NoteDurations, isDotted: boolean, noteGroup: SVGGElement, options?: RenderOptions) {

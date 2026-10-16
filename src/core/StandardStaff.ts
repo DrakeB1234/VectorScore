@@ -79,6 +79,7 @@ type RestEntry = BaseEntry & {
 type BeamEntry = BaseEntry & {
   type: "beam";
   yPosArray: number[];
+  noteXPosArray: number[];
 };
 
 type BarlineEntry = BaseEntry & {
@@ -237,13 +238,14 @@ export default class StandardStaff {
       };
     }
     else if (config.type === "beam") {
-      const { fullWidth, originXOffset, yPosArray } = this.noteRendererInstance.drawBeam(config.beam, targetClef, group);
+      const { fullWidth, originXOffset, yPosArray, noteXPosArray } = this.noteRendererInstance.drawBeam(config.beam, targetClef, group);
       newEntry = {
         ...newEntry,
         type: "beam",
         originXOffset,
         totalWidth: fullWidth,
         yPosArray,
+        noteXPosArray
       };
     }
     else if (config.type === "barline") {

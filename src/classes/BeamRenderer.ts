@@ -5,7 +5,7 @@ import { convertPitchStepToYPos, getPitchStepClefDifference, getStemSteps, MIDDL
 import { getNoteheadGlyphByDuration } from "../glyphs";
 import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 import { setTransformAttr } from "../constants";
-import type { BeamableConfig, NoteDurations } from "..";
+import type { BeamableConfig, NoteDurations } from "../helpers/inputHelpers";
 import type { VSBeamObj } from "../helpers/inputHelpers";
 
 const BEAM_INTERNAL_SPACING = 8;
@@ -22,7 +22,7 @@ const isValidQuarter = (q: number) => ((q % 4) + 4) % 4 !== 2;
 
 type BeamDuration = "e" | "s" | "t";
 
-type StemCoord = {
+export type StemCoord = {
   x: number;
   startY: number;
   endY: number;
@@ -36,6 +36,13 @@ type BeamLine = {
   x0: number;
   y0: number;
   slope: number;
+};
+
+export type BeamLayoutOptions = {
+  /** Custom pixel gap between beamed entries (defaults to BEAM_INTERNAL_SPACING === 8) */
+  spacing?: number;
+  /** Explicit local X-coordinates for each entry in the beam (overrides spacing) */
+  noteXPositions?: number[];
 };
 
 const yAt = (line: BeamLine, x: number) => line.y0 + line.slope * (x - line.x0);
@@ -142,13 +149,12 @@ export default class BeamRenderer {
     return slantY / dx;
   }
 
-  private computeBeamLine(stems: StemCoord[], isStemDown: boolean): BeamLine {
+  private computeBeamLine(stems: StemCoord[], isStemDown: boolean, snapToStaff: boolean): BeamLine {
     if (stems.length === 0) return { x0: 0, y0: 0, slope: 0 };
 
     const x0 = stems[0].x;
     const dx = stems[stems.length - 1].x - x0;
 
-    // First: Get the ideal musical slope
     const slope = this.calculateMusicalSlope(stems, isStemDown, dx);
 
     // Next: Find the baseline Y (where the beam just touches the shortest stem)
@@ -156,33 +162,36 @@ export default class BeamRenderer {
     const rawY0 = isStemDown ? Math.max(...requiredY0s) : Math.min(...requiredY0s);
 
     // Next: Apply staff snapping and collision resolutions
-    const finalY0 = this.snapBeamY0(rawY0, slope * dx, isStemDown)
+    const finalY0 = snapToStaff ? this.snapBeamY0(rawY0, slope * dx, isStemDown) : rawY0;
 
     return { x0, y0: finalY0, slope };
   }
 
-  public drawBeamGroup(beam: VSBeamObj, clef: ClefTypes, beamGroup: SVGGElement) {
+  public drawBeamGroup(
+    beam: VSBeamObj,
+    clef: ClefTypes,
+    beamGroup: SVGGElement,
+    options?: BeamLayoutOptions
+  ) {
+    const gap = options?.spacing ?? BEAM_INTERNAL_SPACING;
+    const customPositions = options?.noteXPositions;
+
     let internalCursorX = 0;
+    let maxRightEdge = 0;
 
-    // Calculate the unified stem direction for the whole group
     const isStemDown = this.getGroupStemDirection(beam.entries, clef);
-
     const stemCoordinates: StemCoord[] = [];
     const yPosArray: number[] = [];
-    let firstOriginXOffset = 0; // Only considers the first entries xOffset, if it exists.
+    const noteCenterXs: number[] = [];
 
-    // Loop through and draw the noteheads (skipping stems)
     beam.entries.forEach((entry, i) => {
-
       let entryWidth = 0;
       let originXOffset = 0;
-
-      // We need these to calculate where the stem attaches
       let highStep = Infinity;
       let lowStep = -Infinity;
+
       const duration = entry.type === "note" ? entry.note.duration : entry.chord.duration;
       const resolvedDuration = this.resolveDuration(duration);
-
       const wrapperGroup = this.svgRendererInstance.createGroup(entry.type);
 
       if (entry.type === "note") {
@@ -194,9 +203,7 @@ export default class BeamRenderer {
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
         yPosArray.push(result.yPos);
-
       } else if (entry.type === "chord") {
-
         const steps = entry.chord.notes.map(n => getPitchStepClefDifference(n.letter, n.octave, clef));
         highStep = Math.min(...steps);
         lowStep = Math.max(...steps);
@@ -207,16 +214,21 @@ export default class BeamRenderer {
         yPosArray.push(isStemDown ? result.yPosArray[result.yPosArray.length - 1] : result.yPosArray[0]);
       }
 
-      setTransformAttr(wrapperGroup, internalCursorX + originXOffset, 0);
+      // If explicit X positions are provided, use them directly as the notehead's X origin.
+      // Otherwise, place sequentially using internalCursorX + originXOffset.
+      const noteheadX = customPositions && customPositions[i] !== undefined
+        ? customPositions[i]
+        : internalCursorX + originXOffset;
+
+      setTransformAttr(wrapperGroup, noteheadX, 0);
       beamGroup.appendChild(wrapperGroup);
 
       const noteHeadWidth = getNoteheadGlyphByDuration(duration).glyphWidth;
       const localStemX = isStemDown ? STEM_X_OFFSET : noteHeadWidth - STEM_X_OFFSET;
+      const absoluteStemX = noteheadX + localStemX;
+      
+      noteCenterXs.push(noteheadX + noteHeadWidth / 2);
 
-      // Absolute X position within the beam group
-      const absoluteStemX = internalCursorX + originXOffset + localStemX;
-
-      // Determine where the stem starts (at the notehead)
       const { startStep, endStep } = getStemSteps(highStep, lowStep, isStemDown, duration, 6.5);
 
       stemCoordinates.push({
@@ -227,24 +239,33 @@ export default class BeamRenderer {
         noteStep: isStemDown ? Math.max(highStep, lowStep) : Math.min(highStep, lowStep)
       });
 
-      internalCursorX += entryWidth + BEAM_INTERNAL_SPACING;
-
-      if (i === 0) {
-        firstOriginXOffset = originXOffset;
-      }
+      const entryRightEdge = (noteheadX - originXOffset) + entryWidth;
+      maxRightEdge = Math.max(maxRightEdge, entryRightEdge);
+      internalCursorX += entryWidth + gap;
     });
 
-    // Build the beam line, then draw stems and beams against it
-    const beamLine = this.computeBeamLine(stemCoordinates, isStemDown);
-
-    this.drawStems(stemCoordinates, beamLine, beamGroup);
-    this.drawBeams(stemCoordinates, beamLine, isStemDown, beamGroup);
+    this.drawStemsAndBeams(stemCoordinates, isStemDown, beamGroup, true);
 
     return {
-      fullWidth: internalCursorX - BEAM_INTERNAL_SPACING,
-      originXOffset: firstOriginXOffset,
-      yPosArray
+      fullWidth: customPositions ? maxRightEdge : internalCursorX - gap,
+      originXOffset: 0,
+      yPosArray,
+      noteXPosArray: noteCenterXs
     };
+  }
+
+  /** - Intermediatory function for rendering stems at provided StemCoords. Also can be called independently for specific notehead rendering logic (ex. RhythmStaff). */
+  public drawStemsAndBeams(
+    stems: StemCoord[],
+    isStemDown: boolean,
+    group: SVGGElement,
+    snapToStaff: boolean = true
+  ) {
+    if (stems.length < 2) return;
+
+    const beamLine = this.computeBeamLine(stems, isStemDown, snapToStaff);
+    this.drawStems(stems, beamLine, group);
+    this.drawBeams(stems, beamLine, isStemDown, group);
   }
 
   // Draws each precalculated stem from drawBeamGroup

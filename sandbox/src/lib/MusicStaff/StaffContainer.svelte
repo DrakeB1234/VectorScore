@@ -24,12 +24,12 @@
 
     if (staffType === "grand") {
       selectedStaff = staff;
+
+      staff.drawBatchElements("C4q C4s-F4s-D5e [C4,E4,G4]q");
+      staff.justifyNotes();
     }
 
     availableStaffs.push(staff);
-
-    staff.drawBatchElements("C4q C4e-B4e-F4e [C4,E4,G4]q");
-    staff.justifyNotes();
   }
 </script>
 

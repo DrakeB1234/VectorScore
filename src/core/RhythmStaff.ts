@@ -6,6 +6,7 @@ import { type NoteDurations } from "../helpers/inputHelpers";
 import { setTransformAttr } from "../constants";
 import { parseDurationString } from "../helpers/noteHelpers";
 import { BASE_STAFF_HEIGHT } from "../helpers/staffHelpers";
+import type { StemCoord } from "../classes/BeamRenderer";
 
 export type RhythmStaffUserOptions = {
   width?: number;
@@ -49,10 +50,6 @@ const MEASURE_RIGHT_PADDING = 10;
 const STAFF_RIGHT_SPACING = 1;
 
 const MIN_PER_MEASURE_WIDTH = 100;
-
-const PRIMARY_BEAM_Y = -35;
-const BEAM_SPACING = 6;
-const BEAM_THICKNESS = 3;
 
 // Fractional whole-note values for pure time-grid calculation
 const DURATION_TIME_MAP: Record<Exclude<NoteDurations, "t">, number> = {
@@ -157,48 +154,6 @@ export default class RhythmStaff {
     return { ...res, timeValue };
   }
 
-  private drawBeamSegment(x1: number, y1: number, x2: number, y2: number, group: SVGGElement) {
-    this.svgRendererInstance.drawPolygon([
-      [x1, y1],
-      [x2, y2],
-      [x2, y2 + BEAM_THICKNESS],
-      [x1, y1 + BEAM_THICKNESS]
-    ], group);
-  }
-
-  private drawBeams(stemCoords: number[], durations: NoteDurations[], group: SVGGElement) {
-    if (stemCoords.length < 2) return;
-
-    // Draw the continuous Primary Beam (8th note level)
-    const firstStemX = stemCoords[0];
-    const lastStemX = stemCoords[stemCoords.length - 1];
-    this.drawBeamSegment(firstStemX, PRIMARY_BEAM_Y, lastStemX, PRIMARY_BEAM_Y, group);
-
-    // Draw the Secondary Beams (16th note level)
-    const secondaryBeamY = PRIMARY_BEAM_Y + BEAM_SPACING;
-
-    for (let i = 0; i < durations.length; i++) {
-      if (durations[i] === "s") {
-        const hasNext16th = i < durations.length - 1 && durations[i + 1] === "s";
-        const hasPrev16th = i > 0 && durations[i - 1] === "s";
-
-        if (hasNext16th) {
-          this.drawBeamSegment(stemCoords[i], secondaryBeamY, stemCoords[i + 1], secondaryBeamY, group);
-        } else if (!hasPrev16th) {
-          // Fractional stub: scale dynamically to 40% of the gap to the adjacent beamed note
-          const adjacentGap = i === 0
-            ? stemCoords[1] - stemCoords[0]
-            : stemCoords[i] - stemCoords[i - 1];
-          const stubLength = Math.min(10, adjacentGap * 0.4);
-          const directionMultiplier = i === 0 ? 1 : -1;
-          const stubEndX = stemCoords[i] + (stubLength * directionMultiplier);
-
-          this.drawBeamSegment(stemCoords[i], secondaryBeamY, stubEndX, secondaryBeamY, group);
-        }
-      }
-    }
-  }
-
   public drawMeasure(items: RhythmItem[]) {
     if (this.measuresDrawn >= this.options.maxMeasures) {
       throw new Error(`RhythmStaff Error: Cannot draw more than ${this.options.maxMeasures} measures per line.`);
@@ -241,29 +196,34 @@ export default class RhythmStaff {
         const beamGroup = this.svgRendererInstance.createGroup("beam");
         setTransformAttr(beamGroup, itemStartX, 0);
 
-        const rawTokens = item.durations.split("");
+        const rawTokens = item.durations.match(/[whqestWHQEST]\.?/g);
         if (!rawTokens || rawTokens.join("") !== item.durations || rawTokens.length < 2) {
           throw new Error(`RhythmStaff Error: Invalid beam durations string '${item.durations}'.`);
         }
 
         const parsedNotes = rawTokens.map(token => this.resolveDuration(token));
-        const stemCoords: number[] = [];
+        const stemCoords: StemCoord[] = [];
 
         parsedNotes.forEach(note => {
           const noteGroup = this.svgRendererInstance.createGroup("note");
-          // Position each beamed notehead relative to the beamGroup's starting X
           const localX = timeToX(elapsedTime) - itemStartX;
 
-          // Draw stemless quarter-style notehead + stem (no flags)
-          this.noteRendererInstance.drawRhythmNote("q", note.isDotted, noteGroup);
+          this.noteRendererInstance.drawRhythmNote("q", note.isDotted, noteGroup, { skipStem: true });
           setTransformAttr(noteGroup, localX, 0);
           beamGroup.appendChild(noteGroup);
 
-          stemCoords.push(localX + NOTEHEAD_BLACK.glyphWidth - STEM_UP_X_OFFSET);
+          stemCoords.push({
+            x: localX + NOTEHEAD_BLACK.glyphWidth - STEM_UP_X_OFFSET,
+            startY: -1, // Matches STEM_Y_OFFSET in NoteRenderer
+            endY: -35,  // Standard rhythm beam height
+            duration: note.duration as "e" | "s",
+            noteStep: 0
+          });
+
           elapsedTime += note.timeValue;
         });
 
-        this.drawBeams(stemCoords, parsedNotes.map(n => n.duration), beamGroup);
+        this.noteRendererInstance.drawRhythmBeamStems(stemCoords, beamGroup);
         this.notesLayer.appendChild(beamGroup);
       }
     });
