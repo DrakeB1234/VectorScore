@@ -428,27 +428,68 @@ export default class StandardStaff {
     this.updateLayersX(newStartX);
   }
 
-  /** - Gets coordinate data and staff options from entry on staff by index*/
+  /** @deprecated Use {@link getPositionDataByIndex} (one entry) or {@link getAllPositionData} (every entry) instead. Will be removed in the next major version. */
   public getDataFromEntryIndex(index: number) {
+    return this.getPositionDataByIndex(index);
+  }
+
+  /**
+   * - Gets coordinate data and staff options from entry on staff by index
+   * - Options prop 'beamSubIndex' to get note data from indexes within a beamed group
+   * */
+  public getPositionDataByIndex(index: number, beamSubIndex: number = 0) {
     this.validateEntriesIndex(index);
+    const entry = this.noteEntries[index];
 
-    const noteEntry = this.noteEntries[index];
-    let y = 0;
-    if (noteEntry.type === "note") y = noteEntry.yPos;
-    else if (noteEntry.type === "chord") y = noteEntry.yPosArray[0];
-    else if (noteEntry.type === "rest") y = noteEntry.yPos;
-    else if (noteEntry.type === "beam") y = noteEntry.yPosArray[0];
-    else if (noteEntry.type === "barline") y = 0;
-    y += noteEntry.yOffset;
+    const groupX = entry.xPos + entry.originXOffset;   // where applySpacing/appendEntry translate the group
+    const headCenter = NOTEHEAD_WIDTH / 2;
 
-    const x = noteEntry.xPos + noteEntry.originXOffset + (NOTEHEAD_WIDTH / 2);
+    let positions: { x: number; y: number }[];
 
-    return {
-      x: x,
-      y: y,
-      isTopStaff: noteEntry.isTopStaff
-    };
-  };
+    switch (entry.type) {
+      case "beam":
+        positions = entry.noteXPosArray.map((localX, i) => ({
+          x: groupX + localX,
+          y: entry.yPosArray[i] + entry.yOffset,
+        }));
+        break;
+      case "chord":
+        positions = [{ x: groupX + headCenter, y: entry.yPosArray[0] + entry.yOffset }];
+        break;
+      case "note":
+      case "rest":
+        positions = [{ x: groupX + headCenter, y: entry.yPos + entry.yOffset }];
+        break;
+      case "barline":
+        positions = [{ x: groupX + entry.totalWidth / 2, y: entry.yOffset }];
+        break;
+    }
+
+    const p = positions[beamSubIndex];
+    if (!p) throw new Error(`StandardStaff Error: subIndex ${beamSubIndex} is out of range for entry ${index}. Sub indexes should only be used for BeamedGroups).`);
+
+    return { x: p.x, y: p.y, positions, isTopStaff: entry.isTopStaff };
+  }
+
+  /**
+   * - Gets all coordiante data for all elements on staff. Includes the individual beam notes as separate indexes. Good for displaying UI on notes.
+   * - Barlines are excluded by default.
+   * */
+  public getAllPositionData(
+    { includeRests = true, includeBarlines = false }: { includeRests?: boolean; includeBarlines?: boolean } = {}
+  ) {
+    const out: { entryIndex: number; subIndex: number; type: string; x: number; y: number; isTopStaff: boolean }[] = [];
+
+    this.noteEntries.forEach((entry, entryIndex) => {
+      if (entry.type === "barline" && includeBarlines === false) return;
+      if (entry.type === "rest" && includeRests === false) return;
+
+      const { positions, isTopStaff } = this.getPositionDataByIndex(entryIndex);
+      positions.forEach((p, subIndex) => out.push({ entryIndex, subIndex, type: entry.type, x: p.x, y: p.y, isTopStaff }));
+    });
+
+    return out;
+  }
 
   /**  - Returns the exact absolute Y-coordinate for a list of pitches (e.g., ["C4", "E4"]). Accounts for staff offsets (top vs bottom) and clef differences. */
   public getYFromPitches(pitches: string[], isTopStaff = true): number[] {
@@ -464,6 +505,8 @@ export default class StandardStaff {
 
     return res;
   };
+
+  public get staffType() { return this.options.staffType; }
 
   /**  - Returns the group element that contains a entry (note, chord, rest, beam, or barline) */
   public getElementByIndex(index: number): SVGGElement {

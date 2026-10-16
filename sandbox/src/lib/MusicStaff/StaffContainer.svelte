@@ -4,9 +4,7 @@
   let { selectedStaff = $bindable(null), availableStaffs = $bindable([]) } =
     $props();
 
-  let currentStaffType = $derived(
-    selectedStaff && selectedStaff.options.staffType,
-  );
+  let currentStaffType = $derived(selectedStaff?.staffType ?? null);
 
   function setupStaff(element, staffType = "grand") {
     const staff = new StandardStaff(element, {
@@ -25,11 +23,23 @@
     if (staffType === "grand") {
       selectedStaff = staff;
 
-      staff.drawBatchElements("C4q C4s-F4s-D5e [C4,E4,G4]q");
-      staff.justifyNotes();
+      staff.drawBatchElements("C4q | C4s-F4s-D5e [C4,E4,G4]q");
+
+      const firstPositionData = staff.getAllPositionData()[3];
+ 
+      if (firstPositionData) {
+        // uiLayer shares notesLayer's coordinate space, so x/y can be used directly.
+        const marker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        marker.setAttribute("cx", String(firstPositionData.x));
+        marker.setAttribute("cy", String(firstPositionData.y));
+        marker.setAttribute("r", "8");
+        marker.setAttribute("fill", "currentColor");
+        marker.setAttribute("opacity", "0.35");
+        staff.uiLayer.appendChild(marker);
+      }
     }
 
-    availableStaffs.push(staff);
+    availableStaffs = [...availableStaffs, staff];
   }
 </script>
 
