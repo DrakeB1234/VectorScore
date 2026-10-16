@@ -118,16 +118,6 @@ export default class StaffRenderer {
     return BASE_STAFF_HEIGHT;
   }
 
-  public drawStaffBarLine(xPos: number, staffType: SystemTypes, staffGroup: SVGGElement) {
-    let topY = BASE_STAFF_HEIGHT;
-
-    if (staffType === "grand") {
-      topY = topY * 2 + this.grandStaffSpacing;
-    }
-
-    this.svgRendererInstance.drawLine(xPos, 0, xPos, topY, staffGroup);
-  };
-
   /** @returns Total X space taken by the key signature */
   public drawKeySignature({ key, clefType, startYPos, staffGroup }: DrawKeySignatureArgs): number {
     validateKeySignature(key);

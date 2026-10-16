@@ -47,11 +47,16 @@
   }
 
   function createMeasure1() {
+    // staff?.drawMeasure([
+    //   { type: "beam", durations: "ee" },
+    //   { type: "rest", duration: "q." },
+    //   { type: "note", duration: "e" },
+    //   { type: "rest", duration: "q" },
+    // ]);
     staff?.drawMeasure([
-      { type: "beam", durations: "ee" },
-      { type: "rest", duration: "q." },
-      { type: "note", duration: "e" },
+      { type: "note", duration: "h" },
       { type: "rest", duration: "q" },
+      { type: "beam", durations: "ee" },
     ]);
   }
 
