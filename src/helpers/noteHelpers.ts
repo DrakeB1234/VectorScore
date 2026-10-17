@@ -1,5 +1,11 @@
 import type { ClefTypes } from "../types";
-import { parseChordNoteString, type NoteAccidentals, type NoteArticulations, type NoteDurations, type VSChordNoteObj } from "./inputHelpers";
+import {
+  parseChordNoteString,
+  type NoteAccidentals,
+  type NoteArticulations,
+  type NoteDurations,
+  type VSChordNoteObj,
+} from "./inputHelpers";
 import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "./staffHelpers";
 
 export type PositionedChordNote = {
@@ -23,15 +29,21 @@ export type AccidentalPlacement = {
 };
 
 const DIATONIC_STEPS: Record<string, number> = {
-  "C": 0, "D": 1, "E": 2, "F": 3, "G": 4, "A": 5, "B": 6
+  C: 0,
+  D: 1,
+  E: 2,
+  F: 3,
+  G: 4,
+  A: 5,
+  B: 6,
 };
 
 // Represents the top line pitch/note of each clef, by (octave * 7) + diatonic note index
 // Ex: treble: F5 == (5 * 7) + 3 == 38
 const CLEF_TOP_LINE_STEPS: Record<ClefTypes, number> = {
-  "treble": 38,
-  "bass": 26,
-  "alto": 32
+  treble: 38,
+  bass: 26,
+  alto: 32,
 };
 
 export const MIDDLE_LINE_STEP = 4;
@@ -45,19 +57,23 @@ export const SECOND_INTERVAL_X_OFFSET = 1;
 const ACCIDENTAL_MIN_STEP_GAP = 6;
 
 export function getPitchStep(letter: string, octave: number): number {
-  return (octave * 7) + DIATONIC_STEPS[letter];
-};
+  return octave * 7 + DIATONIC_STEPS[letter];
+}
 
-export function getPitchStepClefDifference(letter: string, octave: number, clef: ClefTypes): number {
-  const noteStep = (octave * 7) + DIATONIC_STEPS[letter];
+export function getPitchStepClefDifference(
+  letter: string,
+  octave: number,
+  clef: ClefTypes,
+): number {
+  const noteStep = octave * 7 + DIATONIC_STEPS[letter];
   return CLEF_TOP_LINE_STEPS[clef] - noteStep;
-};
+}
 
 export function convertPitchStepToYPos(pitchStep: number) {
   return pitchStep * (STAFF_LINE_SPACING / 2);
-};
+}
 
-/** 
+/**
  * - Handles cases of ledger lines above / below the staff
  * - For example, i starts at -2 (two steps) above staff and i starts at 10 (2 steps below staff)
  */
@@ -74,11 +90,11 @@ export function getLedgerLineYCoords(rawPitchStep: number): number[] {
   }
 
   return ledgerYCoords;
-};
+}
 
 export function isSecondInterval(lowNotePitchStep: number, highNotePitchStep: number) {
   return Math.abs(highNotePitchStep - lowNotePitchStep) === 1;
-};
+}
 
 export function getChordStemDirection(notes: Pick<PositionedChordNote, "pitchStep">[]): boolean {
   if (notes.length === 0) return false;
@@ -96,14 +112,19 @@ export function getChordStemDirection(notes: Pick<PositionedChordNote, "pitchSte
   const distLow = Math.abs(lowStep - MIDDLE_LINE_STEP);
 
   return distHigh >= distLow;
-};
+}
 
-/** 
+/**
  * - Where a stem starts and ends, in pitch steps. Works for single note / chords
  * - Will attach stem to AT LEAST the middle line.
  */
-export function getStemSteps(highStep: number, lowStep: number, isStemDown: boolean, duration: NoteDurations, overrideStandardStemSteps?: number) {
-
+export function getStemSteps(
+  highStep: number,
+  lowStep: number,
+  isStemDown: boolean,
+  duration: NoteDurations,
+  overrideStandardStemSteps?: number,
+) {
   // Handles that 32nd flags need taller stems
   const stemSteps = duration === "t" ? 8 : STANDARD_STEM_STEPS;
   const finalStemSteps = overrideStandardStemSteps ? overrideStandardStemSteps : stemSteps;
@@ -111,17 +132,17 @@ export function getStemSteps(highStep: number, lowStep: number, isStemDown: bool
   if (isStemDown) {
     return {
       startStep: highStep,
-      endStep: Math.max(lowStep + finalStemSteps, MIDDLE_LINE_STEP)
+      endStep: Math.max(lowStep + finalStemSteps, MIDDLE_LINE_STEP),
     };
   }
 
   return {
     startStep: lowStep,
-    endStep: Math.min(highStep - finalStemSteps, MIDDLE_LINE_STEP)
+    endStep: Math.min(highStep - finalStemSteps, MIDDLE_LINE_STEP),
   };
-};
+}
 
-/** 
+/**
  * - Pitch steps count down from the top line of staff. Smallest step is the highest pitch.
  * @returns highStep: highest pitch in range
  * @returns lowStep: lowest pitch in range
@@ -129,10 +150,13 @@ export function getStemSteps(highStep: number, lowStep: number, isStemDown: bool
 export function getPitchStepRange(notes: Pick<PositionedChordNote, "pitchStep">[]) {
   const steps = notes.map(n => n.pitchStep);
   return { highStep: Math.min(...steps), lowStep: Math.max(...steps) };
-};
+}
 
-export function applySecondIntervalOffsets(notes: PositionedChordNote[], isStemDown: boolean, baseWidth: number) {
-
+export function applySecondIntervalOffsets(
+  notes: PositionedChordNote[],
+  isStemDown: boolean,
+  baseWidth: number,
+) {
   // Sort pitches lowest to highest pitch
   const sorted = notes.sort((a, b) => b.pitchStep - a.pitchStep);
 
@@ -157,34 +181,42 @@ export function applySecondIntervalOffsets(notes: PositionedChordNote[], isStemD
       }
     }
   }
-};
+}
 
 // Only considers notes above and below the staff. Notes inside staff are ignored.
 export function getChordLedgerLineSpans(
   notes: Pick<PositionedChordNote, "pitchStep" | "xOffset">[],
-  noteHeadWidth: number
+  noteHeadWidth: number,
 ): LedgerLineSpan[] {
   const above = notes.filter(n => n.pitchStep < TOP_LINE_STEP);
   const below = notes.filter(n => n.pitchStep > BOTTOM_LINE_STEP);
   let spans: LedgerLineSpan[] = [];
 
   if (above.length > 0) {
-    const ledgerLineSpans = createSideLedgerSpans(above, getPitchStepRange(above).highStep, noteHeadWidth);
+    const ledgerLineSpans = createSideLedgerSpans(
+      above,
+      getPitchStepRange(above).highStep,
+      noteHeadWidth,
+    );
     spans.push(...ledgerLineSpans);
   }
   if (below.length > 0) {
-    const ledgerLineSpans = createSideLedgerSpans(below, getPitchStepRange(below).lowStep, noteHeadWidth);
+    const ledgerLineSpans = createSideLedgerSpans(
+      below,
+      getPitchStepRange(below).lowStep,
+      noteHeadWidth,
+    );
     spans.push(...ledgerLineSpans);
   }
 
   return spans;
-};
+}
 
 // Extreme step is the furthest note from either above or below the staff. Side notes refer to which side on staff (above / below).
 function createSideLedgerSpans(
   sideNotes: Pick<PositionedChordNote, "pitchStep" | "xOffset">[],
   extremeStep: number,
-  noteHeadWidth: number
+  noteHeadWidth: number,
 ): LedgerLineSpan[] {
   const ledgerYCoords = getLedgerLineYCoords(extremeStep);
   if (ledgerYCoords.length === 0) return [];
@@ -205,7 +237,7 @@ function createSideLedgerSpans(
   }
 
   return spans;
-};
+}
 
 export function assignAccidentalColumns(notes: PositionedChordNote[]): AccidentalPlacement[] {
   // filter() copies, so sorting here doesn't reorder the caller's array
@@ -221,7 +253,7 @@ export function assignAccidentalColumns(notes: PositionedChordNote[]): Accidenta
     if (!accidental) continue;
 
     let column = columnSteps.findIndex(steps =>
-      steps.every(step => Math.abs(step - note.pitchStep) >= ACCIDENTAL_MIN_STEP_GAP)
+      steps.every(step => Math.abs(step - note.pitchStep) >= ACCIDENTAL_MIN_STEP_GAP),
     );
 
     if (column === -1) {
@@ -234,26 +266,38 @@ export function assignAccidentalColumns(notes: PositionedChordNote[]): Accidenta
   }
 
   return placements;
-};
+}
 
 export function snapPitchStepToStaffSpace(pitchStep: number) {
-  return pitchStep % 2 === 0 ? pitchStep += -1 : pitchStep;
-};
+  return pitchStep % 2 === 0 ? (pitchStep += -1) : pitchStep;
+}
 
-export function getArticulationYPos(artic: NoteArticulations, pitchStep: number, isStemDown: boolean) {
+export function getArticulationYPos(
+  artic: NoteArticulations,
+  pitchStep: number,
+  isStemDown: boolean,
+) {
   let finalStep = 0;
 
   // Marcato / Fermata always is on top of staff
-  const placeAbove = (artic === "marcato" || artic === "fermata")
-    ? true
-    : isStemDown;
+  const placeAbove = artic === "marcato" || artic === "fermata" ? true : isStemDown;
 
   if (artic === "tenuto" || artic === "staccato") {
     // TENUTO: Snaps to spaces so the flat line doesn't blend into staff lines.
     if (placeAbove) {
-      finalStep = pitchStep > TOP_LINE_STEP ? (pitchStep % 2 === 0 ? pitchStep - 3 : pitchStep - 2) : pitchStep - 2;
+      finalStep =
+        pitchStep > TOP_LINE_STEP
+          ? pitchStep % 2 === 0
+            ? pitchStep - 3
+            : pitchStep - 2
+          : pitchStep - 2;
     } else {
-      finalStep = pitchStep < BOTTOM_LINE_STEP ? (pitchStep % 2 === 0 ? pitchStep + 3 : pitchStep + 2) : pitchStep + 2;
+      finalStep =
+        pitchStep < BOTTOM_LINE_STEP
+          ? pitchStep % 2 === 0
+            ? pitchStep + 3
+            : pitchStep + 2
+          : pitchStep + 2;
     }
   } else {
     const padding = 3;
@@ -266,7 +310,7 @@ export function getArticulationYPos(artic: NoteArticulations, pitchStep: number,
   }
 
   return finalStep * STAFF_LINE_SPACING_HALVED;
-};
+}
 
 export function shiftPitches(pitches: string[], steps: number): string[] {
   return pitches.map(pitch => {
@@ -278,27 +322,28 @@ export function shiftPitches(pitches: string[], steps: number): string[] {
     const newLetterIdx = ((newAbsStep % 7) + 7) % 7;
 
     if (newOctave > 9) throw new Error("ShiftPitches Error: notes can not exceed the 9th octave.");
-    if (newOctave < 0) throw new Error("ShiftPitches Error: notes can not be below the 0th octave.");
+    if (newOctave < 0)
+      throw new Error("ShiftPitches Error: notes can not be below the 0th octave.");
 
-    const newLetter = Object.keys(DIATONIC_STEPS).find(
-      key => DIATONIC_STEPS[key] === newLetterIdx
-    );
+    const newLetter = Object.keys(DIATONIC_STEPS).find(key => DIATONIC_STEPS[key] === newLetterIdx);
 
     const accidentalStr = parsed.accidental || "";
 
     return `${newLetter}${accidentalStr}${newOctave}`;
   });
-};
+}
 
 const REGEX_DURATION_STRING = /^(?<duration>[whqestWHQEST])(?<dot>\.?)$/;
 export function parseDurationString(durationString: string) {
   const match = durationString.match(REGEX_DURATION_STRING);
   if (!match || !match.groups) {
-    throw new Error(`Invalid duration string format: ${durationString}. Expected format: [w|h|q|e|s|t][.]?`);
+    throw new Error(
+      `Invalid duration string format: ${durationString}. Expected format: [w|h|q|e|s|t][.]?`,
+    );
   }
 
   return {
     duration: match.groups.duration.toLowerCase() as NoteDurations,
-    isDotted: match.groups.dot === "."
+    isDotted: match.groups.dot === ".",
   };
-};
+}

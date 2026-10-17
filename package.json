@@ -45,11 +45,13 @@
     "dev": "npm run dev --prefix sandbox",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@types/node": "^25.0.0",
     "jsdom": "^27.3.0",
+    "prettier": "3.9.10",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vite-plugin-dts": "^4.5.4"

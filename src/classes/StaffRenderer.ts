@@ -1,8 +1,19 @@
 import { BRACE, getAccidentalGlyph, getClefGlyph, getTimeSigGlyph, REPEAT_DOTS } from "../glyphs";
 import type { BarlineTypes } from "../helpers/inputHelpers";
 import { getPitchStepClefDifference } from "../helpers/noteHelpers";
-import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, KEY_SIG_OCTAVES, KEY_SIGNATURE_ORDER, KEY_SIGNATURES, STAFF_LINE_COUNT, STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED, validateKeySignature, validateTimeSignature, type KeySignatures } from "../helpers/staffHelpers";
-import type { ClefTypes, SystemTypes } from "../types";
+import {
+  BASE_STAFF_HEIGHT,
+  KEY_SIG_OCTAVES,
+  KEY_SIGNATURE_ORDER,
+  KEY_SIGNATURES,
+  STAFF_LINE_COUNT,
+  STAFF_LINE_SPACING,
+  STAFF_LINE_SPACING_HALVED,
+  validateKeySignature,
+  validateTimeSignature,
+  type KeySignatures,
+} from "../helpers/staffHelpers";
+import type { ClefTypes } from "../types";
 import type SVGRenderer from "./SVGRenderer";
 
 type DrawStaffLinesArgs = {
@@ -23,20 +34,20 @@ type DrawKeySignatureArgs = {
   clefType: ClefTypes;
   startYPos: number;
   staffGroup: SVGGElement;
-}
+};
 
 type DrawTimeSignatureArgs = {
   topNumber: number;
   bottomNumber: number;
   startYPos: number;
   staffGroup: SVGGElement;
-}
+};
 
 type DrawBraceArgs = {
   topY: number;
   bottomY: number;
   staffGroup: SVGGElement;
-}
+};
 
 type DrawBarlineArgs = {
   topY: number;
@@ -61,13 +72,9 @@ const BAR_REPEAT_DOT_WIDTH = 4;
 export default class StaffRenderer {
   private svgRendererInstance: SVGRenderer;
 
-  private grandStaffSpacing: number = GRAND_STAFF_SPACING;
-
-  constructor(svgRenderer: SVGRenderer, overrideGrandStaffSpacing?: number) {
+  constructor(svgRenderer: SVGRenderer) {
     this.svgRendererInstance = svgRenderer;
-
-    if (overrideGrandStaffSpacing) this.grandStaffSpacing = overrideGrandStaffSpacing;
-  };
+  }
 
   private getTimeSigNumberWidth(num: number): number {
     const digits = String(num).split("");
@@ -75,7 +82,7 @@ export default class StaffRenderer {
       const glyph = getTimeSigGlyph(parseInt(digitStr, 10));
       return totalWidth + glyph.glyphWidth;
     }, 0);
-  };
+  }
 
   private drawTimeSigNumber(num: number, startX: number, yPos: number, staffGroup: SVGGElement) {
     let currentX = startX;
@@ -86,20 +93,24 @@ export default class StaffRenderer {
 
       this.svgRendererInstance.drawGlyph(glyph.name, staffGroup, {
         x: currentX,
-        y: yPos
+        y: yPos,
       });
 
       currentX += glyph.glyphWidth;
     }
-  };
+  }
 
   /** @returns Total X space taken by the clef(s), including offsets */
-  public drawClef({ clefType: staffType, startYPos, clefGroup: staffGroup }: DrawClefsArgs): number {
+  public drawClef({
+    clefType: staffType,
+    startYPos,
+    clefGroup: staffGroup,
+  }: DrawClefsArgs): number {
     const glyphEntry = getClefGlyph(staffType);
 
     this.svgRendererInstance.drawGlyph(glyphEntry.name, staffGroup, {
       y: startYPos,
-      x: CLEF_X_OFFSET
+      x: CLEF_X_OFFSET,
     });
 
     return glyphEntry.glyphWidth + CLEF_X_OFFSET;
@@ -118,16 +129,6 @@ export default class StaffRenderer {
     return BASE_STAFF_HEIGHT;
   }
 
-  public drawStaffBarLine(xPos: number, staffType: SystemTypes, staffGroup: SVGGElement) {
-    let topY = BASE_STAFF_HEIGHT;
-
-    if (staffType === "grand") {
-      topY = topY * 2 + this.grandStaffSpacing;
-    }
-
-    this.svgRendererInstance.drawLine(xPos, 0, xPos, topY, staffGroup);
-  };
-
   /** @returns Total X space taken by the key signature */
   public drawKeySignature({ key, clefType, startYPos, staffGroup }: DrawKeySignatureArgs): number {
     validateKeySignature(key);
@@ -145,11 +146,11 @@ export default class StaffRenderer {
 
     letters.forEach((name, i) => {
       const steps = getPitchStepClefDifference(name, octaves[i], clefType);
-      const yPos = (steps * STAFF_LINE_SPACING_HALVED) + startYPos;
+      const yPos = steps * STAFF_LINE_SPACING_HALVED + startYPos;
 
       this.svgRendererInstance.drawGlyph(glyphDef.name, staffGroup, {
         x: i * KEY_SIG_ACCIDENTAL_SPACING,
-        y: yPos
+        y: yPos,
       });
     });
 
@@ -157,7 +158,12 @@ export default class StaffRenderer {
   }
 
   /** @returns Total X space taken by the time signature */
-  public drawTimeSignature({ topNumber, bottomNumber, startYPos, staffGroup }: DrawTimeSignatureArgs) {
+  public drawTimeSignature({
+    topNumber,
+    bottomNumber,
+    startYPos,
+    staffGroup,
+  }: DrawTimeSignatureArgs) {
     validateTimeSignature(topNumber, bottomNumber);
 
     const topWidth = this.getTimeSigNumberWidth(topNumber);
@@ -176,7 +182,6 @@ export default class StaffRenderer {
   }
 
   public drawBrace({ topY, bottomY, staffGroup }: DrawBraceArgs) {
-
     const def = BRACE;
     const height = bottomY - topY;
     const scaleY = height / (def.glyphHeight || 1);
@@ -186,25 +191,31 @@ export default class StaffRenderer {
 
     const braceGroup = this.svgRendererInstance.createGroup("brace");
 
-    // By leaving X as 1, the brace stretches vertically to fit the staves 
+    // By leaving X as 1, the brace stretches vertically to fit the staves
     braceGroup.setAttribute("transform", `translate(0, ${topY}) scale(${scaleX}, ${parsedScaleY})`);
 
     this.svgRendererInstance.drawGlyph(def.name, braceGroup, { x: 0, y: 0 });
     staffGroup.appendChild(braceGroup);
 
-    let totalWidth = (def.glyphWidth * scaleX) + BRACE_PADDING;
+    let totalWidth = def.glyphWidth * scaleX + BRACE_PADDING;
     totalWidth = Math.round(totalWidth);
 
     return totalWidth;
-  };
+  }
 
-  public drawBarline({ topY, bottomY, barType, repeatYStartPositions, group }: DrawBarlineArgs): number {
+  public drawBarline({
+    topY,
+    bottomY,
+    barType,
+    repeatYStartPositions,
+    group,
+  }: DrawBarlineArgs): number {
     const height = bottomY - topY;
 
     const drawVerticalBar = (xOffset: number, width: number) => {
       this.svgRendererInstance.drawRect(width, height, group, {
         x: xOffset,
-        y: topY
+        y: topY,
       });
     };
 
@@ -213,7 +224,7 @@ export default class StaffRenderer {
       repeatYStartPositions.forEach(staffTopY => {
         this.svgRendererInstance.drawGlyph(REPEAT_DOTS.name, group, {
           x: xOffset,
-          y: staffTopY
+          y: staffTopY,
         });
       });
     };

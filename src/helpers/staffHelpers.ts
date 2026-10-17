@@ -3,16 +3,32 @@ import type { ClefTypes } from "../types";
 export const STAFF_LINE_SPACING = 10;
 export const STAFF_LINE_COUNT = 5;
 export const STAFF_LINE_SPACING_HALVED = STAFF_LINE_SPACING / 2;
-export const BASE_STAFF_HEIGHT = ((STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING);
+export const BASE_STAFF_HEIGHT = (STAFF_LINE_COUNT - 1) * STAFF_LINE_SPACING;
 export const GRAND_STAFF_SPACING = 60;
 
 export type TimeSignature = {
   topNumber: number;
   bottomNumber: number;
-}
+};
 
-export const KeySignaturesArr = ["C", "G", "D", "A", "E", "B", "F#", "C#", "F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"] as const;
-export type KeySignatures = typeof KeySignaturesArr[number];
+export const KeySignaturesArr = [
+  "C",
+  "G",
+  "D",
+  "A",
+  "E",
+  "B",
+  "F#",
+  "C#",
+  "F",
+  "Bb",
+  "Eb",
+  "Ab",
+  "Db",
+  "Gb",
+  "Cb",
+] as const;
+export type KeySignatures = (typeof KeySignaturesArr)[number];
 
 type KeySignatureDef = { type: "sharp" | "flat"; count: number };
 
@@ -43,26 +59,28 @@ export const KEY_SIGNATURES: Record<KeySignatures, KeySignatureDef> = {
 export const KEY_SIG_OCTAVES: Record<ClefTypes, Record<string, number[]>> = {
   treble: {
     sharp: [5, 5, 5, 5, 4, 5, 4], // F5 C5 G5 D5 A4 E5 B4
-    flat: [4, 5, 4, 5, 4, 5, 4],  // B4 E5 A4 D5 G4 C5 F4
+    flat: [4, 5, 4, 5, 4, 5, 4], // B4 E5 A4 D5 G4 C5 F4
   },
   bass: {
     sharp: [3, 3, 3, 3, 2, 3, 2], // F3 C3 G3 D3 A2 E3 B2
-    flat: [2, 3, 2, 3, 2, 3, 2],  // B2 E3 A2 D3 G2 C3 F2
+    flat: [2, 3, 2, 3, 2, 3, 2], // B2 E3 A2 D3 G2 C3 F2
   },
   alto: {
     sharp: [4, 4, 4, 4, 3, 4, 3], // F4 C4 G4 D4 A3 E4 B3
-    flat: [3, 4, 3, 4, 3, 4, 3],  // B3 E4 A3 D4 G3 C4 F3
+    flat: [3, 4, 3, 4, 3, 4, 3], // B3 E4 A3 D4 G3 C4 F3
   },
 };
 
 /** @throws Error - If key is not in record */
 export function validateKeySignature(key: string): asserts key is KeySignatures {
   const foundKey = KeySignaturesArr.find(k => k === key);
-  if (!foundKey) throw new Error(`Unknown key signature "${key}". Valid keys: ${KeySignaturesArr.join(", ")}`);
-};
+  if (!foundKey)
+    throw new Error(`Unknown key signature "${key}". Valid keys: ${KeySignaturesArr.join(", ")}`);
+}
 
 /** @throws Error - Invalid values, numbers over 100 or NaN */
 export function validateTimeSignature(top: number, bottom: number): void {
   const ok = (n: number) => Number.isInteger(n) && n >= 1 && n <= 99;
-  if (!ok(top) || !ok(bottom)) throw new Error("Invalid time signature: top and bottom must be whole numbers from 1 to 99.");
+  if (!ok(top) || !ok(bottom))
+    throw new Error("Invalid time signature: top and bottom must be whole numbers from 1 to 99.");
 }

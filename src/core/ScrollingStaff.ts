@@ -1,21 +1,25 @@
-import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, ARTIC_ACCENT, ARTIC_FERMATA, ARTIC_MARCATO, ARTIC_STACCATO, ARTIC_TENUTO, AUGMENTATION_DOT, BRACE, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
+// prettier-ignore
+import { ACCIDENTAL_DOUBLEFLAT, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_SHARP, ARTIC_ACCENT, ARTIC_FERMATA, ARTIC_MARCATO, ARTIC_STACCATO, ARTIC_TENUTO, AUGMENTATION_DOT, BRACE, CLEF_ALTO, CLEF_BASS, CLEF_TREBLE, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_THIRTY_SECOND, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef, } from "../glyphs";
 import type { ClefTypes, SystemTypes } from "../types";
 import NoteRenderer from "../classes/NoteRenderer";
 import SVGRenderer from "../classes/SVGRenderer";
 import StaffFrame from "../classes/StaffFrame";
-import { validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
-import { type DrawBeamConfig, type DrawChordConfig, type DrawNoteConfig, type DrawRestConfig } from "../helpers/inputHelpers";
+import {
+  validateKeySignature,
+  validateTimeSignature,
+  type KeySignatures,
+  type TimeSignature,
+} from "../helpers/staffHelpers";
+import {
+  type DrawBeamConfig,
+  type DrawChordConfig,
+  type DrawNoteConfig,
+  type DrawRestConfig,
+} from "../helpers/inputHelpers";
 import { NAMESPACE, setTransformAttr } from "../constants";
 
-const USE_GLPYHS: GlyphDef[] = [
-  CLEF_TREBLE, CLEF_BASS, CLEF_ALTO, BRACE,
-  NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
-  ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT,
-  TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9,
-  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP,
-  REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH, REST_THIRTY_SECOND,
-  AUGMENTATION_DOT, ARTIC_ACCENT, ARTIC_MARCATO, ARTIC_TENUTO, ARTIC_STACCATO, ARTIC_FERMATA
-];
+// prettier-ignore
+const USE_GLPYHS: GlyphDef[] = [ CLEF_TREBLE, CLEF_BASS, CLEF_ALTO, BRACE, NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK, ACCIDENTAL_SHARP, ACCIDENTAL_FLAT, ACCIDENTAL_NATURAL, ACCIDENTAL_DOUBLESHARP, ACCIDENTAL_DOUBLEFLAT, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, FLAG_THIRTY_SECOND_DOWN, FLAG_THIRTY_SECOND_UP, REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH, REST_THIRTY_SECOND, AUGMENTATION_DOT, ARTIC_ACCENT, ARTIC_MARCATO, ARTIC_TENUTO, ARTIC_STACCATO, ARTIC_FERMATA, ];
 
 export type ScrollingStaffUserOptions = {
   width?: number;
@@ -33,19 +37,20 @@ export type ScrollingStaffUserOptions = {
   onNotesOut?: () => void;
 };
 
-type ResolvedScrollingStaffOptions =
-  Required<Omit<ScrollingStaffUserOptions, "keySignature" | "timeSignature" | "onNotesOut">> &
+type ResolvedScrollingStaffOptions = Required<
+  Omit<ScrollingStaffUserOptions, "keySignature" | "timeSignature" | "onNotesOut">
+> &
   Pick<ScrollingStaffUserOptions, "keySignature" | "timeSignature" | "onNotesOut">;
 
-
-export type ScrollingStaffDrawConfig = DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig;
+export type ScrollingStaffDrawConfig =
+  DrawNoteConfig | DrawChordConfig | DrawRestConfig | DrawBeamConfig;
 
 type ActiveEntry = {
   gElement: SVGGElement;
   xPos: number;
   width: number;
   originXOffset: number;
-}
+};
 
 const SCROLLING_NOTE_SPACING = 30;
 
@@ -53,7 +58,9 @@ const OFFSCREEN_BUFFER_X = 100;
 
 const NOTE_LAYER_START_X = 30;
 
-const DEFAULT_STAFF_OPTIONS: Required<Omit<ScrollingStaffUserOptions, "keySignature" | "timeSignature" | "onNotesOut">> = {
+const DEFAULT_STAFF_OPTIONS: Required<
+  Omit<ScrollingStaffUserOptions, "keySignature" | "timeSignature" | "onNotesOut">
+> = {
   width: 300,
   scale: 1,
   noteStartX: NOTE_LAYER_START_X,
@@ -81,14 +88,21 @@ export default class ScrollingStaff {
    *
    * @param rootElementCtx - The element (div) reference that will append the music staff elements to.
    * @param options - Optional configuration settings. All config options are in the type ScrollingStaffOptions
-  */
+   */
   constructor(rootElementCtx: HTMLElement, userOptions?: ScrollingStaffUserOptions) {
-    if (rootElementCtx === null) throw new Error("ScrollingStaff Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.");
+    if (rootElementCtx === null)
+      throw new Error(
+        "ScrollingStaff Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.",
+      );
 
     this.options = { ...DEFAULT_STAFF_OPTIONS, ...userOptions };
 
     if (this.options.keySignature) validateKeySignature(this.options.keySignature);
-    if (this.options.timeSignature) validateTimeSignature(this.options.timeSignature.topNumber, this.options.timeSignature.bottomNumber);
+    if (this.options.timeSignature)
+      validateTimeSignature(
+        this.options.timeSignature.topNumber,
+        this.options.timeSignature.bottomNumber,
+      );
 
     this.svgRendererInstance = new SVGRenderer(rootElementCtx, USE_GLPYHS);
     this.noteRendererInstance = new NoteRenderer(this.svgRendererInstance);
@@ -100,21 +114,23 @@ export default class ScrollingStaff {
     this.updateNotesLayerTransform(this.staffFrame.getNoteStartX());
 
     // Apply total sizing to root SVG
-    const totalHeight = this.staffFrame.totalStaffHeight + this.options.paddingTop + this.options.paddingBottom;
+    const totalHeight =
+      this.staffFrame.totalStaffHeight + this.options.paddingTop + this.options.paddingBottom;
     this.svgRendererInstance.setRootSVGSizing(this.options.width, totalHeight, this.options.scale);
     this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
     this.svgRendererInstance.commitElementsToDOM(this.svgRendererInstance.svgElementRef);
-  };
+  }
 
   private updateNotesLayerTransform(startX: number) {
     setTransformAttr(this.notesLayer, startX, this.options.paddingTop);
-  };
+  }
 
   private resolveStaffTarget() {
-    const targetClef: ClefTypes = this.options.staffType === "grand" ? "treble" : this.options.staffType;
+    const targetClef: ClefTypes =
+      this.options.staffType === "grand" ? "treble" : this.options.staffType;
 
     return targetClef;
-  };
+  }
 
   private renderNextNote() {
     if (this.noteBuffer.length < 1) return 0;
@@ -130,30 +146,17 @@ export default class ScrollingStaff {
       const res = this.noteRendererInstance.drawChord(nextNoteInBuffer.chord, targetClef, group);
       fullWidth = res.fullWidth;
       originXOffset = res.originXOffset;
-    }
-    else if (nextNoteInBuffer.type === "note") {
-      const res = this.noteRendererInstance.drawNote(
-        nextNoteInBuffer.note,
-        targetClef,
-        group
-      );
+    } else if (nextNoteInBuffer.type === "note") {
+      const res = this.noteRendererInstance.drawNote(nextNoteInBuffer.note, targetClef, group);
       fullWidth = res.fullWidth;
       originXOffset = res.originXOffset;
-    }
-    else if (nextNoteInBuffer.type === "beam") {
-      const res = this.noteRendererInstance.drawBeam(
-        nextNoteInBuffer.beam,
-        targetClef,
-        group
-      );
+    } else if (nextNoteInBuffer.type === "beam") {
+      const res = this.noteRendererInstance.drawBeam(nextNoteInBuffer.beam, targetClef, group);
       fullWidth = res.fullWidth;
       originXOffset = res.originXOffset;
-    }
-    else {
+    } else {
       // Is rest
-      const res = this.noteRendererInstance.drawRest(nextNoteInBuffer.rest,
-        group
-      );
+      const res = this.noteRendererInstance.drawRest(nextNoteInBuffer.rest, group);
       fullWidth = res.fullWidth;
       originXOffset = res.originXOffset;
     }
@@ -173,10 +176,11 @@ export default class ScrollingStaff {
     this.notesLayer.appendChild(group);
 
     return fullWidth;
-  };
+  }
 
   private fillBufferOffscreen() {
-    const safeOffscreenX = (this.options.width - this.staffFrame.getNoteStartX()) + OFFSCREEN_BUFFER_X;
+    const safeOffscreenX =
+      this.options.width - this.staffFrame.getNoteStartX() + OFFSCREEN_BUFFER_X;
 
     while (this.noteBuffer.length > 0 && this.noteCursorX < safeOffscreenX) {
       const fullWidth = this.renderNextNote();
@@ -198,9 +202,9 @@ export default class ScrollingStaff {
   }
 
   /**
-     * Advances to the next note in sequence, if theres any remaining notes left.
-     * @callback onNotesOut Constructor option: Calls if there are no more notes remaining.
-    */
+   * Advances to the next note in sequence, if theres any remaining notes left.
+   * @callback onNotesOut Constructor option: Calls if there are no more notes remaining.
+   */
   advanceNotes() {
     if (this.activeEntries.length <= 0) {
       this.clearAllNotes();
@@ -230,7 +234,7 @@ export default class ScrollingStaff {
   /**
    * Clears staff of notes and resets internal positioning.
    * @returns void
-  */
+   */
   clearAllNotes() {
     this.noteCursorX = 0;
 
@@ -242,7 +246,7 @@ export default class ScrollingStaff {
   /**
    * Removes the root svg element and cleans up arrays.
    * @returns void
-  */
+   */
   destroy() {
     this.svgRendererInstance.destroy();
     this.activeEntries = [];

@@ -1,25 +1,19 @@
 <script lang="ts">
   import type { ActiveComponent } from "./helpers";
   import Navbar from "./lib/Navbar.svelte";
-  import GuitarChords from "./lib/GuitarChords.svelte";
   import { RenderScan } from "svelte-render-scan";
-  import ScrollingStaff from "./lib/ScrollingStaff.svelte";
+  import StandardStaff from "./lib/StandardStaff.svelte";
   import RhythmStaff from "./lib/RhythmStaff.svelte";
-  import StandardStaff from "./lib/MusicStaff/StandardStaff.svelte";
 
-  let activeComponent: ActiveComponent = $state("music-staff");
+  let activeComponent: ActiveComponent = $state("standard-staff");
 </script>
 
 <RenderScan />
 
 <Navbar bind:activeComponent />
 
-{#if activeComponent === "music-staff"}
+{#if activeComponent === "standard-staff"}
   <StandardStaff />
-{:else if activeComponent === "scrolling-staff"}
-  <ScrollingStaff />
 {:else if activeComponent === "rhythm-staff"}
   <RhythmStaff />
-{:else}
-  <GuitarChords />
 {/if}

@@ -6,17 +6,17 @@ export const SVG_HREF = "http://www.w3.org/2000/svg";
 type DrawGlyphOptions = {
   y?: number;
   x?: number;
-}
+};
 
 type DrawPolygonOptions = {
   fill?: string;
   classes?: string | string[];
-}
+};
 
 type DrawLineOptions = {
   strokeWidth?: number;
   classes?: string | string[];
-}
+};
 
 type DrawRectOptions = {
   x?: number;
@@ -24,23 +24,23 @@ type DrawRectOptions = {
   fill?: string;
   rx?: number;
   classes?: string | string[];
-}
+};
 
 type DrawCircleOptions = {
   filled?: boolean;
   fill?: string;
   strokeWidth?: number;
   classes?: string | string[];
-}
+};
 
 type DrawTextOptions = {
   fontSize?: number;
   anchor?: "start" | "middle" | "end";
-  baseline?: "central"
+  baseline?: "central";
   fill?: string;
   fontWeight?: string;
   classes?: string | string[];
-}
+};
 
 export default class SVGRenderer {
   private rootElementRef: HTMLElement;
@@ -70,7 +70,7 @@ export default class SVGRenderer {
   private makeGlyphDefs(useGlyphs: GlyphDef[]) {
     const defsElement = document.createElementNS(SVG_HREF, "defs");
 
-    useGlyphs.forEach((glyph) => {
+    useGlyphs.forEach(glyph => {
       const path = document.createElementNS(SVG_HREF, "path");
 
       path.setAttribute("id", `glyph-${glyph.name}`);
@@ -112,11 +112,10 @@ export default class SVGRenderer {
     if (autoFill) {
       this.svgElementRef.style.maxWidth = "100%";
       this.svgElementRef.style.height = "auto";
-    }
-    else {
+    } else {
       this.svgElementRef.style.maxWidth = "";
       this.svgElementRef.style.height = "";
-    };
+    }
   }
 
   /**
@@ -124,8 +123,8 @@ export default class SVGRenderer {
    * layerName arg is the key that is appended to the internal list of layers, which
    * can be used in method getLayer() arg. Best to call on construction.
    *
-   * @param {string} layerName 
-   * @returns {SVGGElement} 
+   * @param {string} layerName
+   * @returns {SVGGElement}
    */
   createLayer(layerName: string): SVGGElement {
     const layer = document.createElementNS(SVG_HREF, "g");
@@ -147,15 +146,17 @@ export default class SVGRenderer {
     return g;
   }
 
-  commitElementsToDOM(elements: SVGElement[] | SVGElement, parent: HTMLElement | SVGElement = this.rootElementRef) {
+  commitElementsToDOM(
+    elements: SVGElement[] | SVGElement,
+    parent: HTMLElement | SVGElement = this.rootElementRef,
+  ) {
     const fragment = document.createDocumentFragment();
 
     if (Array.isArray(elements)) {
       elements.forEach(element => {
         fragment.appendChild(element);
       });
-    }
-    else {
+    } else {
       fragment.appendChild(elements);
     }
 
@@ -164,7 +165,14 @@ export default class SVGRenderer {
 
   // ==== Drawing Methods ====
 
-  drawLine(x1: number, y1: number, x2: number, y2: number, parent: SVGElement, options?: DrawLineOptions) {
+  drawLine(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    parent: SVGElement,
+    options?: DrawLineOptions,
+  ) {
     const strokeWidth = options?.strokeWidth ?? 1;
 
     const line = document.createElementNS(SVG_HREF, "line");
@@ -182,7 +190,12 @@ export default class SVGRenderer {
     return line;
   }
 
-  drawRect(width: number, height: number, parent: SVGElement, options?: DrawRectOptions): SVGRectElement {
+  drawRect(
+    width: number,
+    height: number,
+    parent: SVGElement,
+    options?: DrawRectOptions,
+  ): SVGRectElement {
     const rect = document.createElementNS(SVG_HREF, "rect");
 
     rect.setAttribute("width", width.toString());
@@ -203,7 +216,13 @@ export default class SVGRenderer {
     return rect;
   }
 
-  drawCircle(cx: number, cy: number, radius: number, parent: SVGElement, options?: DrawCircleOptions): SVGCircleElement {
+  drawCircle(
+    cx: number,
+    cy: number,
+    radius: number,
+    parent: SVGElement,
+    options?: DrawCircleOptions,
+  ): SVGCircleElement {
     const circle = document.createElementNS(SVG_HREF, "circle");
     circle.setAttribute("cx", cx.toString());
     circle.setAttribute("cy", cy.toString());
@@ -224,7 +243,11 @@ export default class SVGRenderer {
   }
 
   /**  Points are [x, y] pairs, connected in order and closed automatically */
-  drawPolygon(points: [number, number][], parent: SVGElement, options?: DrawPolygonOptions): SVGPolygonElement {
+  drawPolygon(
+    points: [number, number][],
+    parent: SVGElement,
+    options?: DrawPolygonOptions,
+  ): SVGPolygonElement {
     const polygon = document.createElementNS(SVG_HREF, "polygon");
 
     polygon.setAttribute("points", points.map(([x, y]) => `${x},${y}`).join(" "));
@@ -240,26 +263,32 @@ export default class SVGRenderer {
     options = {
       x: 0,
       y: 0,
-      ...options
+      ...options,
     };
 
     const useElement = document.createElementNS(SVG_HREF, "use");
     useElement.setAttribute("href", `#glyph-${glyphName}`);
     useElement.setAttribute("fill", `currentColor`);
 
-    setTransformAttr(useElement, options.x ?? 0, options.y ?? 0);;
+    setTransformAttr(useElement, options.x ?? 0, options.y ?? 0);
 
     parent.appendChild(useElement);
   }
 
-  drawText(text: string, x: number, y: number, parent: SVGElement, options?: DrawTextOptions): SVGTextElement {
+  drawText(
+    text: string,
+    x: number,
+    y: number,
+    parent: SVGElement,
+    options?: DrawTextOptions,
+  ): SVGTextElement {
     const textElement = document.createElementNS(SVG_HREF, "text");
     textElement.setAttribute("x", x.toString());
     textElement.setAttribute("y", y.toString());
     textElement.setAttribute("text-anchor", options?.anchor ?? "middle");
     textElement.setAttribute("fill", options?.fill ?? "currentColor");
 
-    if (options?.fontSize) textElement.setAttribute("font-size", options.fontSize + "px")
+    if (options?.fontSize) textElement.setAttribute("font-size", options.fontSize + "px");
     if (options?.fontWeight) textElement.setAttribute("font-weight", options.fontWeight);
     if (options?.baseline) textElement.setAttribute("dominant-baseline", options.baseline);
     if (options?.classes) this.addNamespacedClassesToElement(options.classes, textElement);

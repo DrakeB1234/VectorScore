@@ -1,6 +1,6 @@
-import { svelte } from '@sveltejs/vite-plugin-svelte'
-import path from 'path'
-import { defineConfig } from 'vite'
+import { svelte } from "@sveltejs/vite-plugin-svelte";
+import path from "path";
+import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -8,7 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       // Define your aliases here
-      '@VS': path.resolve(import.meta.dirname, '../src'),
+      "@VS": path.resolve(import.meta.dirname, "../src"),
     },
   },
-})
+});

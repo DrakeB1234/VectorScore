@@ -1,11 +1,16 @@
 import type SVGRenderer from "./SVGRenderer";
 import type NoteRenderer from "./NoteRenderer";
 import type { ClefTypes } from "../types";
-import { convertPitchStepToYPos, getPitchStepClefDifference, getStemSteps, MIDDLE_LINE_STEP } from "../helpers/noteHelpers";
+import {
+  convertPitchStepToYPos,
+  getPitchStepClefDifference,
+  getStemSteps,
+  MIDDLE_LINE_STEP,
+} from "../helpers/noteHelpers";
 import { getNoteheadGlyphByDuration } from "../glyphs";
 import { STAFF_LINE_SPACING, STAFF_LINE_SPACING_HALVED } from "../helpers/staffHelpers";
 import { setTransformAttr } from "../constants";
-import type { BeamableConfig, NoteDurations } from "..";
+import type { BeamableConfig, NoteDurations } from "../helpers/inputHelpers";
 import type { VSBeamObj } from "../helpers/inputHelpers";
 
 const BEAM_INTERNAL_SPACING = 8;
@@ -22,7 +27,7 @@ const isValidQuarter = (q: number) => ((q % 4) + 4) % 4 !== 2;
 
 type BeamDuration = "e" | "s" | "t";
 
-type StemCoord = {
+export type StemCoord = {
   x: number;
   startY: number;
   endY: number;
@@ -38,12 +43,19 @@ type BeamLine = {
   slope: number;
 };
 
+export type BeamLayoutOptions = {
+  /** Custom pixel gap between beamed entries (defaults to BEAM_INTERNAL_SPACING === 8) */
+  spacing?: number;
+  /** Explicit local X-coordinates for each entry in the beam (overrides spacing) */
+  noteXPositions?: number[];
+};
+
 const yAt = (line: BeamLine, x: number) => line.y0 + line.slope * (x - line.x0);
 
 const BEAM_COUNTS: Record<string, number> = {
-  "e": 1,
-  "s": 2,
-  "t": 3
+  e: 1,
+  s: 2,
+  t: 3,
 };
 
 export default class BeamRenderer {
@@ -86,7 +98,7 @@ export default class BeamRenderer {
     const distLow = Math.abs(lowStep - MIDDLE_LINE_STEP);
 
     // First: The note furthest from the middle line dictates the direction.
-    if (distHigh > distLow) return true;  // Extreme note is high, stems go DOWN
+    if (distHigh > distLow) return true; // Extreme note is high, stems go DOWN
     if (distLow > distHigh) return false; // Extreme note is low, stems go UP
 
     // OR: If the extreme notes are perfectly equidistant, majority rules.
@@ -97,9 +109,10 @@ export default class BeamRenderer {
   }
 
   private resolveDuration(duration: NoteDurations): BeamDuration {
-    if (duration === "w" || duration === "h" || duration === "q") throw new Error("BeamRenderer Error: Please only use duration values 'e|s|t'.");
+    if (duration === "w" || duration === "h" || duration === "q")
+      throw new Error("BeamRenderer Error: Please only use duration values 'e|s|t'.");
     return duration;
-  };
+  }
 
   private snapBeamY0(rawY0: number, slant: number, isStemDown: boolean): number {
     const EPS = 1e-6;
@@ -135,20 +148,20 @@ export default class BeamRenderer {
 
     // Map standard engraving interval sizes to discrete slants
     let slantSteps = 1.5; // Default max (5th or larger -> slant 3/4 space)
-    if (absDiff === 1) slantSteps = 0.5; // 2nd interval -> slant 1/4 space
+    if (absDiff === 1)
+      slantSteps = 0.5; // 2nd interval -> slant 1/4 space
     else if (absDiff <= 3) slantSteps = 1.0; // 3rd/4th interval -> slant 1/2 space
 
     const slantY = slantSteps * Math.sign(stepDiff) * STAFF_LINE_SPACING_HALVED;
     return slantY / dx;
   }
 
-  private computeBeamLine(stems: StemCoord[], isStemDown: boolean): BeamLine {
+  private computeBeamLine(stems: StemCoord[], isStemDown: boolean, snapToStaff: boolean): BeamLine {
     if (stems.length === 0) return { x0: 0, y0: 0, slope: 0 };
 
     const x0 = stems[0].x;
     const dx = stems[stems.length - 1].x - x0;
 
-    // First: Get the ideal musical slope
     const slope = this.calculateMusicalSlope(stems, isStemDown, dx);
 
     // Next: Find the baseline Y (where the beam just touches the shortest stem)
@@ -156,33 +169,36 @@ export default class BeamRenderer {
     const rawY0 = isStemDown ? Math.max(...requiredY0s) : Math.min(...requiredY0s);
 
     // Next: Apply staff snapping and collision resolutions
-    const finalY0 = this.snapBeamY0(rawY0, slope * dx, isStemDown)
+    const finalY0 = snapToStaff ? this.snapBeamY0(rawY0, slope * dx, isStemDown) : rawY0;
 
     return { x0, y0: finalY0, slope };
   }
 
-  public drawBeamGroup(beam: VSBeamObj, clef: ClefTypes, beamGroup: SVGGElement) {
+  public drawBeamGroup(
+    beam: VSBeamObj,
+    clef: ClefTypes,
+    beamGroup: SVGGElement,
+    options?: BeamLayoutOptions,
+  ) {
+    const gap = options?.spacing ?? BEAM_INTERNAL_SPACING;
+    const customPositions = options?.noteXPositions;
+
     let internalCursorX = 0;
+    let maxRightEdge = 0;
 
-    // Calculate the unified stem direction for the whole group
     const isStemDown = this.getGroupStemDirection(beam.entries, clef);
-
     const stemCoordinates: StemCoord[] = [];
     const yPosArray: number[] = [];
-    let firstOriginXOffset = 0; // Only considers the first entries xOffset, if it exists.
+    const noteCenterXs: number[] = [];
 
-    // Loop through and draw the noteheads (skipping stems)
     beam.entries.forEach((entry, i) => {
-
       let entryWidth = 0;
       let originXOffset = 0;
-
-      // We need these to calculate where the stem attaches
       let highStep = Infinity;
       let lowStep = -Infinity;
+
       const duration = entry.type === "note" ? entry.note.duration : entry.chord.duration;
       const resolvedDuration = this.resolveDuration(duration);
-
       const wrapperGroup = this.svgRendererInstance.createGroup(entry.type);
 
       if (entry.type === "note") {
@@ -190,33 +206,45 @@ export default class BeamRenderer {
         highStep = step;
         lowStep = step;
 
-        const result = this.noteRendererInstance.drawNote(entry.note, clef, wrapperGroup, { skipStem: true });
+        const result = this.noteRendererInstance.drawNote(entry.note, clef, wrapperGroup, {
+          skipStem: true,
+        });
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
         yPosArray.push(result.yPos);
-
       } else if (entry.type === "chord") {
-
-        const steps = entry.chord.notes.map(n => getPitchStepClefDifference(n.letter, n.octave, clef));
+        const steps = entry.chord.notes.map(n =>
+          getPitchStepClefDifference(n.letter, n.octave, clef),
+        );
         highStep = Math.min(...steps);
         lowStep = Math.max(...steps);
 
-        const result = this.noteRendererInstance.drawChord(entry.chord, clef, wrapperGroup, { skipStem: true });
+        const result = this.noteRendererInstance.drawChord(entry.chord, clef, wrapperGroup, {
+          skipStem: true,
+        });
         entryWidth = result.fullWidth;
         originXOffset = result.originXOffset;
-        yPosArray.push(isStemDown ? result.yPosArray[result.yPosArray.length - 1] : result.yPosArray[0]);
+        yPosArray.push(
+          isStemDown ? result.yPosArray[result.yPosArray.length - 1] : result.yPosArray[0],
+        );
       }
 
-      setTransformAttr(wrapperGroup, internalCursorX + originXOffset, 0);
+      // If explicit X positions are provided, use them directly as the notehead's X origin.
+      // Otherwise, place sequentially using internalCursorX + originXOffset.
+      const noteheadX =
+        customPositions && customPositions[i] !== undefined
+          ? customPositions[i]
+          : internalCursorX + originXOffset;
+
+      setTransformAttr(wrapperGroup, noteheadX, 0);
       beamGroup.appendChild(wrapperGroup);
 
       const noteHeadWidth = getNoteheadGlyphByDuration(duration).glyphWidth;
       const localStemX = isStemDown ? STEM_X_OFFSET : noteHeadWidth - STEM_X_OFFSET;
+      const absoluteStemX = noteheadX + localStemX;
 
-      // Absolute X position within the beam group
-      const absoluteStemX = internalCursorX + originXOffset + localStemX;
+      noteCenterXs.push(noteheadX + noteHeadWidth / 2);
 
-      // Determine where the stem starts (at the notehead)
       const { startStep, endStep } = getStemSteps(highStep, lowStep, isStemDown, duration, 6.5);
 
       stemCoordinates.push({
@@ -224,27 +252,36 @@ export default class BeamRenderer {
         startY: convertPitchStepToYPos(startStep),
         endY: convertPitchStepToYPos(endStep),
         duration: resolvedDuration,
-        noteStep: isStemDown ? Math.max(highStep, lowStep) : Math.min(highStep, lowStep)
+        noteStep: isStemDown ? Math.max(highStep, lowStep) : Math.min(highStep, lowStep),
       });
 
-      internalCursorX += entryWidth + BEAM_INTERNAL_SPACING;
-
-      if (i === 0) {
-        firstOriginXOffset = originXOffset;
-      }
+      const entryRightEdge = noteheadX - originXOffset + entryWidth;
+      maxRightEdge = Math.max(maxRightEdge, entryRightEdge);
+      internalCursorX += entryWidth + gap;
     });
 
-    // Build the beam line, then draw stems and beams against it
-    const beamLine = this.computeBeamLine(stemCoordinates, isStemDown);
-
-    this.drawStems(stemCoordinates, beamLine, beamGroup);
-    this.drawBeams(stemCoordinates, beamLine, isStemDown, beamGroup);
+    this.drawStemsAndBeams(stemCoordinates, isStemDown, beamGroup, true);
 
     return {
-      fullWidth: internalCursorX - BEAM_INTERNAL_SPACING,
-      originXOffset: firstOriginXOffset,
-      yPosArray
+      fullWidth: customPositions ? maxRightEdge : internalCursorX - gap,
+      originXOffset: 0,
+      yPosArray,
+      noteXPosArray: noteCenterXs,
     };
+  }
+
+  /** - Intermediatory function for rendering stems at provided StemCoords. Also can be called independently for specific notehead rendering logic (ex. RhythmStaff). */
+  public drawStemsAndBeams(
+    stems: StemCoord[],
+    isStemDown: boolean,
+    group: SVGGElement,
+    snapToStaff: boolean = true,
+  ) {
+    if (stems.length < 2) return;
+
+    const beamLine = this.computeBeamLine(stems, isStemDown, snapToStaff);
+    this.drawStems(stems, beamLine, group);
+    this.drawBeams(stems, beamLine, isStemDown, group);
   }
 
   // Draws each precalculated stem from drawBeamGroup
@@ -254,27 +291,41 @@ export default class BeamRenderer {
     });
   }
 
-  private drawBeamSegment(x1: number, y1: number, x2: number, y2: number, isStemDown: boolean, group: SVGGElement) {
+  private drawBeamSegment(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    isStemDown: boolean,
+    group: SVGGElement,
+  ) {
     const inwardThickValue = isStemDown ? -BEAM_THICKNESS : BEAM_THICKNESS;
 
-    this.svgRendererInstance.drawPolygon([
-      [x1, y1],
-      [x2, y2],
-      [x2, y2 + inwardThickValue],
-      [x1, y1 + inwardThickValue]
-    ], group);
+    this.svgRendererInstance.drawPolygon(
+      [
+        [x1, y1],
+        [x2, y2],
+        [x2, y2 + inwardThickValue],
+        [x1, y1 + inwardThickValue],
+      ],
+      group,
+    );
   }
 
-  private drawBeams(stems: StemCoord[], beamLine: BeamLine, isStemDown: boolean, group: SVGGElement) {
+  private drawBeams(
+    stems: StemCoord[],
+    beamLine: BeamLine,
+    isStemDown: boolean,
+    group: SVGGElement,
+  ) {
     if (stems.length === 0) return;
 
     const maxBeams = Math.max(...stems.map(s => BEAM_COUNTS[s.duration]));
 
     // Loop through each beam level (8ths, 16ths, 32nds)
     for (let level = 0; level < maxBeams; level++) {
-
       // Secondary beams stack "inward" toward the noteheads
-      const levelShift = isStemDown ? -(level * BEAM_SPACING) : (level * BEAM_SPACING);
+      const levelShift = isStemDown ? -(level * BEAM_SPACING) : level * BEAM_SPACING;
       const beamY = (x: number) => yAt(beamLine, x) + levelShift;
 
       for (let i = 0; i < stems.length; i++) {
@@ -291,11 +342,10 @@ export default class BeamRenderer {
         }
         // If not, and it doesn't connect backwards either, it's a fractional stub!
         else if (level > 0 && (i === 0 || BEAM_COUNTS[stems[i - 1].duration] <= level)) {
-
           // Stubs point inward. If it's the first note, it points right (+). Otherwise, left (-).
           const directionMultiplier = i === 0 ? 1 : -1;
           const x1 = stems[i].x;
-          const x2 = x1 + (STUB_LENGTH * directionMultiplier);
+          const x2 = x1 + STUB_LENGTH * directionMultiplier;
           this.drawBeamSegment(x1, beamY(x1), x2, beamY(x2), isStemDown, group);
         }
       }
