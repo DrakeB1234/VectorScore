@@ -134,8 +134,7 @@ import { ..., noteConfig } from "vector-score";
 staff.drawNote(noteConfig({
   letter: "C",
   octave: 4,
-  duration: "s"
-  // Optional
+  duration: "s",
   accidental: "#",
   // Optional
   isDotted: true,
@@ -144,10 +143,10 @@ staff.drawNote(noteConfig({
 }));
 
 // Most basic note config
-const note = noteConfig({ letter: "C", octave: 4, duration: "q"});
+const reusableNoteConfig = noteConfig({ letter: "C", octave: 4, duration: "q"});
 
 // Chord notes *DONT* contain duration per note, instead duration is defined top level of chord object.
-staff.drawChord(chordConfig({
+const resuableChordConfig = chordConfig({
   notes: [
     {
       letter: "D",
@@ -159,9 +158,12 @@ staff.drawChord(chordConfig({
     },
   ],
   duration: "q",
+  // Optional
   articulation: "staccato",
-  }),
-);
+  // Optional
+  isDotted: undefined
+});
+staff.drawChord(resuableChordConfig);
 
 staff.drawRest(restConfig({
   duration: "q",
@@ -171,29 +173,61 @@ staff.drawRest(restConfig({
 
 staff.drawBarline(barlineConfig("repeat-end"));
 
-staff.drawBeam(beamConfig(
-  noteConfig(...),
-  chordConfig(...),
-  noteConfig(...)
-));
+staff.drawBeam(beamConfig({
+  entries: [
+    noteConfig({ letter: "C", octave: 4, duration: "e"}),
+    chordConfig({
+      notes: [
+        { letter: "D", octave: 4 }
+      ],
+      duration: "e",
+    }),
+    noteConfig({ letter: "G", octave: 4, duration: "e"})
+  ]
+}));
+
+staff.justifyNotes();
 ```
 
 Drawing batch of elements using **config functions**. Using configs instead of strings gives options to each individual element in list.
 
 ```ts
-
 //  Refer to section above for the actual options available in config functions.
 //  Options here are applied per desired element, options are NOT REQUIRED.
 staff.drawBatchElements([
-  { config: noteConfig(...), options: { staff: "top", classes: ["my-note"]} },
-  { config: chordConfig(...), options: ... },
-  { config: restConfig(...) },
-  { config: beamConfig(...) },
-  { config: barlineConfig(...), options: ... },
+  {
+    config: noteConfig({ letter: "C", octave: 4, duration: "q" }),
+    options: { staff: "top", classes: ["my-note"] },
+  },
+  {
+    config: chordConfig({
+      notes: [
+        {
+          letter: "D",
+          octave: 4,
+        },
+        {
+          letter: "F",
+          octave: 4,
+        },
+      ],
+      duration: "q",
+    }),
+    options: { staff: "bottom" },
+  },
+  {
+    config: restConfig({
+      duration: "t",
+    }),
+  },
+  // { config: beamConfig(...) },
+  { config: barlineConfig("repeat-end") },
 ]);
 
+staff.justifyNotes();
+
 // With options being passed as the second parameter instead of per config entry, its values will be applied to each element drawn.
-staff.drawBatchElements([...], options: { staff: "top", classes: ["my-note"]});
+// staff.drawBatchElements([...], options: { staff: "top", classes: ["my-note"]});
 ```
 
 ## Guitar Chord
