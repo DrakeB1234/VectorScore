@@ -51,6 +51,21 @@ export type StandardStaffUserOptions = {
   timeSignature?: TimeSignature;
 };
 
+type StandardStaffEntryType = StaffEntry["type"];
+
+export type StandardStaffPositionData = {
+  /** Index of the entry on the staff (what replaceByIndex / removeElementByIndex use). */
+  entryIndex: number;
+  /** Position inside the entry. Always 0, except beams have one per notehead. */
+  subIndex: number;
+  /** Number of positions in the entry (1, except beams). */
+  subCount: number;
+  type: StandardStaffEntryType;
+  x: number;
+  y: number;
+  isTopStaff: boolean;
+};
+
 type ResolvedStaffOptions = Required<
   Omit<StandardStaffUserOptions, "keySignature" | "timeSignature">
 > &
@@ -475,45 +490,57 @@ export default class StandardStaff {
     return this.getPositionDataByIndex(index);
   }
 
-  /**
-   * - Gets coordinate data and staff options from entry on staff by index
-   * - Options prop 'beamSubIndex' to get note data from indexes within a beamed group
-   * */
-  public getPositionDataByIndex(index: number, beamSubIndex: number = 0) {
-    this.validateEntriesIndex(index);
-    const entry = this.noteEntries[index];
-
-    const groupX = entry.xPos + entry.originXOffset; // where applySpacing/appendEntry translate the group
+  private buildPositionData(entryIndex: number): StandardStaffPositionData[] {
+    const entry = this.noteEntries[entryIndex];
+    const groupX = entry.xPos + entry.originXOffset;
     const headCenter = NOTEHEAD_WIDTH / 2;
 
-    let positions: { x: number; y: number }[];
-
+    let points: { x: number; y: number }[];
     switch (entry.type) {
       case "beam":
-        positions = entry.noteXPosArray.map((localX, i) => ({
+        points = entry.noteXPosArray.map((localX, i) => ({
           x: groupX + localX,
           y: entry.yPosArray[i] + entry.yOffset,
         }));
         break;
       case "chord":
-        positions = [{ x: groupX + headCenter, y: entry.yPosArray[0] + entry.yOffset }];
+        points = [{ x: groupX + headCenter, y: entry.yPosArray[0] + entry.yOffset }];
         break;
       case "note":
       case "rest":
-        positions = [{ x: groupX + headCenter, y: entry.yPos + entry.yOffset }];
+        points = [{ x: groupX + headCenter, y: entry.yPos + entry.yOffset }];
         break;
       case "barline":
-        positions = [{ x: groupX + entry.totalWidth / 2, y: entry.yOffset }];
+        points = [{ x: groupX + entry.totalWidth / 2, y: entry.yOffset }];
         break;
     }
 
-    const p = positions[beamSubIndex];
-    if (!p)
-      throw new Error(
-        `StandardStaff Error: subIndex ${beamSubIndex} is out of range for entry ${index}. Sub indexes should only be used for BeamedGroups).`,
-      );
+    return points.map((p, subIndex) => ({
+      entryIndex,
+      subIndex,
+      subCount: points.length,
+      type: entry.type,
+      x: p.x,
+      y: p.y,
+      isTopStaff: entry.isTopStaff,
+    }));
+  }
 
-    return { x: p.x, y: p.y, positions, isTopStaff: entry.isTopStaff };
+  /**
+   * - Gets coordinate data and staff options from entry on staff by index
+   * - Options prop 'beamSubIndex' to get note data from indexes within a beamed group
+   * */
+  public getPositionDataByIndex(
+    index: number,
+    beamSubIndex: number = 0,
+  ): StandardStaffPositionData {
+    this.validateEntriesIndex(index);
+    const data = this.buildPositionData(index)[beamSubIndex];
+    if (!data)
+      throw new Error(
+        `StandardStaff Error: beamSubIndex ${beamSubIndex} is out of range for entry ${index}. Sub indexes should only be used for beamed groups.`,
+      );
+    return data;
   }
 
   /**
@@ -523,27 +550,12 @@ export default class StandardStaff {
   public getAllPositionData({
     includeRests = true,
     includeBarlines = false,
-  }: { includeRests?: boolean; includeBarlines?: boolean } = {}) {
-    const out: {
-      entryIndex: number;
-      subIndex: number;
-      type: string;
-      x: number;
-      y: number;
-      isTopStaff: boolean;
-    }[] = [];
-
-    this.noteEntries.forEach((entry, entryIndex) => {
-      if (entry.type === "barline" && includeBarlines === false) return;
-      if (entry.type === "rest" && includeRests === false) return;
-
-      const { positions, isTopStaff } = this.getPositionDataByIndex(entryIndex);
-      positions.forEach((p, subIndex) =>
-        out.push({ entryIndex, subIndex, type: entry.type, x: p.x, y: p.y, isTopStaff }),
-      );
+  }: { includeRests?: boolean; includeBarlines?: boolean } = {}): StandardStaffPositionData[] {
+    return this.noteEntries.flatMap((entry, entryIndex) => {
+      if (entry.type === "barline" && !includeBarlines) return [];
+      if (entry.type === "rest" && !includeRests) return [];
+      return this.buildPositionData(entryIndex);
     });
-
-    return out;
   }
 
   /**  - Returns the exact absolute Y-coordinate for a list of pitches (e.g., ["C4", "E4"]). Accounts for staff offsets (top vs bottom) and clef differences. */

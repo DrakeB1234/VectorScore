@@ -35,8 +35,8 @@
   <div class="links">
     <button
       class="text"
-      class:active={activeComponent === "music-staff"}
-      onclick={() => handleButtonClick("music-staff")}>Music Staff</button
+      class:active={activeComponent === "standard-staff"}
+      onclick={() => handleButtonClick("standard-staff")}>Standard Staff</button
     >
     <button
       class="text"

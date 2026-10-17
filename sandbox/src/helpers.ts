@@ -1,5 +1,5 @@
 export const activeComponents = [
-  "music-staff",
+  "standard-staff",
   "scrolling-staff",
   "rhythm-staff",
   "guitar",

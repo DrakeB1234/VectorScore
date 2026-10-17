@@ -34,6 +34,7 @@ export type {
   StandardStaffUserOptions,
   StandardStaffDrawConfig,
   StandardStaffDrawOptions,
+  StandardStaffPositionData,
 } from "./core/StandardStaff";
 
 // Scrolling Staff Exports
