@@ -19,8 +19,17 @@ import {
   GUITAR_STRING_LABEL_OFFSET,
   GUITAR_STRING_SPACING,
 } from "../helpers/guitarHelpers";
-import { calculateStartFret, createStateStrings, parseFingersEntry, parseFretsEntry } from "../helpers/guitarHelpers";
-import type { GuitarBarreDef, GuitarChordDrawOptions, GuitarStringState } from "../helpers/guitarHelpers";
+import {
+  calculateStartFret,
+  createStateStrings,
+  parseFingersEntry,
+  parseFretsEntry,
+} from "../helpers/guitarHelpers";
+import type {
+  GuitarBarreDef,
+  GuitarChordDrawOptions,
+  GuitarStringState,
+} from "../helpers/guitarHelpers";
 import SVGRenderer from "../classes/SVGRenderer";
 import { NAMESPACE, setTransformAttr } from "../constants";
 
@@ -51,7 +60,7 @@ type BarreEntry = {
   fret: number;
   startingFret: number;
   finger?: number;
-}
+};
 
 export default class GuitarChord {
   private svgRendererInstance: SVGRenderer;
@@ -74,9 +83,12 @@ export default class GuitarChord {
    * @param rootElementCtx - The element (div) reference that the chord diagram(s) will be appended to.
    * @param options - Optional configuration. Can adjust total width, scale, string/fret count, and coloring.
    * All config options are in the type GuitarChordOptions.
-  */
+   */
   constructor(rootElementCtx: HTMLElement, options?: GuitarChordOptions) {
-    if (rootElementCtx === null) throw new Error("GuitarChords Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.");
+    if (rootElementCtx === null)
+      throw new Error(
+        "GuitarChords Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.",
+      );
 
     this.options = {
       stringCount: GUITAR_STRING_COUNT_DEFAULT,
@@ -86,7 +98,7 @@ export default class GuitarChord {
       centerChords: true,
       scale: 1,
       svgAutoFill: true,
-      ...options
+      ...options,
     } as Required<GuitarChordOptions>;
 
     this.svgRendererInstance = new SVGRenderer(rootElementCtx);
@@ -97,26 +109,33 @@ export default class GuitarChord {
     this.gridTopY = GUITAR_LABEL_HEIGHT + GUITAR_NUT_SPACE_ABOVE;
     this.rowHeight = this.gridTopY + this.diagramHeight + GUITAR_DIAGRAM_BOTTOM_PADDING;
 
-    if (options?.width) this.options.width = options.width
-    else this.options.width = (this.diagramWidth + GUITAR_DIAGRAM_H_SPACING) * this.options.inlineChordsAmount;
+    if (options?.width) this.options.width = options.width;
+    else
+      this.options.width =
+        (this.diagramWidth + GUITAR_DIAGRAM_H_SPACING) * this.options.inlineChordsAmount;
 
     if (this.options.stringLabels.length >= 1) {
       this.rowHeight += GUITAR_STRING_LABEL_HEIGHT + GUITAR_STRING_LABEL_OFFSET;
     }
 
     if (this.diagramWidth > this.options.width) {
-      throw new Error(`The configured width (${this.options.width}) is too small to fit a single ${this.options.stringCount}-string diagram (needs at least ${this.diagramWidth}). Increase 'width'.`);
+      throw new Error(
+        `The configured width (${this.options.width}) is too small to fit a single ${this.options.stringCount}-string diagram (needs at least ${this.diagramWidth}). Increase 'width'.`,
+      );
     }
 
     // Parent group in which all elements will be appended to
     this.rootLayer = this.svgRendererInstance.createLayer("guitar-chords");
     rootSvgElement.appendChild(this.rootLayer);
 
-    this.svgRendererInstance.setRootSVGSizing(this.options.width, this.rowHeight, this.options.scale);
+    this.svgRendererInstance.setRootSVGSizing(
+      this.options.width,
+      this.rowHeight,
+      this.options.scale,
+    );
     this.svgRendererInstance.setSVGAutoFill(this.options.svgAutoFill);
 
     this.svgRendererInstance.commitElementsToDOM(rootSvgElement);
-
   }
 
   private getDotsToHide(barres?: GuitarBarreDef[]): Set<string> {
@@ -135,7 +154,13 @@ export default class GuitarChord {
     return hiddenDots;
   }
 
-  private drawFretDots(frets: string[], fingers: string[], startFret: number, hiddenDots: Set<string>, group: SVGGElement) {
+  private drawFretDots(
+    frets: string[],
+    fingers: string[],
+    startFret: number,
+    hiddenDots: Set<string>,
+    group: SVGGElement,
+  ) {
     const markerY = this.gridTopY - GUITAR_NUT_SPACE_ABOVE / 2;
 
     for (let i = 0; i < this.options.stringCount; i++) {
@@ -150,21 +175,36 @@ export default class GuitarChord {
         fretDotGroup.classList.add(`${NAMESPACE}-guitar-fret-muted`);
         setTransformAttr(fretDotGroup, x, markerY);
 
-        this.svgRendererInstance.drawLine(-GUITAR_MARKER_RADIUS, -GUITAR_MARKER_RADIUS, GUITAR_MARKER_RADIUS, GUITAR_MARKER_RADIUS, fretDotGroup, {
-          strokeWidth: 1.5
-        });
-        this.svgRendererInstance.drawLine(-GUITAR_MARKER_RADIUS, GUITAR_MARKER_RADIUS, GUITAR_MARKER_RADIUS, -GUITAR_MARKER_RADIUS, fretDotGroup, {
-          strokeWidth: 1.5
-        });
+        this.svgRendererInstance.drawLine(
+          -GUITAR_MARKER_RADIUS,
+          -GUITAR_MARKER_RADIUS,
+          GUITAR_MARKER_RADIUS,
+          GUITAR_MARKER_RADIUS,
+          fretDotGroup,
+          {
+            strokeWidth: 1.5,
+          },
+        );
+        this.svgRendererInstance.drawLine(
+          -GUITAR_MARKER_RADIUS,
+          GUITAR_MARKER_RADIUS,
+          GUITAR_MARKER_RADIUS,
+          -GUITAR_MARKER_RADIUS,
+          fretDotGroup,
+          {
+            strokeWidth: 1.5,
+          },
+        );
       }
       // Draw a outlined circle for 'open' string
       else if (fret === "0") {
         fretDotGroup.classList.add(`${NAMESPACE}-guitar-fret-open`);
         setTransformAttr(fretDotGroup, x, markerY);
 
-        this.svgRendererInstance.drawCircle(0, 0, GUITAR_MARKER_RADIUS, fretDotGroup, { filled: false });
-      }
-      else {
+        this.svgRendererInstance.drawCircle(0, 0, GUITAR_MARKER_RADIUS, fretDotGroup, {
+          filled: false,
+        });
+      } else {
         const absoluteFret = parseInt(fret, 36);
 
         // Skip rendering this specific dot if it is covered by a barre
@@ -176,21 +216,23 @@ export default class GuitarChord {
         // Fretted note - position relative to the diagram's visible fret range
         const relativeFret = absoluteFret - startFret + 1; // Parse int method used due to alphanumeric numbers being used
         if (relativeFret < 1 || relativeFret > this.options.fretCount) {
-          throw new Error(`Fret ${fret} on string ${i + 1} is outside the visible range (${startFret}-${startFret + this.options.fretCount - 1}). Adjust 'startFret' or 'fretCount'.`);
+          throw new Error(
+            `Fret ${fret} on string ${i + 1} is outside the visible range (${startFret}-${startFret + this.options.fretCount - 1}). Adjust 'startFret' or 'fretCount'.`,
+          );
         }
 
         const dotY = this.gridTopY + (relativeFret - 0.5) * GUITAR_FRET_SPACING;
         setTransformAttr(fretDotGroup, x, dotY);
 
         this.svgRendererInstance.drawCircle(0, 0, GUITAR_DOT_RADIUS, fretDotGroup, {
-          classes: "guitar-fret-circle"
+          classes: "guitar-fret-circle",
         });
 
         if (finger !== "0") {
           this.svgRendererInstance.drawText(finger, 0, -1, fretDotGroup, {
             fontSize: GUITAR_FONT_SMALL,
             baseline: "central",
-            classes: ["guitar-text", "guitar-fret-text"]
+            classes: ["guitar-text", "guitar-fret-text"],
           });
         }
       }
@@ -215,7 +257,7 @@ export default class GuitarChord {
       this.svgRendererInstance.drawText(labelText, x, yPos, group, {
         fontSize: GUITAR_FONT_SMALL,
         baseline: "central",
-        classes: "guitar-text"
+        classes: "guitar-text",
       });
     }
   }
@@ -224,8 +266,14 @@ export default class GuitarChord {
   private drawBarre(group: SVGElement, options: BarreEntry) {
     const fret = options.fret;
 
-    if (options.fromIndex < 0 || options.toIndex >= this.options.stringCount || options.fromIndex >= options.toIndex) {
-      throw new Error(`Barre fret error: Invalid string range ${options.fromIndex + 1}:${options.toIndex + 1}.`);
+    if (
+      options.fromIndex < 0 ||
+      options.toIndex >= this.options.stringCount ||
+      options.fromIndex >= options.toIndex
+    ) {
+      throw new Error(
+        `Barre fret error: Invalid string range ${options.fromIndex + 1}:${options.toIndex + 1}.`,
+      );
     }
 
     if (fret < options.startingFret || fret > options.startingFret + (this.options.fretCount - 1)) {
@@ -238,9 +286,9 @@ export default class GuitarChord {
     const startX = options.fromIndex * GUITAR_STRING_SPACING;
     const endX = options.toIndex * GUITAR_STRING_SPACING;
     const height = GUITAR_DOT_RADIUS * 2;
-    const width = (endX - startX) + height;
+    const width = endX - startX + height;
 
-    const y = this.gridTopY + (GUITAR_FRET_SPACING * relativeFret);
+    const y = this.gridTopY + GUITAR_FRET_SPACING * relativeFret;
 
     setTransformAttr(barreGroup, 0, y);
 
@@ -248,40 +296,62 @@ export default class GuitarChord {
       x: startX - GUITAR_DOT_RADIUS,
       y: GUITAR_DOT_RADIUS / 2,
       rx: GUITAR_DOT_RADIUS,
-      classes: "guitar-barre"
+      classes: "guitar-barre",
     });
 
     if (options.finger) {
-      this.svgRendererInstance.drawText(options.finger.toString(), (startX + endX) / 2, (GUITAR_DOT_RADIUS * 1.5) - 1, barreGroup, {
-        fontSize: GUITAR_FONT_SMALL,
-        baseline: "central",
-        classes: ["guitar-text", "guitar-fret-text"]
-      });
+      this.svgRendererInstance.drawText(
+        options.finger.toString(),
+        (startX + endX) / 2,
+        GUITAR_DOT_RADIUS * 1.5 - 1,
+        barreGroup,
+        {
+          fontSize: GUITAR_FONT_SMALL,
+          baseline: "central",
+          classes: ["guitar-text", "guitar-fret-text"],
+        },
+      );
     }
 
     group.appendChild(barreGroup);
   }
 
   // Builds a single chord diagram's group element: grid, nut/fret-position label, and per-string markers.
-  private renderChordDiagram(frets: string[], fingers: string[], options?: GuitarChordDrawOptions): SVGGElement {
+  private renderChordDiagram(
+    frets: string[],
+    fingers: string[],
+    options?: GuitarChordDrawOptions,
+  ): SVGGElement {
     const group = this.svgRendererInstance.createGroup("guitar-chord");
     const startFret = options?.startFret ?? 1;
 
     if (options?.label) {
-      this.svgRendererInstance.drawText(options.label, this.diagramWidth / 2, GUITAR_LABEL_HEIGHT - 5, group, {
-        fontSize: GUITAR_FONT_BASE,
-        fontWeight: "bold",
-        classes: ["guitar-text", "guitar-diagram-label"]
-      });
+      this.svgRendererInstance.drawText(
+        options.label,
+        this.diagramWidth / 2,
+        GUITAR_LABEL_HEIGHT - 5,
+        group,
+        {
+          fontSize: GUITAR_FONT_BASE,
+          fontWeight: "bold",
+          classes: ["guitar-text", "guitar-diagram-label"],
+        },
+      );
     }
 
     if (startFret > 1) {
-      this.svgRendererInstance.drawText(`${startFret}fr`, this.diagramWidth + GUITAR_DOT_RADIUS + GUITAR_FRET_LABEL_OFFSET_X, this.gridTopY + GUITAR_FRET_SPACING / 2 + 4, group, {
-        anchor: "start",
-        fontSize: GUITAR_FONT_SMALL,
-        fontWeight: "bold",
-        classes: ["guitar-text", "guitar-fret-label"]
-      });
+      this.svgRendererInstance.drawText(
+        `${startFret}fr`,
+        this.diagramWidth + GUITAR_DOT_RADIUS + GUITAR_FRET_LABEL_OFFSET_X,
+        this.gridTopY + GUITAR_FRET_SPACING / 2 + 4,
+        group,
+        {
+          anchor: "start",
+          fontSize: GUITAR_FONT_SMALL,
+          fontWeight: "bold",
+          classes: ["guitar-text", "guitar-fret-label"],
+        },
+      );
     }
 
     // Fret lines (fretCount + 1 lines make up fretCount cells). The first line is drawn thicker
@@ -291,10 +361,15 @@ export default class GuitarChord {
       const y = this.gridTopY + i * GUITAR_FRET_SPACING;
 
       if (i === 0 && startFret === 1) {
-        this.svgRendererInstance.drawRect(this.diagramWidth + GUITAR_NUT_X_OFFSET, GUITAR_NUT_THICKNESS, fretLinesGroup, {
-          x: -(GUITAR_NUT_X_OFFSET / 2),
-          y: y - (GUITAR_NUT_THICKNESS / 2)
-        });
+        this.svgRendererInstance.drawRect(
+          this.diagramWidth + GUITAR_NUT_X_OFFSET,
+          GUITAR_NUT_THICKNESS,
+          fretLinesGroup,
+          {
+            x: -(GUITAR_NUT_X_OFFSET / 2),
+            y: y - GUITAR_NUT_THICKNESS / 2,
+          },
+        );
       } else {
         this.svgRendererInstance.drawLine(0, y, this.diagramWidth, y, fretLinesGroup);
       }
@@ -304,7 +379,13 @@ export default class GuitarChord {
     const stringLinesGroup = this.svgRendererInstance.createGroup("guitar-group-string-lines");
     for (let i = 0; i < this.options.stringCount; i++) {
       const x = i * GUITAR_STRING_SPACING;
-      this.svgRendererInstance.drawLine(x, this.gridTopY, x, this.gridTopY + this.diagramHeight, stringLinesGroup);
+      this.svgRendererInstance.drawLine(
+        x,
+        this.gridTopY,
+        x,
+        this.gridTopY + this.diagramHeight,
+        stringLinesGroup,
+      );
     }
     group.appendChild(stringLinesGroup);
 
@@ -319,7 +400,7 @@ export default class GuitarChord {
         toIndex: barre.endString - 1,
         fret: barre.fret,
         finger: barre.finger,
-        startingFret: startFret
+        startingFret: startFret,
       });
     });
     group.appendChild(fretDotsGroup);
@@ -327,7 +408,7 @@ export default class GuitarChord {
     const stringLabelsGroup = this.svgRendererInstance.createGroup("guitar-group-string-labels");
     if (this.options.stringLabels.length >= 1) {
       this.drawStringLabels(stringLabelsGroup, this.options.stringLabels);
-    };
+    }
     group.appendChild(stringLabelsGroup);
 
     return group;
@@ -347,7 +428,7 @@ export default class GuitarChord {
 
     // Group chords into rows based on width capacity (by default, width determined by inlineChords arg)
     this.chordEntries.forEach((entry, i) => {
-      if (i > 0 && (tempX + this.diagramWidth) > this.options.width) {
+      if (i > 0 && tempX + this.diagramWidth > this.options.width) {
         rows.push(currentRow);
         currentRow = [];
         tempX = GUITAR_DOT_RADIUS;
@@ -372,15 +453,16 @@ export default class GuitarChord {
 
       // Calculate starting X pos based on the centerChords val
       if (this.options.centerChords) {
-        const totalRowWidth = (row.length * this.diagramWidth) + ((row.length - 1) * GUITAR_DIAGRAM_H_SPACING);
-        const calculatedX = (this.options.width / 2) - (totalRowWidth / 2) - 16;
+        const totalRowWidth =
+          row.length * this.diagramWidth + (row.length - 1) * GUITAR_DIAGRAM_H_SPACING;
+        const calculatedX = this.options.width / 2 - totalRowWidth / 2 - 16;
         this.cursorX = calculatedX;
       } else {
         this.cursorX = GUITAR_DOT_RADIUS;
       }
 
       // Apply coordinates to each entry in the current row
-      row.forEach((entry) => {
+      row.forEach(entry => {
         entry.xPos = this.cursorX;
         entry.yPos = this.cursorY;
         setTransformAttr(entry.gElement, this.cursorX, this.cursorY);
@@ -396,13 +478,19 @@ export default class GuitarChord {
   /**
    * Adds a new chord diagram. Diagrams are placed left-to-right in the order added, wrapping to a
    * new row automatically once the configured width is exceeded
-  */
+   */
   addChord(frets: string, fingers: string, options?: GuitarChordDrawOptions): number {
     const fretParts = parseFretsEntry(frets);
     const fingerParts = parseFingersEntry(fingers);
 
-    if (fretParts.length !== this.options.stringCount) throw new Error("Invalid number of frets provided, entries should be equal to number of strings in diagram.");
-    if (fingerParts.length !== this.options.stringCount) throw new Error("Invalid number of fingers provided, entries should be equal to number of strings in diagram.");
+    if (fretParts.length !== this.options.stringCount)
+      throw new Error(
+        "Invalid number of frets provided, entries should be equal to number of strings in diagram.",
+      );
+    if (fingerParts.length !== this.options.stringCount)
+      throw new Error(
+        "Invalid number of fingers provided, entries should be equal to number of strings in diagram.",
+      );
 
     const startFret = options?.startFret ?? calculateStartFret(fretParts, this.options.fretCount);
     const label = options?.label;
@@ -418,7 +506,7 @@ export default class GuitarChord {
       strings: createStateStrings(fretParts, fingerParts),
       ...resolvedOptions,
       xPos: 0,
-      yPos: 0
+      yPos: 0,
     });
 
     this.relayoutChords();
@@ -428,43 +516,58 @@ export default class GuitarChord {
 
   /**
    * Replaces the chord diagram at the specified index with a new one, in place.
-   * 
-  * @param frets - A string, with each value being ordered low-to-high (e.g. first position in string 0 is the low E string)
+   *
+   * @param frets - A string, with each value being ordered low-to-high (e.g. first position in string 0 is the low E string)
    * * `x` - muted string
    * * `0` - open string
    * * `1...n` - fretted at the given absolute fret number (e.g. `3`)
    * @param fingers - A string, with each value being ordered low-to-high (e.g. first position in string 0 is the low E string)
    * * `0` - No finger labeled
    * * `1...n` - Finger labeled as number provided
-   * 
+   *
    * @param chordIndex - The index of the chord to replace (as returned by addChord).
-   * 
+   *
    * @param options - Optional per-chord settings, see addChord.
-   * 
+   *
    * @returns void
-   * 
+   *
    * @throws {Error} If the index is out of bounds, or if chordDef is invalid (see addChord).
    *
    * @example
    * // Change chord at index 0 to a D major chord
    * guitarChord.modifyChordByIndex("xx0232", "000132", 0, { label: "D" });
-   *   
-  */
-  modifyChordByIndex(frets: string, fingers: string, chordIndex: number, options?: GuitarChordDrawOptions) {
-    if (chordIndex >= this.chordEntries.length || chordIndex < 0) throw new Error("Chord index was out of bounds.");
+   *
+   */
+  modifyChordByIndex(
+    frets: string,
+    fingers: string,
+    chordIndex: number,
+    options?: GuitarChordDrawOptions,
+  ) {
+    if (chordIndex >= this.chordEntries.length || chordIndex < 0)
+      throw new Error("Chord index was out of bounds.");
 
     const fretParts = parseFretsEntry(frets);
     const fingerParts = parseFingersEntry(fingers);
 
-    if (fretParts.length !== this.options.stringCount) throw new Error("Invalid number of frets provided, entries should be equal to number of strings in diagram.");
-    if (fingerParts.length !== this.options.stringCount) throw new Error("Invalid number of fingers provided, entries should be equal to number of strings in diagram.");
+    if (fretParts.length !== this.options.stringCount)
+      throw new Error(
+        "Invalid number of frets provided, entries should be equal to number of strings in diagram.",
+      );
+    if (fingerParts.length !== this.options.stringCount)
+      throw new Error(
+        "Invalid number of fingers provided, entries should be equal to number of strings in diagram.",
+      );
 
     const oldEntry = this.chordEntries[chordIndex];
 
     // "label" in options distinguishes "key not passed -> keep old" from "key passed as '' -> clear it"
-    const label = options && "label" in options
-      ? (options.label === "" ? undefined : options.label)
-      : oldEntry.label;
+    const label =
+      options && "label" in options
+        ? options.label === ""
+          ? undefined
+          : options.label
+        : oldEntry.label;
 
     const startFret = options?.startFret ?? calculateStartFret(fretParts, this.options.fretCount);
     const resolvedOptions = { ...options, label, startFret };
@@ -477,7 +580,7 @@ export default class GuitarChord {
       strings: createStateStrings(fretParts, fingerParts),
       ...resolvedOptions,
       xPos: oldEntry.xPos,
-      yPos: oldEntry.yPos
+      yPos: oldEntry.yPos,
     };
 
     this.relayoutChords();
@@ -488,9 +591,10 @@ export default class GuitarChord {
    * @param chordIndex - The index of the chord to remove.
    * @returns void
    * @throws {Error} If the index is out of bounds.
-  */
+   */
   removeChordByIndex(chordIndex: number) {
-    if (chordIndex >= this.chordEntries.length || chordIndex < 0) throw new Error("Chord index was out of bounds.");
+    if (chordIndex >= this.chordEntries.length || chordIndex < 0)
+      throw new Error("Chord index was out of bounds.");
 
     const entry = this.chordEntries[chordIndex];
     entry.gElement.remove();
@@ -502,7 +606,7 @@ export default class GuitarChord {
   /**
    * Removes all chord diagrams and resets internal positioning.
    * @returns void
-  */
+   */
   clearAllChords() {
     this.rootLayer.replaceChildren();
     this.chordEntries = [];
@@ -515,7 +619,7 @@ export default class GuitarChord {
   /**
    * Removes the root svg element and cleans up arrays.
    * @returns void
-  */
+   */
   destroy() {
     this.chordEntries = [];
     this.svgRendererInstance.destroy();

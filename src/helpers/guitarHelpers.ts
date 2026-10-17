@@ -5,13 +5,13 @@ export type GuitarBarreDef = {
   fromString: number;
   endString: number;
   finger?: number;
-}
+};
 
 export type GuitarChordDrawOptions = {
   startFret?: number;
   label?: string;
   barres?: GuitarBarreDef[];
-}
+};
 
 export const GUITAR_STRING_COUNT_DEFAULT = 6;
 export const GUITAR_FRET_COUNT_DEFAULT = 5;
@@ -32,7 +32,7 @@ export const GUITAR_DIAGRAM_BOTTOM_PADDING = 1; // includes padding for the dot 
 
 export const GUITAR_NUT_THICKNESS = 4;
 export const GUITAR_NUT_X_OFFSET = 1;
-export const GUITAR_NUT_SPACE_ABOVE = (GUITAR_MARKER_RADIUS * 2) + GUITAR_NUT_THICKNESS + 8;
+export const GUITAR_NUT_SPACE_ABOVE = GUITAR_MARKER_RADIUS * 2 + GUITAR_NUT_THICKNESS + 8;
 
 export const GUITAR_FONT_BASE = 16;
 export const GUITAR_FONT_SMALL = 12;
@@ -49,7 +49,7 @@ export function createStateStrings(frets: string[], fingers: string[]): GuitarSt
   for (let i = 0; i < frets.length; i++) {
     result.push({
       fret: frets[i],
-      finger: fingers[i]
+      finger: fingers[i],
     });
   }
   return result;
@@ -57,7 +57,7 @@ export function createStateStrings(frets: string[], fingers: string[]): GuitarSt
 
 export function calculateStartFret(fretParts: string[], fretCount: number): number {
   const activeFrets = fretParts
-    .filter(f => f.toLowerCase() !== 'x' && f !== '0')
+    .filter(f => f.toLowerCase() !== "x" && f !== "0")
     .map(f => parseInt(f, 36));
 
   // Edge case: String is entirely open strings or muted (e.g., "000000" or "xxxxxx")
@@ -76,13 +76,15 @@ export function calculateStartFret(fretParts: string[], fretCount: number): numb
 }
 
 export function parseFretsEntry(frets: string): string[] {
-  if (!REGEX_FRETS_STRING.test(frets)) throw new Error("Invalid frets string. Only 'x', 'X', and digits are allowed.");
+  if (!REGEX_FRETS_STRING.test(frets))
+    throw new Error("Invalid frets string. Only 'x', 'X', and digits are allowed.");
 
   return frets.split("");
 }
 
 export function parseFingersEntry(fingers: string): string[] {
-  if (!REGEX_FINGERS_STRING.test(fingers)) throw new Error("Invalid fingers string. Only digits are allowed.");
+  if (!REGEX_FINGERS_STRING.test(fingers))
+    throw new Error("Invalid fingers string. Only digits are allowed.");
 
   return fingers.split("");
 }
@@ -91,8 +93,12 @@ export function parseFingersEntry(fingers: string): string[] {
  * * Used to automatically determine options for creating barre lines.
  * * The returned value then can be used in addChord and modifyChord methods.
  * @returns GuitarBarreDef[]
-*/
-export function determineBarreOptions(frets: string, fingers: string, barreFrets: number[]): GuitarBarreDef[] {
+ */
+export function determineBarreOptions(
+  frets: string,
+  fingers: string,
+  barreFrets: number[],
+): GuitarBarreDef[] {
   const fretParts = parseFretsEntry(frets);
   const fingerParts = parseFingersEntry(fingers);
 
@@ -105,7 +111,7 @@ export function determineBarreOptions(frets: string, fingers: string, barreFrets
     const fingerOccurrences: Record<number, number> = {};
 
     for (let i = 0; i < fretParts.length; i++) {
-      if (fretParts[i].toLowerCase() === 'x') continue;
+      if (fretParts[i].toLowerCase() === "x") continue;
 
       // Use base-36 parsing to convert 'a' to 10, 'b' to 11, etc.
       const currentFret = parseInt(fretParts[i], 36);
@@ -135,7 +141,7 @@ export function determineBarreOptions(frets: string, fingers: string, barreFrets
         fret: targetFret,
         fromString: fromString,
         endString: toString,
-        finger: mostOccurringFinger
+        finger: mostOccurringFinger,
       });
     }
   });

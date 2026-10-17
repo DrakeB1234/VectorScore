@@ -1,4 +1,5 @@
-import { AUGMENTATION_DOT, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef } from "../glyphs";
+// prettier-ignore
+import { AUGMENTATION_DOT, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, NOTEHEAD_BLACK, NOTEHEAD_HALF, NOTEHEAD_WHOLE, REST_EIGHTH, REST_HALF, REST_QUARTER, REST_SIXTEENTH, REST_WHOLE, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, type GlyphDef, } from "../glyphs";
 import SVGRenderer from "../classes/SVGRenderer";
 import NoteRenderer, { STEM_UP_X_OFFSET } from "../classes/NoteRenderer";
 import StaffRenderer from "../classes/StaffRenderer";
@@ -30,13 +31,8 @@ const DEFAULT_STAFF_OPTIONS: Required<RhythmStaffUserOptions> = {
 
 type ResolvedStaffOptions = Required<RhythmStaffUserOptions>;
 
-const USE_GLPYHS: GlyphDef[] = [
-  NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK,
-  TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9,
-  FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP,
-  REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH,
-  AUGMENTATION_DOT
-];
+// prettier-ignore
+const USE_GLPYHS: GlyphDef[] = [ NOTEHEAD_WHOLE, NOTEHEAD_HALF, NOTEHEAD_BLACK, TIMESIG_0, TIMESIG_1, TIMESIG_2, TIMESIG_3, TIMESIG_4, TIMESIG_5, TIMESIG_6, TIMESIG_7, TIMESIG_8, TIMESIG_9, FLAG_EIGHTH_DOWN, FLAG_EIGHTH_UP, FLAG_SIXTEENTH_DOWN, FLAG_SIXTEENTH_UP, REST_WHOLE, REST_HALF, REST_QUARTER, REST_EIGHTH, REST_SIXTEENTH, AUGMENTATION_DOT, ];
 
 export type RhythmItem =
   | { type: "note"; duration: string }
@@ -53,11 +49,11 @@ const MIN_PER_MEASURE_WIDTH = 100;
 
 // Fractional whole-note values for pure time-grid calculation
 const DURATION_TIME_MAP: Record<Exclude<NoteDurations, "t">, number> = {
-  "w": 1,
-  "h": 0.5,
-  "q": 0.25,
-  "e": 0.125,
-  "s": 0.0625,
+  w: 1,
+  h: 0.5,
+  q: 0.25,
+  e: 0.125,
+  s: 0.0625,
 };
 
 export default class RhythmStaff {
@@ -79,7 +75,10 @@ export default class RhythmStaff {
   private measuresDrawn: number = 0;
 
   constructor(rootElementCtx: HTMLElement, userOptions?: RhythmStaffUserOptions) {
-    if (rootElementCtx === null) throw new Error("RhythmStaff Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.");
+    if (rootElementCtx === null)
+      throw new Error(
+        "RhythmStaff Error: RootElementCtx was not defined. Please ensure a valid HTML element is provided to append the staff to.",
+      );
 
     this.options = { ...DEFAULT_STAFF_OPTIONS, ...userOptions };
 
@@ -124,7 +123,9 @@ export default class RhythmStaff {
     this.dynamicMeasureWidth = availableWidth / this.options.maxMeasures;
 
     if (this.dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH || this.options.maxMeasures < 1) {
-      throw new Error(`RhythmStaff init Error: Not enough space to support '${this.options.maxMeasures}' measures with a staff width of '${this.options.width}'.`);
+      throw new Error(
+        `RhythmStaff init Error: Not enough space to support '${this.options.maxMeasures}' measures with a staff width of '${this.options.width}'.`,
+      );
     }
 
     const totalHeight = timeSigTotalHeight + this.options.padding * 2;
@@ -146,7 +147,9 @@ export default class RhythmStaff {
   private resolveDuration(durationStr: string) {
     const res = parseDurationString(durationStr);
     if (res.duration === "t") {
-      throw new Error("RhythmStaff Error: Invalid duration value 't' used, Rhythm staff does not support 32nd notes.");
+      throw new Error(
+        "RhythmStaff Error: Invalid duration value 't' used, Rhythm staff does not support 32nd notes.",
+      );
     }
     const baseTime = DURATION_TIME_MAP[res.duration];
     const timeValue = res.isDotted ? baseTime * 1.5 : baseTime;
@@ -156,7 +159,9 @@ export default class RhythmStaff {
 
   public drawMeasure(items: RhythmItem[]) {
     if (this.measuresDrawn >= this.options.maxMeasures) {
-      throw new Error(`RhythmStaff Error: Cannot draw more than ${this.options.maxMeasures} measures per line.`);
+      throw new Error(
+        `RhythmStaff Error: Cannot draw more than ${this.options.maxMeasures} measures per line.`,
+      );
     }
 
     const measureStartX = this.noteCursorX;
@@ -181,18 +186,19 @@ export default class RhythmStaff {
         this.notesLayer.appendChild(group);
 
         elapsedTime += res.timeValue;
-      }
-      else if (item.type === "rest") {
+      } else if (item.type === "rest") {
         const group = this.svgRendererInstance.createGroup("rest");
         const res = this.resolveDuration(item.duration);
 
-        this.noteRendererInstance.drawRest({ duration: res.duration, isDotted: res.isDotted }, group);
+        this.noteRendererInstance.drawRest(
+          { duration: res.duration, isDotted: res.isDotted },
+          group,
+        );
         setTransformAttr(group, itemStartX, -(this.options.padding * 0.8));
         this.notesLayer.appendChild(group);
 
         elapsedTime += res.timeValue;
-      }
-      else if (item.type === "beam") {
+      } else if (item.type === "beam") {
         const beamGroup = this.svgRendererInstance.createGroup("beam");
         setTransformAttr(beamGroup, itemStartX, 0);
 
@@ -208,16 +214,18 @@ export default class RhythmStaff {
           const noteGroup = this.svgRendererInstance.createGroup("note");
           const localX = timeToX(elapsedTime) - itemStartX;
 
-          this.noteRendererInstance.drawRhythmNote("q", note.isDotted, noteGroup, { skipStem: true });
+          this.noteRendererInstance.drawRhythmNote("q", note.isDotted, noteGroup, {
+            skipStem: true,
+          });
           setTransformAttr(noteGroup, localX, 0);
           beamGroup.appendChild(noteGroup);
 
           stemCoords.push({
             x: localX + NOTEHEAD_BLACK.glyphWidth - STEM_UP_X_OFFSET,
             startY: -1, // Matches STEM_Y_OFFSET in NoteRenderer
-            endY: -35,  // Standard rhythm beam height
+            endY: -35, // Standard rhythm beam height
             duration: note.duration as "e" | "s",
-            noteStep: 0
+            noteStep: 0,
           });
 
           elapsedTime += note.timeValue;
@@ -235,7 +243,7 @@ export default class RhythmStaff {
       barType: "single",
       topY: 0,
       bottomY: BASE_STAFF_HEIGHT,
-      group: barline
+      group: barline,
     });
     setTransformAttr(barline, absoluteBarlineX, 0);
     this.barlinesGroup.appendChild(barline);
@@ -256,7 +264,9 @@ export default class RhythmStaff {
     const dynamicMeasureWidth = availableWidth / count;
 
     if (dynamicMeasureWidth < MIN_PER_MEASURE_WIDTH || count < 1) {
-      throw new Error(`RhythmStaff init Error: Not enough space to support '${count}' measures with a staff width of '${this.options.width}'.`);
+      throw new Error(
+        `RhythmStaff init Error: Not enough space to support '${count}' measures with a staff width of '${this.options.width}'.`,
+      );
     }
 
     this.options.maxMeasures = count;

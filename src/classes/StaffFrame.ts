@@ -2,7 +2,14 @@ import { COMPONENT_GAP } from "./StaffRenderer";
 import StaffRenderer from "./StaffRenderer";
 import type SVGRenderer from "./SVGRenderer";
 import type { ClefTypes, SystemTypes } from "../types";
-import { BASE_STAFF_HEIGHT, GRAND_STAFF_SPACING, validateKeySignature, validateTimeSignature, type KeySignatures, type TimeSignature } from "../helpers/staffHelpers";
+import {
+  BASE_STAFF_HEIGHT,
+  GRAND_STAFF_SPACING,
+  validateKeySignature,
+  validateTimeSignature,
+  type KeySignatures,
+  type TimeSignature,
+} from "../helpers/staffHelpers";
 import { setTransformAttr } from "../constants";
 import type { BarlineTypes } from "../helpers/inputHelpers";
 
@@ -63,8 +70,7 @@ export default class StaffFrame {
       this.clefWidth = res.clefWidth;
       this.braceWidth = res.braceWidth;
       this.staffYStartPositions = [0, this.totalStaffHeight - BASE_STAFF_HEIGHT];
-    }
-    else {
+    } else {
       const staffHeight = this.staffRenderer.drawStaffLines({
         width: this.options.width,
         startYPos: 0,
@@ -74,7 +80,7 @@ export default class StaffFrame {
       const clefWidth = this.staffRenderer.drawClef({
         clefType: this.options.staffType,
         startYPos: 0,
-        clefGroup: this.clefGroup
+        clefGroup: this.clefGroup,
       });
 
       this.totalStaffHeight = staffHeight;
@@ -92,7 +98,7 @@ export default class StaffFrame {
       topY: 0,
       bottomY: this.totalStaffHeight,
       barType: "single",
-      group: startLineGroup
+      group: startLineGroup,
     });
     setTransformAttr(startLineGroup, this.braceWidth, 0);
     this.staffGroup.appendChild(startLineGroup);
@@ -102,7 +108,7 @@ export default class StaffFrame {
       topY: 0,
       bottomY: this.totalStaffHeight,
       barType: "single",
-      group: endLineGroup
+      group: endLineGroup,
     });
     setTransformAttr(endLineGroup, this.options.width - 1, 0);
     this.staffGroup.appendChild(endLineGroup);
@@ -111,14 +117,13 @@ export default class StaffFrame {
   }
 
   private renderGrandStaff() {
-
-    const totalStaffHeight = (BASE_STAFF_HEIGHT * 2) + GRAND_STAFF_SPACING;
+    const totalStaffHeight = BASE_STAFF_HEIGHT * 2 + GRAND_STAFF_SPACING;
     let y = 0;
 
     const braceWidth = this.staffRenderer.drawBrace({
       topY: 0,
       bottomY: totalStaffHeight,
-      staffGroup: this.staffGroup
+      staffGroup: this.staffGroup,
     });
 
     setTransformAttr(this.clefGroup, braceWidth, 0);
@@ -132,7 +137,7 @@ export default class StaffFrame {
     const trebleClefWidth = this.staffRenderer.drawClef({
       clefType: "treble",
       startYPos: y,
-      clefGroup: this.clefGroup
+      clefGroup: this.clefGroup,
     });
     y += trebleStaffHeight + GRAND_STAFF_SPACING;
 
@@ -145,15 +150,15 @@ export default class StaffFrame {
     const bassClefWidth = this.staffRenderer.drawClef({
       clefType: "bass",
       startYPos: y,
-      clefGroup: this.clefGroup
+      clefGroup: this.clefGroup,
     });
     y += bassStaffHeight;
 
     return {
       clefWidth: Math.max(trebleClefWidth, bassClefWidth),
       totalStaffHeight: y,
-      braceWidth
-    }
+      braceWidth,
+    };
   }
 
   /**
@@ -245,7 +250,10 @@ export default class StaffFrame {
 
   public changeTimeSignature(top: number, bottom: number): number {
     validateTimeSignature(top, bottom);
-    if (this.options.timeSignature?.topNumber === top && this.options.timeSignature?.bottomNumber === bottom) {
+    if (
+      this.options.timeSignature?.topNumber === top &&
+      this.options.timeSignature?.bottomNumber === bottom
+    ) {
       return this.currentNoteStartX;
     }
 
@@ -291,7 +299,7 @@ export default class StaffFrame {
       bottomY: this.totalStaffHeight,
       barType,
       repeatYStartPositions: this.staffYStartPositions,
-      group
+      group,
     });
   }
 }
