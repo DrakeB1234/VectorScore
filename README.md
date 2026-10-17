@@ -11,7 +11,7 @@
 
 A lightweight, SVG-based TypeScript library for rendering simple musical notation, rhythms, and guitar chords. This project aims to provide a simple to use renderer for web-based musical apps.
 
-<img src="public/standardStaff1.png" alt="" width="450" />
+<img src="https://raw.githubusercontent.com/DrakeB1234/VectorScore/master/public/standardStaff1.png" alt="" width="450" />
 
 ## Table of Contents
 
@@ -245,7 +245,7 @@ const guitarDiagram = new GuitarChord(containerRoot, {
   // default: 1
   scale: 1,
   // default: 6
-  stringCount: 4,
+  stringCount: 6,
   // default: 5
   fretCount: 5,
   // optional
@@ -453,7 +453,7 @@ staff.uiLayer.appendChild(uiBar);
 | RhythmStaff `drawNote(['q','q'])`, `drawRest(['h'])`, `drawBeamedNotes('e', 4)` | `drawMeasure([{ type: "note", duration: "q" }, { type: "rest", duration: "h" }, { type: "beam", durations: "eeee" }])` |
 | `incrementCurrentBeatUI()` / `resetCurrentBeatUI()`                             | Removed. Position your own element with `getBeatCoordinateX()` in `uiLayer`                                            |
 | RhythmStaff `clearAllNotes()`                                                   | `clear()`                                                                                                              |
-| ScrollingStaff `queueNotes(["C4w", ["C4w","E4w","G4w"]])`                       | `queueNotes([noteConfig("C4w"), chordConfig(["C4","E4","G4"], "w")])`                                                  |
+| ScrollingStaff `queueNotes(["C4w", ["C4w","E4w","G4w"]])`                       | `queueNotes([noteConfig({}: NoteInput), chordConfig({}: ChordInput)])`                                                 |
 | ScrollingStaff `clearAllNote()`                                                 | `clearAllNotes()`                                                                                                      |
 | CSS `.vs-scrolling-notes-layer > g.vs-note-wrapper`                             | `.vs-scrolling-notes-layer > g` (groups are now `vs-note`, `vs-chord`, `vs-rest`, `vs-beam`)                           |
 

@@ -1,6 +1,7 @@
 // General Exports
 export type { ClefTypes, SystemTypes } from "./types";
-export type { KeySignatures, TimeSignature, KeySignaturesArr } from "./helpers/staffHelpers";
+export { KeySignaturesArr } from "./helpers/staffHelpers";
+export type { KeySignatures, TimeSignature } from "./helpers/staffHelpers";
 export type {
   DrawNoteConfig,
   DrawChordConfig,
@@ -15,6 +16,7 @@ export type {
   NoteInput,
   ChordInput,
   RestInput,
+  BarlineTypes,
 } from "./helpers/inputHelpers";
 export {
   noteConfig,
